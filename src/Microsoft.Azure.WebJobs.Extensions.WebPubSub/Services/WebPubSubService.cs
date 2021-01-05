@@ -65,20 +65,20 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
 
         public Task Send(MessageData message)
         {
-            var subPath = $"/messages";
+            var subPath = $"/";
             if (!string.IsNullOrEmpty(message.TargetId) && message.TargetType != TargetType.All)
             {
                 subPath = $"/{message.TargetType.ToString().ToLower()}/{message.TargetId}/messages";
             }
 
-            if (message.TargetType != TargetType.Connections && message.Excludes.Length > 0)
+            if (message.TargetType != TargetType.Connections && message.Excludes?.Length > 0)
             {
                 var excludes = string.Join("&", message.Excludes.Select(x => $"excluded={x}"));
                 subPath += excludes;
             }
 
             var connection = GetServerConnection(HubName, subPath);
-            return RequestAsync(connection.Url, message, connection.AccessToken, HttpMethod.Post);
+            return RequestAsync(connection.Url, message.Message, connection.AccessToken, HttpMethod.Post);
         }
 
         public Task AddToGroup(GroupData groupData)

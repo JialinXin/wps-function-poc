@@ -11,14 +11,20 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
     [Binding]
     public class WebPubSubConnectionAttribute : Attribute
     {
+        private string _userId;
+
         [ConnectionString]
-        public string ConnectionStringSetting { get; set; }
+        public string ConnectionStringSetting { get; set; } = Constants.WebPubSubConnectionStringName;
 
         [AutoResolve]
         public string HubName { get; set; }
 
         [AutoResolve]
-        public string UserId { get; set; }
+        public string UserId 
+        {
+            get { return _userId; }
+            set { _userId = value; }
+        }
 
         internal IEnumerable<Claim> GetClaims()
         {
@@ -28,6 +34,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
                 claims.Add(new Claim(ClaimTypes.NameIdentifier, UserId));
             }
             return claims;
+        }
+
+        internal string GetUserIdFromQuery(string query)
+        {
+
         }
     }
 }
