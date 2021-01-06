@@ -12,6 +12,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
 
         public string[] Excludes { get; set; }
 
-        public object Message { get; set; }
+        public string Message { get; set; }
     }
 }

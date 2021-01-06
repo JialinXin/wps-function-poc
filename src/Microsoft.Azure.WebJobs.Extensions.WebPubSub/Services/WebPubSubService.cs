@@ -42,11 +42,17 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
 
         internal WebPubSubConnection GetClientConnection(string hubName, IEnumerable<Claim> claims = null)
         {
+            var subPath = string.Empty;
+            if (string.IsNullOrEmpty(hubName))
+            {
+                
+            }
+            var baseEndpoint = new Uri(BaseEndpoint);
             var hubUrl = $"{BaseEndpoint}/ws/client/?hub={hubName}";
             var token = AuthUtility.GenerateJwtBearer(null, hubUrl, claims, DateTime.UtcNow.AddMinutes(30), AccessKey);
             return new WebPubSubConnection
             {
-                Url = hubUrl,
+                Url = $"wss://{baseEndpoint.Host}/ws/client",
                 AccessToken = token
             };
         }
@@ -65,7 +71,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
 
         public Task Send(MessageData message)
         {
-            var subPath = $"/";
+            var subPath = $"/messages";
             if (!string.IsNullOrEmpty(message.TargetId) && message.TargetType != TargetType.All)
             {
                 subPath = $"/{message.TargetType.ToString().ToLower()}/{message.TargetId}/messages";
@@ -129,7 +135,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
             return RequestAsync(connection.Url, null, connection.AccessToken, HttpMethod.Delete);
         }
 
-        private Task<HttpResponseMessage> RequestAsync(string url, object body, string bearer, HttpMethod httpMethod)
+        private Task<HttpResponseMessage> RequestAsync(string url, string message, string bearer, HttpMethod httpMethod)
         {
             var request = new HttpRequestMessage
             {
@@ -139,15 +145,15 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
 
             request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", bearer);
             request.Headers.Accept.Clear();
-            request.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
+            request.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("*/*"));
             request.Headers.AcceptCharset.Clear();
             request.Headers.AcceptCharset.Add(new StringWithQualityHeaderValue("UTF-8"));
             request.Headers.Add("Asrs-User-Agent", GetProductInfo());
 
-            if (body != null)
+            if (message != null)
             {
-                var content = JsonConvert.SerializeObject(body);
-                request.Content = new StringContent(content, Encoding.UTF8, "application/json");
+                //var content = JsonConvert.SerializeObject(message);
+                request.Content = new StringContent(message, Encoding.UTF8, "text/plain");
             }
             return _httpClient.SendAsync(request);
         }

@@ -12,13 +12,22 @@ namespace SimpleChat
 {
     public static class Functions
     {
-        [FunctionName("connect")]
-        public static WebPubSubConnection Connect(
-            [HttpTrigger(AuthorizationLevel.Anonymous, "get", "post", Route = null)] HttpRequest req,
-            [WebPubSubConnection(HubName = "simplechat", UserId = "User aaa")] WebPubSubConnection connection,
+        [FunctionName("login")]
+        public static WebPubSubConnection GetClientConnection(
+            [HttpTrigger(AuthorizationLevel.Anonymous, "get", "post")] HttpRequest req,
+            [WebPubSubConnection(HubName = "simplechat", UserId = "{headers}")] WebPubSubConnection connection,
             ILogger log)
         {
+            Console.WriteLine("login");
             return connection;
+        }
+
+        [FunctionName("connect")]
+        public static void Connect(
+            [HttpTrigger(AuthorizationLevel.Anonymous, "post")] HttpRequest req,
+            ILogger log)
+        {
+            Console.WriteLine("Connect.");
         }
 
         [FunctionName("chat")]
@@ -26,9 +35,9 @@ namespace SimpleChat
             [HttpTrigger(AuthorizationLevel.Anonymous, "post")] HttpRequest req,
             [WebPubSub(HubName = "simplechat")] IAsyncCollector<MessageData> messages)
         {
-            var data = new JsonSerializer().Deserialize<ClientData>(new JsonTextReader(new StreamReader(req.Body)));
+            var data = new StreamReader(req.Body);
             var msg = new MessageData();
-            msg.Message = data.Content;
+            msg.Message = data.ReadToEnd();
             return messages.AddAsync(msg);
         }
 

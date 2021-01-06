@@ -2,6 +2,7 @@
 using System;
 using System.Collections.Generic;
 using System.Security.Claims;
+using System.Web;
 using Microsoft.Azure.WebJobs.Description;
 
 
@@ -22,8 +23,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
         [AutoResolve]
         public string UserId 
         {
-            get { return _userId; }
-            set { _userId = value; }
+            get 
+            { 
+                return GetUserIdFromQuery(_userId); 
+            }
+            set 
+            { 
+                _userId = value; 
+            }
         }
 
         internal IEnumerable<Claim> GetClaims()
@@ -36,9 +43,15 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
             return claims;
         }
 
-        internal string GetUserIdFromQuery(string query)
+        internal string GetUserIdFromQuery(string userId)
         {
-
+            // query format
+            if (userId.StartsWith("?"))
+            {
+                var queryCollection = HttpUtility.ParseQueryString(userId);
+                return queryCollection["user"];
+            }
+            return userId;
         }
     }
 }
