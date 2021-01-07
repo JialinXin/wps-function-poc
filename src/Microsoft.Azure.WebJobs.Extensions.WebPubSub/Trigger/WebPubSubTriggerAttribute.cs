@@ -24,10 +24,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
         }
 
         /// <summary>
-        /// Connection string that connect to Azure SignalR Service
+        /// Connection string that connect to Web PubSub Service
         /// </summary>
-        [AppSetting(Default = Constants.WebPubSubConnectionStringName)]
-        public string ConnectionStringSetting { get; set; }
+        public string ConnectionStringSetting { get; set; } = Constants.WebPubSubConnectionStringName;
 
         /// <summary>
         /// The hub of request belongs to.

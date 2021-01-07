@@ -58,11 +58,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
             webpubsubConnectionAttributeRule.AddValidator(ValidateWebPubSubConnectionAttributeBinding);
             webpubsubConnectionAttributeRule.BindToInput<WebPubSubConnection>(GetClientConnection);
 
-            var signalRAttributeRule = context.AddBindingRule<WebPubSubAttribute>();
-            signalRAttributeRule.AddValidator(ValidateWebPubSubAttributeBinding);
-            signalRAttributeRule.BindToCollector<WebPubSubOpenType>(typeof(WebPubSubCollectorBuilder<>), this);
+            var webPubSubAttributeRule = context.AddBindingRule<WebPubSubAttribute>();
+            webPubSubAttributeRule.AddValidator(ValidateWebPubSubAttributeBinding);
+            webPubSubAttributeRule.BindToCollector<WebPubSubOpenType>(typeof(WebPubSubCollectorBuilder<>), this);
 
-            _logger.LogInformation("SignalRService binding initialized");
+            _logger.LogInformation("Web PubSub binding initialized");
         }
 
         public Task<HttpResponseMessage> ConvertAsync(HttpRequestMessage input, CancellationToken cancellationToken)

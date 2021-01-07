@@ -15,7 +15,7 @@ namespace SimpleChat
         [FunctionName("login")]
         public static WebPubSubConnection GetClientConnection(
             [HttpTrigger(AuthorizationLevel.Anonymous, "get", "post")] HttpRequest req,
-            [WebPubSubConnection(HubName = "simplechat", UserId = "{headers}")] WebPubSubConnection connection,
+            [WebPubSubConnection(HubName = "simplechat", UserId = "{query.userid}")] WebPubSubConnection connection,
             ILogger log)
         {
             Console.WriteLine("login");
@@ -46,12 +46,6 @@ namespace SimpleChat
             [HttpTrigger(AuthorizationLevel.Anonymous, "post")] HttpRequest req)
         {
             Console.WriteLine("Disconnect.");
-        }
-
-        private sealed class ClientData
-        {
-            public string From { get; set; }
-            public string Content { get; set; }
         }
     }
 }

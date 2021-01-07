@@ -22,7 +22,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
                 throw new ArgumentNullException("Binding Object.");
             }
 
-            var convertItem = _converter.ConvertToSignalROutput(item);
+            var convertItem = _converter.ConvertToWebPubSubOutput(item);
 
             if (convertItem.GetType() == typeof(MessageData))
             {

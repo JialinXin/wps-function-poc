@@ -21,17 +21,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
         public string HubName { get; set; }
 
         [AutoResolve]
-        public string UserId 
-        {
-            get 
-            { 
-                return GetUserIdFromQuery(_userId); 
-            }
-            set 
-            { 
-                _userId = value; 
-            }
-        }
+        public string UserId { get; set; }
 
         internal IEnumerable<Claim> GetClaims()
         {
@@ -41,17 +31,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
                 claims.Add(new Claim(ClaimTypes.NameIdentifier, UserId));
             }
             return claims;
-        }
-
-        internal string GetUserIdFromQuery(string userId)
-        {
-            // query format
-            if (userId.StartsWith("?"))
-            {
-                var queryCollection = HttpUtility.ParseQueryString(userId);
-                return queryCollection["user"];
-            }
-            return userId;
         }
     }
 }

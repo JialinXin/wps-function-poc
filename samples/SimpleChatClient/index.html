@@ -185,19 +185,11 @@
                         this.loggedin = true;
 
                         this.log("Connecting...");
-
-                        const config = {
-                            headers: { 'x-wps-userid': data.username }
-                        };
-                        axios.post(`http://4438849d57d2.ngrok.io/api/login?userid=${this.username}`, null, config)
+                        // id in query map to the name in function, use like {query.userid}
+                        axios.post(`http://37a53d5297da.ngrok.io/api/login?userid=${this.username}`, null, null)
                         .then(resp => resp.data)
                         .then(info => {
-                            // make compatible with old and new SignalRConnectionInfo
-                            info.accessToken = info.accessToken;
-                            info.url = info.url;
-                            var url = new URL(info.url);
-                            url.protocol = url.protocol == 'http:' ? 'ws:' : 'wss:';
-                            return url.toString();
+                            return info.url;
                         }).catch(alert)
                         .then(url => {
                             var websocket = this.websocket = new WebSocket(url);

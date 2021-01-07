@@ -23,15 +23,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
         private string AccessKey { get; }
         private string Version { get; }
 
-        //public const string AzureSignalRUserPrefix = "asrs.u.";
-        //private static readonly string[] SystemClaims =
-        //{
-        //    "aud", // Audience claim, used by service to make sure token is matched with target resource.
-        //    "exp", // Expiration time claims. A token is valid only before its expiration time.
-        //    "iat", // Issued At claim. Added by default. It is not validated by service.
-        //    "nbf"  // Not Before claim. Added by default. It is not validated by service.
-        //};
-
         public string HubName { get; } = string.Empty;
 
         internal WebPubSubService(string connectionString, string hubName = "")
@@ -43,16 +34,17 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
         internal WebPubSubConnection GetClientConnection(string hubName, IEnumerable<Claim> claims = null)
         {
             var subPath = string.Empty;
-            if (string.IsNullOrEmpty(hubName))
+            if (!string.IsNullOrEmpty(hubName))
             {
-                
+                subPath = $"/hubs/{hubName}";
             }
             var baseEndpoint = new Uri(BaseEndpoint);
-            var hubUrl = $"{BaseEndpoint}/ws/client/?hub={hubName}";
+            var hubUrl = $"{BaseEndpoint}/ws/client{subPath}";
+            var scheme = baseEndpoint.Scheme == "http" ? "ws" : "wss";
             var token = AuthUtility.GenerateJwtBearer(null, hubUrl, claims, DateTime.UtcNow.AddMinutes(30), AccessKey);
             return new WebPubSubConnection
             {
-                Url = $"wss://{baseEndpoint.Host}/ws/client",
+                Url = $"{scheme}://{baseEndpoint.Host}/ws/client{subPath}",
                 AccessToken = token
             };
         }
@@ -174,25 +166,23 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
         {
             if (string.IsNullOrEmpty(connectionString))
             {
-                throw new ArgumentException("SignalR Service connection string is empty");
+                throw new ArgumentException("Web PubSub Service connection string is empty");
             }
 
             var endpointMatch = Regex.Match(connectionString, @"endpoint=([^;]+)", RegexOptions.IgnoreCase);
             if (!endpointMatch.Success)
             {
-                throw new ArgumentException("No endpoint present in SignalR Service connection string");
+                throw new ArgumentException("No endpoint present in Web PubSub Service connection string");
             }
             var accessKeyMatch = Regex.Match(connectionString, @"accesskey=([^;]+)", RegexOptions.IgnoreCase);
             if (!accessKeyMatch.Success)
             {
-                throw new ArgumentException("No access key present in SignalR Service connection string");
+                throw new ArgumentException("No access key present in Web PubSub Service connection string");
             }
             var versionKeyMatch = Regex.Match(connectionString, @"version=([^;]+)", RegexOptions.IgnoreCase);
-
-            Version version;
-            if (versionKeyMatch.Success && !System.Version.TryParse(versionKeyMatch.Groups[1].Value, out version))
+            if (versionKeyMatch.Success && !System.Version.TryParse(versionKeyMatch.Groups[1].Value, out var version))
             {
-                throw new ArgumentException("Invalid version format in SignalR Service connection string");
+                throw new ArgumentException("Invalid version format in Web PubSub Service connection string");
             }
 
             return (endpointMatch.Groups[1].Value, accessKeyMatch.Groups[1].Value, versionKeyMatch.Groups[1].Value);
