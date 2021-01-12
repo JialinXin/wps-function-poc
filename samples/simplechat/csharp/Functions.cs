@@ -24,11 +24,18 @@ namespace SimpleChat
 
         [FunctionName("connect")]
         public static void Connect(
-            [HttpTrigger(AuthorizationLevel.Anonymous, "post")] HttpRequest req,
-            ILogger log)
+            [WebPubSubTrigger("simplechat", "connections", "connect")]InvocationContext context)
         {
             Console.WriteLine("Connect.");
         }
+
+        //[FunctionName("connect")]
+        //public static void Connect(
+        //    [HttpTrigger(AuthorizationLevel.Anonymous, "post")] HttpRequest req,
+        //    ILogger log)
+        //{
+        //    Console.WriteLine("Connect.");
+        //}
 
         [FunctionName("chat")]
         public static Task Broadcast(

@@ -5,7 +5,11 @@ VisualStudioVersion = 16.0.30803.129
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Microsoft.Azure.WebJobs.Extensions.WebPubSub", "src\Microsoft.Azure.WebJobs.Extensions.WebPubSub\Microsoft.Azure.WebJobs.Extensions.WebPubSub.csproj", "{D3F6A924-23C1-4983-9CF8-D505072554B5}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SimpleChat", "samples\SimpleChat\SimpleChat.csproj", "{FBA48C13-D9A2-444E-91C9-C390D83800B1}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SimpleChat", "samples\simplechat\csharp\SimpleChat.csproj", "{FBA48C13-D9A2-444E-91C9-C390D83800B1}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{1AAC386C-108E-4F95-8BB3-2A183A024BF9}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "samples", "samples", "{9F6B40A4-C90B-4F9F-A626-052EF2D8D5DA}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -24,6 +28,10 @@ Global
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{D3F6A924-23C1-4983-9CF8-D505072554B5} = {1AAC386C-108E-4F95-8BB3-2A183A024BF9}
+		{FBA48C13-D9A2-444E-91C9-C390D83800B1} = {9F6B40A4-C90B-4F9F-A626-052EF2D8D5DA}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {19CE8259-F856-463A-9D49-40FB11B6C68C}

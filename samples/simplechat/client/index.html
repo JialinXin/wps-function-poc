@@ -72,14 +72,13 @@
         <div id="login" v-if="!loggedin" class="login">
             <form v-on:submit.prevent="login()" class="bg-light p-3" style="width: 70%;">
                 <h5>Welcome to the Chatroom</h5>
-                <!--
                 <div class="form-group">
                     <label for="endpointInput">Endpoint</label>
                     <input type="text" class="form-control" v-model="endpoint" id="endpointInput"
                         aria-describedby="endpointHelp" placeholder="The Endpoint to connect">
                     <small id="endpointHelp" class="form-text text-muted">The endpoint is the URL for the
                         service</small>
-                </div>-->
+                </div>
                 <div class="form-group">
                     <label for="usernameInput">User</label>
                     <input type="text" class="form-control" v-model="username" id="usernameInput"
@@ -175,6 +174,11 @@
         const app = new Vue({
             el: '#app',
             data: data,
+            computed: {
+                wsendpoint: function () {
+                    if (!this.endpoint) return null;
+                }
+            },
             methods: {
                 login: function () {
                     if (this.username && this.endpoint) {

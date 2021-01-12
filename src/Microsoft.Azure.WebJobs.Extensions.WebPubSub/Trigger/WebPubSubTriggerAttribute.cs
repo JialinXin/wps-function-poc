@@ -5,7 +5,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
 {
     [AttributeUsage(AttributeTargets.ReturnValue | AttributeTargets.Parameter)]
     [Binding]
-    class WebPubSubTriggerAttribute : Attribute
+    public class WebPubSubTriggerAttribute : Attribute
     {
         public WebPubSubTriggerAttribute()
         {

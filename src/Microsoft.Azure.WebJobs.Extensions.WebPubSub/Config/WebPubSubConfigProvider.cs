@@ -15,13 +15,14 @@ using System.Threading.Tasks;
 
 namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
 {
-    [Extension("WebPubSub")]
+    [Extension("WebPubSub", "webpubsub")]
     internal class WebPubSubConfigProvider : IExtensionConfigProvider, IAsyncConverter<HttpRequestMessage, HttpResponseMessage>
     {
         private readonly IConfiguration _configuration;
         private readonly INameResolver _nameResolver;
         private readonly ILogger _logger;
         private readonly WebPubSubOptions _options;
+        private readonly IWebPubSubTriggerDispatcher _dispatcher;
 
         public WebPubSubConfigProvider(
             IOptions<WebPubSubOptions> options,
@@ -33,6 +34,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
             _logger = loggerFactory.CreateLogger(LogCategories.CreateTriggerCategory("WebPubSub"));
             _nameResolver = nameResolver;
             _configuration = configuration;
+            _dispatcher = new WebPubSubTriggerDispatcher();
         }
 
         public void Initialize(ExtensionConfigContext context)
@@ -47,6 +49,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
                 _options.ConnectionString = _nameResolver.Resolve(Constants.WebPubSubConnectionStringName);
             }
 
+            var url = context.GetWebhookHandler();
+            _logger.LogInformation($"Registered Web PubSub negotiate Endpoint = {url?.GetLeftPart(UriPartial.Path)}");
+
+
             context.AddConverter<string, JObject>(JObject.FromObject)
                    .AddConverter<WebPubSubConnection, JObject>(JObject.FromObject)
                    .AddConverter<JObject, MessageData>(input => input.ToObject<MessageData>())
@@ -54,9 +60,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
                    .AddConverter<JObject, ExistenceData>(input => input.ToObject<ExistenceData>())
                    .AddConverter<JObject, ConnectionCloseData>(input => input.ToObject<ConnectionCloseData>());
 
+            // Trigger binding
+            context.AddBindingRule<WebPubSubTriggerAttribute>()
+                .BindToTrigger<InvocationContext>(new WebPubSubTriggerBindingProvider(_dispatcher));
+
             var webpubsubConnectionAttributeRule = context.AddBindingRule<WebPubSubConnectionAttribute>();
             webpubsubConnectionAttributeRule.AddValidator(ValidateWebPubSubConnectionAttributeBinding);
-            webpubsubConnectionAttributeRule.BindToInput<WebPubSubConnection>(GetClientConnection);
+            webpubsubConnectionAttributeRule.BindToInput(GetClientConnection);
 
             var webPubSubAttributeRule = context.AddBindingRule<WebPubSubAttribute>();
             webPubSubAttributeRule.AddValidator(ValidateWebPubSubAttributeBinding);
@@ -67,7 +77,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
 
         public Task<HttpResponseMessage> ConvertAsync(HttpRequestMessage input, CancellationToken cancellationToken)
         {
-            throw new NotImplementedException();
+            return _dispatcher.ExecuteAsync(input, cancellationToken);
         }
 
         private void ValidateWebPubSubConnectionAttributeBinding(WebPubSubConnectionAttribute attribute, Type type)
