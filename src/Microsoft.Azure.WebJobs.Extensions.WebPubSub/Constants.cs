@@ -20,5 +20,21 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
         public const string AsrsEvent = AsrsHeaderPrefix + "Event";
         public const string AsrsClientQueryString = AsrsHeaderPrefix + "Client-Query";
         public const string AsrsSignature = AsrsHeaderPrefix + "Signature";
+
+        public const char HeaderSeparator = ',';
+        public const string ClaimsSeparator = ": ";
+
+        public static class Categories
+        {
+            public const string Messages = "messages";
+            public const string Connections = "connections";
+        }
+
+        public static class Events
+        {
+            public const string Connect = "connect";
+            public const string Disconnect = "disconnect";
+            public const string Message = "message";
+        }
     }
 }

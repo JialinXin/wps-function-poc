@@ -19,15 +19,17 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
     {
         private static readonly HttpClient _httpClient = new HttpClient();
 
-        private string BaseEndpoint { get; }
-        private string AccessKey { get; }
-        private string Version { get; }
+        private readonly string _baseEndpoint;
+        private readonly string _accessKey;
+        private readonly string _version;
+        private readonly string _port;
 
         public string HubName { get; } = string.Empty;
 
         internal WebPubSubService(string connectionString, string hubName = "")
         {
-            (BaseEndpoint, AccessKey, Version) = ParseConnectionString(connectionString);
+            (_baseEndpoint, _accessKey, _version, _port) = ParseConnectionString(connectionString);
+            _port = string.IsNullOrEmpty(_port) ? string.Empty : $":{_port}";
             HubName = hubName;
         }
 
@@ -38,25 +40,25 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
             {
                 subPath = $"/hubs/{hubName}";
             }
-            var baseEndpoint = new Uri(BaseEndpoint);
-            var hubUrl = $"{BaseEndpoint}/ws/client{subPath}";
+            var hubUrl = $"{_baseEndpoint}/ws/client{subPath}";
+            var baseEndpoint = new Uri(_baseEndpoint);
             var scheme = baseEndpoint.Scheme == "http" ? "ws" : "wss";
-            var token = AuthUtility.GenerateJwtBearer(null, hubUrl, claims, DateTime.UtcNow.AddMinutes(30), AccessKey);
+            var token = AuthUtility.GenerateJwtBearer(null, hubUrl, claims, DateTime.UtcNow.AddMinutes(30), _accessKey);
             return new WebPubSubConnection
             {
-                Url = $"{scheme}://{baseEndpoint.Host}/ws/client{subPath}",
+                Url = $"{scheme}://{baseEndpoint.Authority}{_port}/ws/client{subPath}",
                 AccessToken = token
             };
         }
 
         internal WebPubSubConnection GetServerConnection(string hubName = "", string additionalPath = "")
         {
-            var hubUrl = string.IsNullOrEmpty(hubName) ? $"{BaseEndpoint}/ws/api" : $"{BaseEndpoint}/ws/api/hubs/{hubName}";
-            var audienceUrl = $"{hubUrl}{additionalPath}";
-            var token = AuthUtility.GenerateJwtBearer(null, audienceUrl, null, DateTime.UtcNow.AddMinutes(30), AccessKey);
+            var subPath = string.IsNullOrEmpty(hubName) ? "/ws/api" : $"/ws/api/hubs/{hubName}";
+            var audienceUrl = $"{_baseEndpoint}{subPath}{additionalPath}";
+            var token = AuthUtility.GenerateJwtBearer(null, audienceUrl, null, DateTime.UtcNow.AddMinutes(30), _accessKey);
             return new WebPubSubConnection
             {
-                Url = audienceUrl,
+                Url = $"{_baseEndpoint}{_port}{subPath}{additionalPath}",
                 AccessToken = token
             };
         }
@@ -162,7 +164,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
             return $"{packageId}/{version} ({runtime}; {operatingSystem}; {processorArchitecture})";
         }
 
-        private static (string EndPoint, string AccessKey, string Version) ParseConnectionString(string connectionString)
+        private static (string EndPoint, string AccessKey, string Version, string Port) ParseConnectionString(string connectionString)
         {
             if (string.IsNullOrEmpty(connectionString))
             {
@@ -184,8 +186,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
             {
                 throw new ArgumentException("Invalid version format in Web PubSub Service connection string");
             }
+            var portKeyMatch = Regex.Match(connectionString, @"port=([^;]+)", RegexOptions.IgnoreCase);
+            var port = portKeyMatch.Success ? portKeyMatch.Groups[1].Value : string.Empty;
 
-            return (endpointMatch.Groups[1].Value, accessKeyMatch.Groups[1].Value, versionKeyMatch.Groups[1].Value);
+            return (endpointMatch.Groups[1].Value, accessKeyMatch.Groups[1].Value, versionKeyMatch.Groups[1].Value, port);
         }
     }
 }

@@ -26,6 +26,7 @@ namespace SimpleChat
         public static void Connect(
             [WebPubSubTrigger("simplechat", "connections", "connect")]InvocationContext context)
         {
+            Console.WriteLine($"{context.ConnectionId}");
             Console.WriteLine("Connect.");
         }
 
