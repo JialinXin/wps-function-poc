@@ -7,9 +7,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
     public class InvocationContext
     {
         /// <summary>
-         /// The arguments of invocation message.
-         /// </summary>
-        public object[] Arguments { get; set; }
+        /// The arguments of invocation message.
+        /// </summary>
+        //public object[] Arguments { get; set; }
+        public ReadOnlyMemory<byte> Payload { get; set; }
 
         /// <summary>
         /// The error message of close connection event.
@@ -52,12 +53,17 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
         /// The query of the request when client connect to the service.
         /// Queries with duplicated key will be joined by comma.
         /// </summary>
-        public IDictionary<string, string> Query { get; set; }
+        public IDictionary<string, string> Queries { get; set; }
 
         /// <summary>
         /// The claims of the client.
         /// If you multiple claims have the same key, only the first one will be reserved.
         /// </summary>
         public IDictionary<string, string> Claims { get; set; }
+
+        /// <summary>
+        /// The media type of the message.
+        /// </summary>
+        public string MediaType { get; set; }
     }
 }
