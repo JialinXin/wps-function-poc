@@ -65,5 +65,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
         /// The media type of the message.
         /// </summary>
         public string MediaType { get; set; }
+
+        /// <summary>
+        /// Function name of the trigger as the key to bind the function
+        /// </summary>
+        public string Function { get; set; }
     }
 }

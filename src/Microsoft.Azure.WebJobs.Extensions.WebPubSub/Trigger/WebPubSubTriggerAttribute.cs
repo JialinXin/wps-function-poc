@@ -11,16 +11,15 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
         {
         }
 
-        public WebPubSubTriggerAttribute(string hubName, string category, string @event) : this(hubName, category, @event, Array.Empty<string>())
-        {
-        }
-
-        public WebPubSubTriggerAttribute(string hubName, string category, string @event, params string[] parameterNames)
+        /// <summary>
+        /// Used for Connect/Disconnect event which can't be mapped to method name automatically
+        /// </summary>
+        /// <param name="hubName"></param>
+        /// <param name="event"></param>
+        public WebPubSubTriggerAttribute(string hubName, string @event)
         {
             HubName = hubName;
-            Category = category;
             Event = @event;
-            ParameterNames = parameterNames;
         }
 
         /// <summary>
@@ -35,22 +34,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
         public string HubName { get; }
 
         /// <summary>
-        /// The event of the request.
+        /// The event of the request. Required for Connect/Disconnect
         /// </summary>
         [AutoResolve]
         public string Event { get; }
-
-        /// <summary>
-        /// Two optional value: connections and messages
-        /// </summary>
-        [AutoResolve]
-        public string Category { get; }
-
-        /// <summary>
-        /// Used for messages category. All the name defined in <see cref="ParameterNames"/> will map to
-        /// Arguments in InvocationMessage by order. And the name can be used in parameters of method
-        /// directly.
-        /// </summary>
-        public string[] ParameterNames { get; }
     }
 }

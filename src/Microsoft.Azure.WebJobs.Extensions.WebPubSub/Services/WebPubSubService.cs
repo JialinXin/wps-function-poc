@@ -38,7 +38,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
             var subPath = string.Empty;
             if (!string.IsNullOrEmpty(hubName))
             {
-                subPath = $"/hubs/{hubName}";
+                subPath = $"?hub={hubName}";
             }
             var hubUrl = $"{_baseEndpoint}/ws/client{subPath}";
             var baseEndpoint = new Uri(_baseEndpoint);
@@ -53,12 +53,23 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
 
         internal WebPubSubConnection GetServerConnection(string hubName = "", string additionalPath = "")
         {
-            var subPath = string.IsNullOrEmpty(hubName) ? "/ws/api" : $"/ws/api/hubs/{hubName}";
-            var audienceUrl = $"{_baseEndpoint}{subPath}{additionalPath}";
+            string hubQuery = string.Empty;
+            if (!string.IsNullOrEmpty(hubName))
+            {
+                if (additionalPath.Contains("?"))
+                {
+                    hubQuery = $"&hub={hubName}";
+                }
+                else
+                {
+                    hubQuery = $"?hub={hubName}";
+                }
+            }
+            var audienceUrl = $"{_baseEndpoint}/api{additionalPath}{hubQuery}";
             var token = AuthUtility.GenerateJwtBearer(null, audienceUrl, null, DateTime.UtcNow.AddMinutes(30), _accessKey);
             return new WebPubSubConnection
             {
-                Url = $"{_baseEndpoint}{_port}{subPath}{additionalPath}",
+                Url = $"{_baseEndpoint}{_port}/api{additionalPath}{hubQuery}",
                 AccessToken = token
             };
         }

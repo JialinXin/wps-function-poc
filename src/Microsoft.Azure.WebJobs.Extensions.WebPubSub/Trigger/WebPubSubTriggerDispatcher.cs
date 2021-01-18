@@ -9,12 +9,13 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Web;
 
+using Newtonsoft.Json;
+
 namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
 {
     internal class WebPubSubTriggerDispatcher : IWebPubSubTriggerDispatcher
     {
         private Dictionary<string, WebPubSubListener> _listeners = new Dictionary<string, WebPubSubListener>();
-        private Dictionary<string, WebPubSubKey> MethodsMap = new Dictionary<string, WebPubSubKey>();
 
         public void AddListener(string key, WebPubSubListener listener)
         {
@@ -23,12 +24,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
 
         public async Task<HttpResponseMessage> ExecuteAsync(HttpRequestMessage req, CancellationToken token = default)
         {
-            var functionName = HttpUtility.ParseQueryString(req.RequestUri.Query)["functionName"];
-            if (string.IsNullOrEmpty(functionName) || !_listeners.ContainsKey(functionName))
-            {
-                return new HttpResponseMessage(HttpStatusCode.NotFound) { Content = new StringContent($"cannot find function: '{functionName}'") };
-            }
-
             if (!TryGetConnectionContext(req, out var context))
             {
                 return new HttpResponseMessage(HttpStatusCode.BadRequest);
@@ -39,11 +34,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
                 return new HttpResponseMessage(HttpStatusCode.BadRequest);
             }
 
-            var hubName = context.Hub;
+            if (string.IsNullOrEmpty(context.Function) || !_listeners.ContainsKey(context.Function))
+            {
+                return new HttpResponseMessage(HttpStatusCode.NotFound) { Content = new StringContent($"cannot find function: '{context.Function}'") };
+            }
+
             var tcs = new TaskCompletionSource<object>(TaskCreationOptions.RunContinuationsAsynchronously);
 
-            // TODO: detect category of connections/messages.
-            if (_listeners.TryGetValue(functionName, out var executor))
+            if (_listeners.TryGetValue(context.Function, out var executor))
             {
                 if (context.Category == Constants.Categories.Messages)
                 {
@@ -108,6 +106,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
             {
                 context.UserId = request.Headers.GetValues(Constants.AsrsUserId).FirstOrDefault();
             }
+
+            var content = request.Content.ReadAsStringAsync().Result;
+            var body = JsonConvert.DeserializeObject<RequestContent>(content);
+            // exlude _defaulthub
+            context.Function = context.Category == Constants.Categories.Connections ? $"{context.Hub}-{context.Event}".ToLower() : body.FunctionName;
             return true;
         }
 
@@ -124,11 +127,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
                 .ToDictionary(p => p[0].Trim(), p => p[1].Trim());
         }
 
-        private sealed class WebPubSubKey
+        private sealed class RequestContent
         {
-            public string HubName { get; set; }
-            public string Category { get; set; }
-            public string Event { get; set; }
+            [JsonProperty]
+            public string FunctionName { get; set; }
         }
     }
 }

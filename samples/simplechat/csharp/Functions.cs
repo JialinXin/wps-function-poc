@@ -24,7 +24,7 @@ namespace SimpleChat
 
         [FunctionName("connect")]
         public static void Connect(
-            [WebPubSubTrigger("simplechat", "connections", "connect")]InvocationContext context)
+            [WebPubSubTrigger("simplechat", "connect")]InvocationContext context)
         {
             Console.WriteLine($"{context.ConnectionId}");
             Console.WriteLine("Connect.");
@@ -38,14 +38,25 @@ namespace SimpleChat
         //    Console.WriteLine("Connect.");
         //}
 
-        [FunctionName("chat")]
+        //[FunctionName("chat")]
+        //public static Task Broadcast(
+        //    [HttpTrigger(AuthorizationLevel.Anonymous, "post")] HttpRequest req,
+        //    [WebPubSub(HubName = "simplechat")] IAsyncCollector<MessageData> messages)
+        //{
+        //    var data = new StreamReader(req.Body);
+        //    var msg = new MessageData();
+        //    msg.Message = data.ReadToEnd();
+        //    return messages.AddAsync(msg);
+        //}
+
+        [FunctionName("broadcast")]
         public static Task Broadcast(
-            [HttpTrigger(AuthorizationLevel.Anonymous, "post")] HttpRequest req,
+            [WebPubSubTrigger]InvocationContext context,
             [WebPubSub(HubName = "simplechat")] IAsyncCollector<MessageData> messages)
         {
-            var data = new StreamReader(req.Body);
+            var data = context.Payload;
             var msg = new MessageData();
-            msg.Message = data.ReadToEnd();
+            msg.Message = System.Text.Encoding.UTF8.GetString(data.Span);
             return messages.AddAsync(msg);
         }
 

@@ -1,13 +1,14 @@
-﻿using Microsoft.Azure.WebJobs.Host.Bindings;
-using Microsoft.Azure.WebJobs.Host.Listeners;
-using Microsoft.Azure.WebJobs.Host.Protocols;
-using Microsoft.Azure.WebJobs.Host.Triggers;
-using Newtonsoft.Json.Linq;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
+
+using Microsoft.Azure.WebJobs.Host.Bindings;
+using Microsoft.Azure.WebJobs.Host.Listeners;
+using Microsoft.Azure.WebJobs.Host.Protocols;
+using Microsoft.Azure.WebJobs.Host.Triggers;
+using Newtonsoft.Json.Linq;
 
 namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
 {
@@ -38,18 +39,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
             {
                 var bindingContext = triggerEvent.Context;
 
-                // If ParameterNames are set, bind them in order.
-                // To reduce undefined situation, number of arguments should keep consist with that of ParameterNames
-                if (_attribute.ParameterNames != null && _attribute.ParameterNames.Length != 0)
+                // attribute settings valids for connect/disconnect only.
+                if (_attribute.Event != Constants.Events.Connect && _attribute.Event != Constants.Events.Disconnect)
                 {
-                    //if (bindingContext.Payload == null ||
-                    //    bindingContext.Arguments.Length != _attribute.ParameterNames.Length)
-                    //{
-                    //    throw new ArgumentException(nameof(value));
-                    //    //throw new SignalRTriggerParametersNotMatchException(_attribute.ParameterNames.Length, bindingContext.Arguments?.Length ?? 0);
-                    //}
-                    //
-                    //AddParameterNamesBindingData(bindingData, _attribute.ParameterNames, bindingContext.Arguments);
+                    // TODO: warns 
+                    Console.WriteLine("ignored settings.");
                 }
 
                 return Task.FromResult<ITriggerData>(new TriggerData(new WebPubSubTriggerValueProvider(_parameterInfo, bindingContext), bindingData)
@@ -68,10 +62,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
                 throw new ArgumentNullException(nameof(context));
             }
 
-            var functionNameAttribute = _parameterInfo.Member.GetCustomAttribute<FunctionNameAttribute>(false);
-            var methodName = functionNameAttribute.Name;
+            // get listener key from function name or trigger attributes of connect/disconnect
+            var attributeName = $"{_attribute.HubName}-{_attribute.Event}".ToLower();
+            var functionName = _parameterInfo.Member.GetCustomAttribute<FunctionNameAttribute>(false);
+            var listernerKey = (_attribute.Event == Constants.Events.Connect || _attribute.Event == Constants.Events.Disconnect) 
+                ? attributeName : functionName.Name;
 
-            return Task.FromResult<IListener>(new WebPubSubListener(context.Executor,  methodName, _dispatcher));
+            return Task.FromResult<IListener>(new WebPubSubListener(context.Executor,  listernerKey, _dispatcher));
         }
 
         public ParameterDescriptor ToParameterDescriptor()

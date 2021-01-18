@@ -10,13 +10,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
     {
         public ITriggeredFunctionExecutor Executor { private set; get; }
 
-        private readonly string _methodName;
+        private readonly string _listenerKey;
         private readonly IWebPubSubTriggerDispatcher _dispatcher;
 
-        public WebPubSubListener(ITriggeredFunctionExecutor executor, string methodName, IWebPubSubTriggerDispatcher dispatcher)
+        public WebPubSubListener(ITriggeredFunctionExecutor executor, string listenerKey, IWebPubSubTriggerDispatcher dispatcher)
         {
             _dispatcher = dispatcher ?? throw new ArgumentNullException(nameof(dispatcher));
-            _methodName = methodName ?? throw new ArgumentNullException(nameof(methodName));
+            _listenerKey = listenerKey ?? throw new ArgumentNullException(nameof(listenerKey));
             Executor = executor ?? throw new ArgumentNullException(nameof(executor));
         }
 
@@ -30,7 +30,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
 
         public Task StartAsync(CancellationToken cancellationToken)
         {
-            _dispatcher.AddListener(_methodName, this);
+            _dispatcher.AddListener(_listenerKey, this);
             return Task.CompletedTask;
         }
 

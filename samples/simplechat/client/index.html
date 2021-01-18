@@ -73,13 +73,6 @@
             <form v-on:submit.prevent="login()" class="bg-light p-3" style="width: 70%;">
                 <h5>Welcome to the Chatroom</h5>
                 <div class="form-group">
-                    <label for="endpointInput">Endpoint</label>
-                    <input type="text" class="form-control" v-model="endpoint" id="endpointInput"
-                        aria-describedby="endpointHelp" placeholder="The Endpoint to connect">
-                    <small id="endpointHelp" class="form-text text-muted">The endpoint is the URL for the
-                        service</small>
-                </div>
-                <div class="form-group">
                     <label for="usernameInput">User</label>
                     <input type="text" class="form-control" v-model="username" id="usernameInput"
                         aria-describedby="usernameHelp" placeholder="Type your user name">
@@ -163,7 +156,7 @@
         const data = {
             websocket: null,
             username: generateUser(), // todo: oauth
-            endpoint: 'https://jixinwss.servicedev.signalr.net', // replace it with your own endpoint
+            endpoint: 'localhost:7071',
             newMessage: '',
             chat: { messages: [] },
             logs: [],
@@ -174,14 +167,9 @@
         const app = new Vue({
             el: '#app',
             data: data,
-            computed: {
-                wsendpoint: function () {
-                    if (!this.endpoint) return null;
-                }
-            },
             methods: {
                 login: function () {
-                    if (this.username && this.endpoint) {
+                    if (this.username) {
                         this.loggedin = true;
 
                         this.log("Connecting...");
@@ -230,6 +218,7 @@
                 sendToServer(content) {
                     this.websocket.send(JSON.stringify(
                         {
+                            FunctionName:"broadcast",
                             from: this.username,
                             content: content,
                         }
