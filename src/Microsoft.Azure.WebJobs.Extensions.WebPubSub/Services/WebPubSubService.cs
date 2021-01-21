@@ -40,13 +40,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
             {
                 subPath = $"?hub={hubName}";
             }
-            var hubUrl = $"{_baseEndpoint}/ws/client{subPath}";
+            var hubUrl = $"{_baseEndpoint}/client{subPath}";
             var baseEndpoint = new Uri(_baseEndpoint);
             var scheme = baseEndpoint.Scheme == "http" ? "ws" : "wss";
             var token = AuthUtility.GenerateJwtBearer(null, hubUrl, claims, DateTime.UtcNow.AddMinutes(30), _accessKey);
             return new WebPubSubConnection
             {
-                Url = $"{scheme}://{baseEndpoint.Authority}{_port}/ws/client{subPath}",
+                Url = $"{scheme}://{baseEndpoint.Authority}{_port}/client{subPath}",
                 AccessToken = token
             };
         }

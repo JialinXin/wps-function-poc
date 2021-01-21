@@ -43,20 +43,22 @@ namespace SimpleChat
         //    [HttpTrigger(AuthorizationLevel.Anonymous, "post")] HttpRequest req,
         //    [WebPubSub(HubName = "simplechat")] IAsyncCollector<MessageData> messages)
         //{
-        //    var data = new StreamReader(req.Body);
-        //    var msg = new MessageData();
-        //    msg.Message = data.ReadToEnd();
+        //    var msg = new MessageData
+        //    {
+        //        Message = (new StreamReader(req.Body)).ReadToEnd()
+        //    };
         //    return messages.AddAsync(msg);
         //}
 
         [FunctionName("broadcast")]
         public static Task Broadcast(
-            [WebPubSubTrigger]InvocationContext context,
+            [WebPubSubTrigger] InvocationContext context,
             [WebPubSub(HubName = "simplechat")] IAsyncCollector<MessageData> messages)
         {
-            var data = context.Payload;
-            var msg = new MessageData();
-            msg.Message = System.Text.Encoding.UTF8.GetString(data.Span);
+            var msg = new MessageData
+            {
+                Message = System.Text.Encoding.UTF8.GetString(context.Payload.Span)
+            };
             return messages.AddAsync(msg);
         }
 

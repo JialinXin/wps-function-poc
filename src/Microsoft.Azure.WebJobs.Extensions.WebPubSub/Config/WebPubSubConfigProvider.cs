@@ -72,7 +72,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
             webPubSubAttributeRule.AddValidator(ValidateWebPubSubAttributeBinding);
             webPubSubAttributeRule.BindToCollector<WebPubSubOpenType>(typeof(WebPubSubCollectorBuilder<>), this);
 
-            _logger.LogInformation("Web PubSub binding initialized");
+            _logger.LogInformation("Azure Web PubSub binding initialized");
         }
 
         public Task<HttpResponseMessage> ConvertAsync(HttpRequestMessage input, CancellationToken cancellationToken)
@@ -93,6 +93,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
                 attribute.ConnectionStringSetting,
                 $"{nameof(WebPubSubAttribute)}.{nameof(WebPubSubAttribute.ConnectionStringSetting)}");
         }
+
         internal WebPubSubService GetService(WebPubSubAttribute attribute)
         {
             var connectionString = FirstOrDefault(attribute.ConnectionStringSetting, _options.ConnectionString);
