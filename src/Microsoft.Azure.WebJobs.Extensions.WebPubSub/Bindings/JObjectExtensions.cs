@@ -4,9 +4,9 @@ using System;
 
 namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
 {
-    internal class JObjectToTypeConverter<TOutput> where TOutput : class
+    internal static class JObjectExtensions
     {
-        public bool TryConvert(JObject input, out TOutput output)
+        public static bool TryConvert<TOutput>(this JObject input, out TOutput output)
         {
             try
             {
@@ -14,7 +14,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
             }
             catch (Exception)
             {
-                output = null;
+                output = default;
                 return false;
             }
 

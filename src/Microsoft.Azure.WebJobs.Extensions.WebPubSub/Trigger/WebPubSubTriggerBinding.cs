@@ -40,11 +40,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
                 var bindingContext = triggerEvent.Context;
 
                 // attribute settings valids for connect/disconnect only.
-                if (_attribute.Event != Constants.Events.Connect && _attribute.Event != Constants.Events.Disconnect)
-                {
-                    // TODO: warns 
-                    Console.WriteLine("ignored settings.");
-                }
+                //if (_attribute.EventName != Constants.Events.Connect && _attribute.EventName != Constants.Events.Disconnect)
+                //{
+                //    // TODO: warns 
+                //    Console.WriteLine("ignored settings.");
+                //}
 
                 return Task.FromResult<ITriggerData>(new TriggerData(new WebPubSubTriggerValueProvider(_parameterInfo, bindingContext), bindingData)
                 {
@@ -62,11 +62,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
                 throw new ArgumentNullException(nameof(context));
             }
 
-            // get listener key from function name or trigger attributes of connect/disconnect
-            var attributeName = $"{_attribute.HubName}-{_attribute.Event}".ToLower();
+            // Get listener key from function name which ensures unique
+            // Format: hub-eventName or eventName(for default hub)
+            // var attributeName = $"{_attribute.Hub}-{_attribute.EventName}".ToLower();
             var functionName = _parameterInfo.Member.GetCustomAttribute<FunctionNameAttribute>(false);
-            var listernerKey = (_attribute.Event == Constants.Events.Connect || _attribute.Event == Constants.Events.Disconnect) 
-                ? attributeName : functionName.Name;
+            var listernerKey = functionName.Name;
 
             return Task.FromResult<IListener>(new WebPubSubListener(context.Executor,  listernerKey, _dispatcher));
         }

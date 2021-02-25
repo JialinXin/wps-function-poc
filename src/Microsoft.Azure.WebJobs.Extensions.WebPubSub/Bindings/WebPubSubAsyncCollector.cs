@@ -9,7 +9,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
         private readonly IWebPubSubService _service;
         private readonly WebPubSubOutputConverter _converter;
 
-        internal WebPubSubAsyncCollector(IWebPubSubService service, string hubName)
+        internal WebPubSubAsyncCollector(IWebPubSubService service, string hub)
         {
             _service = service;
             _converter = new WebPubSubOutputConverter();

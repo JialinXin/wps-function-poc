@@ -6,6 +6,7 @@ using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using System;
 using System.IO;
+using System.Net.Http;
 using System.Threading.Tasks;
 
 namespace SimpleChat
@@ -15,19 +16,20 @@ namespace SimpleChat
         [FunctionName("login")]
         public static WebPubSubConnection GetClientConnection(
             [HttpTrigger(AuthorizationLevel.Anonymous, "get", "post")] HttpRequest req,
-            [WebPubSubConnection(HubName = "simplechat", UserId = "{query.userid}")] WebPubSubConnection connection,
+            [WebPubSubConnection(UserId = "{query.userid}")] WebPubSubConnection connection,
             ILogger log)
         {
             Console.WriteLine("login");
             return connection;
         }
 
-        [FunctionName("connect")]
-        public static void Connect(
-            [WebPubSubTrigger("simplechat", "connect")]InvocationContext context)
+        [FunctionName("Connect")]
+        public static ClientConnectResponseMessage Connect(
+            [WebPubSubTrigger]InvocationContext context)
         {
             Console.WriteLine($"{context.ConnectionId}");
             Console.WriteLine("Connect.");
+            return context.ToConnectResponse();
         }
 
         //[FunctionName("connect")]
@@ -51,15 +53,14 @@ namespace SimpleChat
         //}
 
         [FunctionName("broadcast")]
-        public static Task Broadcast(
-            [WebPubSubTrigger] InvocationContext context,
-            [WebPubSub(HubName = "simplechat")] IAsyncCollector<MessageData> messages)
+        [return: WebPubSub()]
+        public static MessageData Broadcast(
+            [WebPubSubTrigger] InvocationContext context)
         {
-            var msg = new MessageData
+            return new MessageData
             {
                 Message = System.Text.Encoding.UTF8.GetString(context.Payload.Span)
             };
-            return messages.AddAsync(msg);
         }
 
         [FunctionName("disconnect")]

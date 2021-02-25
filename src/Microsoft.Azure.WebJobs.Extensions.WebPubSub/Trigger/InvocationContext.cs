@@ -19,9 +19,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
         public string Error { get; set; }
 
         /// <summary>
-        /// The category of the message.
+        /// The type of the message.
         /// </summary>
-        public string Category { get; set; }
+        public string Type { get; set; }
 
         /// <summary>
         /// The event of the message.

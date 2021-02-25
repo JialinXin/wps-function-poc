@@ -38,7 +38,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
             var subPath = string.Empty;
             if (!string.IsNullOrEmpty(hubName))
             {
-                subPath = $"?hub={hubName}";
+                subPath = $"hub={hubName}";
             }
             var hubUrl = $"{_baseEndpoint}/client{subPath}";
             var baseEndpoint = new Uri(_baseEndpoint);
@@ -46,7 +46,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
             var token = AuthUtility.GenerateJwtBearer(null, hubUrl, claims, DateTime.UtcNow.AddMinutes(30), _accessKey);
             return new WebPubSubConnection
             {
-                Url = $"{scheme}://{baseEndpoint.Authority}{_port}/client{subPath}",
+                Url = $"{scheme}://{baseEndpoint.Authority}{_port}/client?access_token=token&{subPath}",
                 AccessToken = token
             };
         }
@@ -76,10 +76,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
 
         public Task Send(MessageData message)
         {
-            var subPath = $"/messages";
+            var subPath = $"/:send";
             if (!string.IsNullOrEmpty(message.TargetId) && message.TargetType != TargetType.All)
             {
-                subPath = $"/{message.TargetType.ToString().ToLower()}/{message.TargetId}/messages";
+                subPath = $"/{message.TargetType.ToString().ToLower()}/{message.TargetId}/:send";
             }
 
             if (message.TargetType != TargetType.Connections && message.Excludes?.Length > 0)
@@ -153,7 +153,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
             request.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("*/*"));
             request.Headers.AcceptCharset.Clear();
             request.Headers.AcceptCharset.Add(new StringWithQualityHeaderValue("UTF-8"));
-            request.Headers.Add("Asrs-User-Agent", GetProductInfo());
+            request.Headers.Add("wps-User-Agent", GetProductInfo());
 
             if (message != null)
             {

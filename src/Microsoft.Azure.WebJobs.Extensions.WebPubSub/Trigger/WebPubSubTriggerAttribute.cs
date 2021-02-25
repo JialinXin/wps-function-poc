@@ -14,13 +14,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
         /// <summary>
         /// Used for Connect/Disconnect event which can't be mapped to method name automatically
         /// </summary>
-        /// <param name="hubName"></param>
-        /// <param name="event"></param>
-        public WebPubSubTriggerAttribute(string hubName, string @event)
-        {
-            HubName = hubName;
-            Event = @event;
-        }
+        /// <param name="hub"></param>
+        /// <param name="eventName"></param>
+        //public WebPubSubTriggerAttribute(string hub, string eventName)
+        //{
+        //    Hub = hub;
+        //    EventName = eventName;
+        //}
 
         /// <summary>
         /// Connection string that connect to Web PubSub Service
@@ -30,13 +30,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
         /// <summary>
         /// The hub of request belongs to.
         /// </summary>
-        [AutoResolve]
-        public string HubName { get; }
-
-        /// <summary>
-        /// The event of the request. Required for Connect/Disconnect
-        /// </summary>
-        [AutoResolve]
-        public string Event { get; }
+        //[AutoResolve]
+        //public string Hub { get; }
+        //
+        ///// <summary>
+        ///// The event of the request. Required for Connect/Disconnect
+        ///// </summary>
+        //[AutoResolve]
+        //public string EventName { get; }
     }
 }

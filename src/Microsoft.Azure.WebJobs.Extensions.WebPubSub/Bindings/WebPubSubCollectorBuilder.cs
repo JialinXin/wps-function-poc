@@ -16,7 +16,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
         public IAsyncCollector<T> Convert(WebPubSubAttribute attribute)
         {
             var service = _configProvider.GetService(attribute);
-            return new WebPubSubAsyncCollector<T>(service, attribute.HubName);
+            return new WebPubSubAsyncCollector<T>(service, attribute.Hub);
         }
     }
 }

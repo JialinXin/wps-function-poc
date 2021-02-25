@@ -97,15 +97,15 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
         internal WebPubSubService GetService(WebPubSubAttribute attribute)
         {
             var connectionString = FirstOrDefault(attribute.ConnectionStringSetting, _options.ConnectionString);
-            var hubName = FirstOrDefault(attribute.HubName, _options.HubName);
+            var hubName = FirstOrDefault(attribute.Hub, _options.HubName);
             return new WebPubSubService(connectionString, hubName);
         }
 
         private WebPubSubConnection GetClientConnection(WebPubSubConnectionAttribute attribute)
         {
-            var service = new WebPubSubService(attribute.ConnectionStringSetting);
+            var service = new WebPubSubService(attribute.ConnectionStringSetting, attribute.Hub);
             var claims = attribute.GetClaims();
-            return service.GetClientConnection(attribute.HubName, claims);
+            return service.GetClientConnection(attribute.Hub, claims);
         }
 
         private void ValidateConnectionString(string attributeConnectionString, string attributeConnectionStringName)

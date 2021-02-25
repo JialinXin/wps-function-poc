@@ -16,7 +16,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
         public string ConnectionStringSetting { get; set; } = Constants.WebPubSubConnectionStringName;
 
         [AutoResolve]
-        public string HubName { get; set; }
+        public string Hub { get; set; }
 
         [AutoResolve]
         public string UserId { get; set; }
