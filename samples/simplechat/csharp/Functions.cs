@@ -39,18 +39,6 @@ namespace SimpleChat
         //    Console.WriteLine("Connect.");
         //}
 
-        //[FunctionName("chat")]
-        //public static Task Broadcast(
-        //    [HttpTrigger(AuthorizationLevel.Anonymous, "post")] HttpRequest req,
-        //    [WebPubSub(HubName = "simplechat")] IAsyncCollector<MessageData> messages)
-        //{
-        //    var msg = new MessageData
-        //    {
-        //        Message = (new StreamReader(req.Body)).ReadToEnd()
-        //    };
-        //    return messages.AddAsync(msg);
-        //}
-
         [FunctionName("message")]
         [return: WebPubSub()]
         public static MessageData Broadcast(

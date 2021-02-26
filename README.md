@@ -23,20 +23,17 @@ These bindings allow Azure Functions to integrate with **Azure Web PubSub Servic
 
 `WebPubSub` output binding allows sending all kinds of messages to an Azure Web PubSub service.
 
-`WebPubSubTrigger` trigger bindings allows to responding to all kinds of upstream events to trigger different operations to services.
+`WebPubSubTrigger` trigger bindings allows responding to all kinds of upstream events to trigger different operations to services.
 
 ### Development Plan
 
-[Azure WebPubSub Development Plan]https://github.com/Azure/azure-webpubsub/blob/main/docs/specs/development-plan.md
+[Azure WebPubSub Development Plan](https://github.com/Azure/azure-webpubsub/blob/main/docs/specs/development-plan.md)
 
-- [x] **Phase 1** Support simple websocket clients
+- [ ] **Phase 1** Support simple websocket clients
 
-- [x] **Phase 2** Support subprotocol websocket clients
+- [ ] **Phase 2** Support subprotocol websocket clients
 
-> Subprotocol deserialization is done by service side. Server will have a consistant `Event` property to understand the request.
-
-### Limitation
-
+> Subprotocol deserialization is done by service side. Server will have a consistant `Event` property to understand the request. So not much gap between phase 1 & 2 in function side.
 
 ## Usage
 
@@ -62,9 +59,9 @@ public static WebPubSubConnection GetClientConnection(
 
 ### Using the WebPubSubTrigger trigger binding
 
-When clients already know Service and communication to service, `WebPubSubTrigger` can be used as listerner towards all kinds of request coming from service. To have an consistent routing logic that need to configure in service side, `FunctionName` will be used as the unique key to match upstream events. Rule is `<hub>-<event>` works for user defined hubs and `<event>` works for default hub. 
+When clients already know Web PubSub service and communication to service, `WebPubSubTrigger` can be used as listerner towards all kinds of requests coming from service. To have a consistent routing logic that needs to configure in service side (Resource Provider), `FunctionName` will be used as the unique key to match upstream events. Rule is `<hub>-<event>` works for user defined hubs and `<event>` works for default hub. Service will map to `_default` hub which is unaware by customer.
 
-For a connect request, server side has some controls to manager user's authentication before connected.
+For a connect request, server side has some controls to manager user's authentication before connected. Future on-hold messages can also be used like this. Proerties available to set will be opened in `InvocationContext` and function extension will help build correct response to service after user actions are done in function.
 
 ```cs
 [FunctionName("connect")]
@@ -85,7 +82,7 @@ public static void Connect(
 
 ### Using the WebPubSub output binding
 
-For single message request, customer could bind to a target operation related data type to send the service request.
+For single message request, customer could bind to a target operation related data type to send the request.
 
 ```cs
 [FunctionName("message")]
@@ -100,7 +97,7 @@ public static MessageData Broadcast(
 }
 ```
 
-To send multiple messages, customer need to work with generic `WebPubSubData` and send multiple tasks in order.
+To send multiple messages, customer need to work with generic `WebPubSubEvent` and do multiple tasks in order.
 
 ```cs
 [FunctionName("message")]
@@ -136,7 +133,7 @@ public static async Task Message(
 
 ### Supported object types for Output bindings.
 
-#### WebPubSubEvent (Base)
+#### WebPubSubEvent (Generic base class)
 
 #### MessageData
 
