@@ -24,12 +24,11 @@ namespace SimpleChat
         }
 
         [FunctionName("Connect")]
-        public static ClientConnectResponseMessage Connect(
+        public static void Connect(
             [WebPubSubTrigger]InvocationContext context)
         {
             Console.WriteLine($"{context.ConnectionId}");
             Console.WriteLine("Connect.");
-            return context.ToConnectResponse();
         }
 
         //[FunctionName("connect")]
@@ -52,7 +51,7 @@ namespace SimpleChat
         //    return messages.AddAsync(msg);
         //}
 
-        [FunctionName("broadcast")]
+        [FunctionName("message")]
         [return: WebPubSub()]
         public static MessageData Broadcast(
             [WebPubSubTrigger] InvocationContext context)

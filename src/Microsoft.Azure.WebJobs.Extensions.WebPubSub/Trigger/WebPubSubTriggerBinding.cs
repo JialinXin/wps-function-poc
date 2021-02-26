@@ -66,7 +66,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
             // Format: hub-eventName or eventName(for default hub)
             // var attributeName = $"{_attribute.Hub}-{_attribute.EventName}".ToLower();
             var functionName = _parameterInfo.Member.GetCustomAttribute<FunctionNameAttribute>(false);
-            var listernerKey = functionName.Name;
+            var listernerKey = functionName.Name.ToLower();
 
             return Task.FromResult<IListener>(new WebPubSubListener(context.Executor,  listernerKey, _dispatcher));
         }

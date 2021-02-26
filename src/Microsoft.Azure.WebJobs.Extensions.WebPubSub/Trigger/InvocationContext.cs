@@ -1,5 +1,7 @@
-﻿using System;
+﻿using Microsoft.Extensions.Primitives;
+using System;
 using System.Collections.Generic;
+using System.Net;
 using System.Text;
 
 namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
@@ -13,30 +15,29 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
         public ReadOnlyMemory<byte> Payload { get; set; }
 
         /// <summary>
-        /// The error message of close connection event.
-        /// Only close connection message can have this property, and it can be empty if connections close with no error.
+        /// The error message of the event.
         /// </summary>
         public string Error { get; set; }
 
         /// <summary>
         /// The type of the message.
         /// </summary>
-        public string Type { get; set; }
+        public string Type { get; internal set; }
 
         /// <summary>
         /// The event of the message.
         /// </summary>
-        public string Event { get; set; }
+        public string Event { get; internal set; }
 
         /// <summary>
         /// The hub which message belongs to.
         /// </summary>
-        public string Hub { get; set; }
+        public string Hub { get; internal set; }
 
         /// <summary>
         /// The connection-id of the client which send the message.
         /// </summary>
-        public string ConnectionId { get; set; }
+        public string ConnectionId { get; internal set; }
 
         /// <summary>
         /// The user identity of the client which send the message.
@@ -47,13 +48,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
         /// The headers of request.
         /// Headers with duplicated key will be joined by comma.
         /// </summary>
-        public IDictionary<string, string> Headers { get; set; }
+        public Dictionary<string, StringValues> Headers { get; set; }
 
         /// <summary>
         /// The query of the request when client connect to the service.
         /// Queries with duplicated key will be joined by comma.
         /// </summary>
-        public IDictionary<string, string> Queries { get; set; }
+        public IDictionary<string, string> Queries { get; internal set; }
 
         /// <summary>
         /// The claims of the client.
@@ -64,11 +65,25 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
         /// <summary>
         /// The media type of the message.
         /// </summary>
-        public string MediaType { get; set; }
+        public string MediaType { get; internal set; }
 
         /// <summary>
         /// Function name of the trigger as the key to bind the function
         /// </summary>
-        public string Function { get; set; }
+        internal string Function { get; set; }
+
+        /// <summary>
+        /// ResponsiveEvent Properties where server can manage response send to service.
+        /// </summary>
+        #region ResponsiveEvent Properties
+
+        public string[] Roles { get; set; }
+
+        public string Subprotocol { get; set; }
+
+        public string[] Groups { get; set; }
+
+        public HttpStatusCode StatusCode { get; set; }
+        #endregion
     }
 }

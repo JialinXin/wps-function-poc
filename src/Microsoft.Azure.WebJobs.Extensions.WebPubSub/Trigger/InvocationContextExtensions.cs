@@ -1,23 +1,35 @@
-﻿namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
+﻿using Microsoft.Extensions.Primitives;
+using Newtonsoft.Json;
+using System.Collections.Generic;
+using System.Net;
+using System.Net.Http;
+
+namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
 {
     public static class InvocationContextExtensions
     {
-        public static ClientConnectResponseMessage ToConnectResponse(this InvocationContext context)
+        public static HttpResponseMessage BuildConnectResponse(this InvocationContext context)
         {
-            return new ClientConnectResponseMessage
+            HttpResponseMessage response = new HttpResponseMessage(context.StatusCode);
+            //var headers = new Dictionary<string, StringValues>();
+            //if (context.Headers.Count > 0)
+            //{
+            //    foreach (var header in context.Headers)
+            //    {
+            //        headers.Add(header.Key, new StringValues(header.Value));
+            //    }
+            //}
+            var connectEvent = new ConnectEventResponse 
             {
-                ConnectionId = context.ConnectionId,
-                UserId = context.UserId
+                UserId = context.UserId,
+                Headers = context.Headers,
+                Groups = context.Groups,
+                Roles = context.Roles,
             };
-        }
 
-        public static ClientPayloadResponseMessage ToPayloadResponse(this InvocationContext context)
-        {
-            return new ClientPayloadResponseMessage
-            {
-                ConnectionId = context.ConnectionId,
-                Payload = context.Payload
-            };
+            response.Content = new StringContent(JsonConvert.SerializeObject(connectEvent));
+
+            return response;
         }
     }
 }

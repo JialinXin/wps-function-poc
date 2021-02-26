@@ -46,7 +46,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
             var token = AuthUtility.GenerateJwtBearer(null, hubUrl, claims, DateTime.UtcNow.AddMinutes(30), _accessKey);
             return new WebPubSubConnection
             {
-                Url = $"{scheme}://{baseEndpoint.Authority}{_port}/client?access_token=token&{subPath}",
+                Url = $"{scheme}://{baseEndpoint.Authority}{_port}/client?access_token={token}&{subPath}",
                 AccessToken = token
             };
         }

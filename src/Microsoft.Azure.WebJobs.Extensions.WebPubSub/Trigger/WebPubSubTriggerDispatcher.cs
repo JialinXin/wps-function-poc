@@ -10,6 +10,7 @@ using System.Threading.Tasks;
 using System.Web;
 
 using Newtonsoft.Json;
+using Microsoft.Extensions.Primitives;
 
 namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
 {
@@ -58,6 +59,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
                     TriggerValue = triggerEvent
                 }, token);
 
+                // After function processed, return on-hold event reponses.
+                if (context.Event == Constants.Events.ConnectEvent)
+                {
+                    return context.BuildConnectResponse();
+                }
+
                 return new HttpResponseMessage(HttpStatusCode.OK);
             }
             // No target hub in functions
@@ -88,31 +95,15 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
             context.ConnectionId = request.Headers.GetValues(Constants.CloudEvents.Headers.ConnectionId).FirstOrDefault();
             context.Hub = request.Headers.GetValues(Constants.CloudEvents.Headers.Hub).FirstOrDefault();
             context.Type = request.Headers.GetValues(Constants.CloudEvents.Headers.Type).FirstOrDefault();
-            //context.Category = request.Headers.GetValues(Constants.CloudEvents.Headers).FirstOrDefault();
             context.Event = request.Headers.GetValues(Constants.CloudEvents.Headers.EventName).FirstOrDefault();
             context.MediaType = request.Content.Headers.ContentType?.MediaType;
-            context.Headers = request.Headers.ToDictionary(x => x.Key, v => v.Value.FirstOrDefault(), StringComparer.OrdinalIgnoreCase);
-            
-            //if (request.Headers.Contains(Constants.AsrsClientQueryString))
-            //{
-            //    var queries = HttpUtility.ParseQueryString(request.Headers.GetValues(Constants.AsrsClientQueryString).FirstOrDefault());
-            //    context.Queries = queries.AllKeys.ToDictionary(x => x, v => queries[v]);
-            //}
-
-            //if (request.Headers.Contains(Constants.AsrsUserClaims))
-            //{
-            //    var claim = request.Headers.GetValues(Constants.AsrsUserClaims).FirstOrDefault();
-            //    context.Claims = GetClaimDictionary(claim);
-            //}
+            context.Headers = request.Headers.ToDictionary(x => x.Key, v => new StringValues(v.Value.FirstOrDefault()), StringComparer.OrdinalIgnoreCase);
 
             if (request.Headers.Contains(Constants.CloudEvents.Headers.UserId))
             {
                 context.UserId = request.Headers.GetValues(Constants.CloudEvents.Headers.UserId).FirstOrDefault();
             }
 
-            //var content = request.Content.ReadAsStringAsync().Result;
-            //var body = JsonConvert.DeserializeObject<RequestContent>(content);
-            // TODO: exlude _defaulthub
             context.Function =  context.Hub == Constants.DefaultHub ? $"{context.Event}".ToLower() : $"{context.Hub}-{context.Event}".ToLower();
             return true;
         }
