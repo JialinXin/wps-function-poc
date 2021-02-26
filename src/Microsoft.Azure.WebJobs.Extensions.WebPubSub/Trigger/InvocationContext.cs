@@ -83,7 +83,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
 
         public string[] Groups { get; set; }
 
-        public HttpStatusCode StatusCode { get; set; }
+        public HttpStatusCode StatusCode { get; set; } = HttpStatusCode.OK;
         #endregion
     }
 }

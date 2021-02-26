@@ -4,7 +4,7 @@ using System.Text;
 
 namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
 {
-    public class GroupData
+    public class GroupData : WebPubSubEvent
     {
         public GroupAction Action { get; set; }
 

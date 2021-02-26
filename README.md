@@ -21,14 +21,22 @@ These bindings allow Azure Functions to integrate with **Azure Web PubSub Servic
 
 `WebPubSubConnection` input binding makes it easy to generate websocket url align with access token for clients to initiate a connection to Azure Web PubSub Service.
 
-`WebPubSub` output binding allows generic messages to send to an Azure Web PubSub service.
+`WebPubSub` output binding allows sending all kinds of messages to an Azure Web PubSub service.
 
-`WebPubSubTrigger` trigger bindings allows to responding to all kinds of upstream messages for trigger different operations to services.
+`WebPubSubTrigger` trigger bindings allows to responding to all kinds of upstream events to trigger different operations to services.
 
-### Limitations
-- The upstream using persistent connection is out of scope.
-- Supporting protocols where one protocol message is not bound to a single WebSocket frame is out of scope, e.g. MQTT.
-- Supporting protocols where messages are having context or dependencies to previous messages is out of scope, e.g. streaming protocols.
+### Development Plan
+
+[Azure WebPubSub Development Plan]https://github.com/Azure/azure-webpubsub/blob/main/docs/specs/development-plan.md
+
+- [x] **Phase 1** Support simple websocket clients
+
+- [x] **Phase 2** Support subprotocol websocket clients
+
+> Subprotocol deserialization is done by service side. Server will have a consistant `Event` property to understand the request.
+
+### Limitation
+
 
 ## Usage
 
@@ -37,7 +45,9 @@ These bindings allow Azure Functions to integrate with **Azure Web PubSub Servic
 
 ### Using the WebPubSubConnection input binding
 
-In anonymous mode, `UserId` can be used with {headers.userid} or {query.userid} depends on where the userid is assigned. Similarly users can set customers generated JWT accesstoken by assign `AccessToken = {query.accesstoken}` where customized claims are built with. 
+In anonymous mode, `UserId` can be used with {headers.userid} or {query.userid} depends on where the userid is assigned in the negotiate call.
+
+Similarly users can set customers generated JWT accesstoken by assign `AccessToken = {query.accesstoken}` where customized claims are built with. 
 
 ```cs
 [FunctionName("login")]
@@ -50,60 +60,83 @@ public static WebPubSubConnection GetClientConnection(
 }
 ```
 
-### Using the WebPubSub output binding
-
-```cs
-[FunctionName("chat")]
-public static Task Broadcast(
-    [HttpTrigger(AuthorizationLevel.Anonymous, "post")] HttpRequest req,
-    [WebPubSub(HubName = "simplechat")] IAsyncCollector<MessageData> messages)
-{
-    var msg = new MessageData
-    {
-        Message = (new StreamReader(req.Body)).ReadToEnd();
-    };
-    return messages.AddAsync(msg);
-}
-```
-
 ### Using the WebPubSubTrigger trigger binding
 
+When clients already know Service and communication to service, `WebPubSubTrigger` can be used as listerner towards all kinds of request coming from service. To have an consistent routing logic that need to configure in service side, `FunctionName` will be used as the unique key to match upstream events. Rule is `<hub>-<event>` works for user defined hubs and `<event>` works for default hub. 
+
+For a connect request, server side has some controls to manager user's authentication before connected.
+
 ```cs
-[FunctionName("broadcast")]
-public static Task Broadcast(
-    [WebPubSubTrigger]InvocationContext context,
-    [WebPubSub] IAsyncCollector<MessageData> messages)
+[FunctionName("connect")]
+public static void Connect(
+[WebPubSubTrigger]InvocationContext context)
 {
-    var msg = new MessageData
+    Console.WriteLine($"{context.ConnectionId}");
+    Console.WriteLine("Connect.");
+    if (context.UserId == "abc")
     {
-        Message = System.Text.Encoding.UTF8.GetString(context.Payload.Span)
-    };
-    return messages.AddAsync(msg);
+        // some further check
+        context.StatusCode = System.Net.HttpStatusCode.Unauthorized;
+        // or set roles
+        context.Roles = new string[] { "Admin" };
+    }
 }
 ```
 
-And in client side the function should be triggered by assign a property `FunctionName` in the message which point the target function to be bind.
+### Using the WebPubSub output binding
 
-```js
-this.websocket.send(JSON.stringify({
-    FunctionName:"broadcast",
-    from: this.username,
-    content: content,
-}));
+For single message request, customer could bind to a target operation related data type to send the service request.
+
+```cs
+[FunctionName("message")]
+[return: WebPubSub]
+public static MessageData Broadcast(
+    [WebPubSubTrigger] InvocationContext context)
+{
+    return new MessageData
+    {
+        Message = GetString(context.Payload.Span)
+    };
+}
 ```
 
-> For connect/disconnect event, customer has no chance to bind the target Azure Function, so `WebPubSub` property `HubName` and `Event` will be used as the key to auto bind which means the properties will be required for this kind of events (connect/disconnect). 
+To send multiple messages, customer need to work with generic `WebPubSubData` and send multiple tasks in order.
+
+```cs
+[FunctionName("message")]
+public static async Task Message(
+    [WebPubSubTrigger] InvocationContext context,
+    [WebPubSub] IAsyncCollector<WebPubSubEvent> eventHandler)
+{
+    await message.AddAsync(new GroupData
+    {
+        Action = GroupAction.Add,
+        TargetType = TargetType.Users,
+        TargetId = context.UserId,
+        GroupId = "group1",
+    })
+    await message.AddAsync(new MessageData
+    {
+        Message = GetString(context.Payload.Span)
+    });
+}
+```
+
+> When SDK has better supports, server side could work with server sdk convenience layer methods without output binding data type limited.
 > ```cs
-> [FunctionName("connect")]
-> public static void Connect(
->     [WebPubSubTrigger("simplechat", "connect")]InvocationContext context)
+> [FunctionName("message")]
+> public static async Task Message(
+>     [WebPubSubTrigger] InvocationContext context)
 > {
->     Console.WriteLine($"{context.ConnectionId}");
->     Console.WriteLine("Connect.");
+>     var server = context.GetWebPubSubServer();
+>     await server.AddToGroupAsync(context.UserId, "group1");
+>     await server.SendAsync(context.Payload);
 > }
 > ```
 
-### Supported object types for Output/Trigger actions.
+### Supported object types for Output bindings.
+
+#### WebPubSubEvent (Base)
 
 #### MessageData
 

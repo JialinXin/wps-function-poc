@@ -4,7 +4,7 @@ using System.Text;
 
 namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
 {
-    internal class WebPubSubCollectorBuilder<T> : IConverter<WebPubSubAttribute, IAsyncCollector<T>>
+    internal class WebPubSubCollectorBuilder : IConverter<WebPubSubAttribute, IAsyncCollector<WebPubSubEvent>>
     {
         private readonly WebPubSubConfigProvider _configProvider;
 
@@ -13,10 +13,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
             _configProvider = configProvider;
         }
 
-        public IAsyncCollector<T> Convert(WebPubSubAttribute attribute)
+        public IAsyncCollector<WebPubSubEvent> Convert(WebPubSubAttribute attribute)
         {
             var service = _configProvider.GetService(attribute);
-            return new WebPubSubAsyncCollector<T>(service, attribute.Hub);
+            return new WebPubSubAsyncCollector(service, attribute.Hub);
         }
     }
 }

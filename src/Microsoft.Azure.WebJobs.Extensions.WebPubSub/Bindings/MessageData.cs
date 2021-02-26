@@ -4,7 +4,7 @@ using System.Text;
 
 namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
 {
-    public class MessageData
+    public class MessageData : WebPubSubEvent
     {
         public TargetType TargetType { get; set; } = TargetType.All;
 

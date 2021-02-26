@@ -10,7 +10,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
         // We accept multiple output binding types and rely on them to determine rest api actions
         // But in non .NET language, it's not able to convert JObject to different types
         // So need a converter to accurate convert JObject to acceptable data object
-        public object ConvertToWebPubSubOutput(object input)
+        public object ConvertToWebPubSubData(object input)
         {
             if (input.GetType() != typeof(JObject))
             {

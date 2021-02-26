@@ -4,7 +4,7 @@ using System.Threading.Tasks;
 
 namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
 {
-    public class WebPubSubAsyncCollector<T>: IAsyncCollector<T>
+    public class WebPubSubAsyncCollector: IAsyncCollector<WebPubSubEvent>
     {
         private readonly IWebPubSubService _service;
         private readonly WebPubSubOutputConverter _converter;
@@ -15,24 +15,21 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
             _converter = new WebPubSubOutputConverter();
         }
 
-        public async Task AddAsync(T item, CancellationToken cancellationToken = default)
+        public async Task AddAsync(WebPubSubEvent item, CancellationToken cancellationToken = default)
         {
             if (item == null)
             {
                 throw new ArgumentNullException("Binding Object.");
             }
 
-            var convertItem = _converter.ConvertToWebPubSubOutput(item);
+            // var convertItem = _converter.ConvertToWebPubSubData(item);
 
-            if (convertItem.GetType() == typeof(MessageData))
+            if (item is MessageData message)
             {
-                MessageData message = convertItem as MessageData;
                 await _service.Send(message).ConfigureAwait(false);
             }
-            else if (convertItem.GetType() == typeof(GroupData))
+            else if (item is GroupData groupData)
             {
-                var groupData = convertItem as GroupData;
-
                 if (groupData.Action == GroupAction.Add)
                 {
                     await _service.AddToGroup(groupData).ConfigureAwait(false);
@@ -42,16 +39,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
                     await _service.RemoveFromGroup(groupData).ConfigureAwait(false);
                 }
             }
-            else if (convertItem.GetType() == typeof(ExistenceData))
+            else if (item is ExistenceData existenceData)
             {
-                var existenceData = convertItem as ExistenceData;
-
                 await _service.CheckExistence(existenceData).ConfigureAwait(false);
             }
-            else if (convertItem.GetType() == typeof(ConnectionCloseData))
+            else if (item is ConnectionCloseData closeData)
             {
-                var closeData = convertItem as ConnectionCloseData;
-
                 await _service.CloseConnection(closeData).ConfigureAwait(false);
             }
             else

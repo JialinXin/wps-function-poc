@@ -70,7 +70,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
 
             var webPubSubAttributeRule = context.AddBindingRule<WebPubSubAttribute>();
             webPubSubAttributeRule.AddValidator(ValidateWebPubSubAttributeBinding);
-            webPubSubAttributeRule.BindToCollector<WebPubSubOpenType>(typeof(WebPubSubCollectorBuilder<>), this);
+            webPubSubAttributeRule.BindToCollector<WebPubSubOpenType>(typeof(WebPubSubCollectorBuilder), this);
 
             _logger.LogInformation("Azure Web PubSub binding initialized");
         }
