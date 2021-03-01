@@ -30,8 +30,12 @@ These bindings allow Azure Functions to integrate with **Azure Web PubSub Servic
 [Azure WebPubSub Development Plan](https://github.com/Azure/azure-webpubsub/blob/main/docs/specs/development-plan.md)
 
 - [ ] **Phase 1** Support simple websocket clients
+  - [ ] Separate Request/Response for all kinds of Events (Connect, Disconnect, Message)
+  - [ ] Both binary/string type of message supports
 
 - [ ] **Phase 2** Support subprotocol websocket clients
+
+- [ ] **Portal Support** Azure Portal integration for a easy create/configure Azure Functions for Web PubSub service.
 
 > Subprotocol deserialization is done by service side. Server will have a consistant `Event` property to understand the request. So not much gap between phase 1 & 2 in function side.
 
@@ -119,7 +123,7 @@ public static async Task Message(
 }
 ```
 
-> When SDK has better supports, server side could work with server sdk convenience layer methods without output binding data type limited.
+> When SDK has better supports, server side could work with server sdk convenience layer methods without output binding data type limited. And method response will have enrich properties.
 > ```cs
 > [FunctionName("message")]
 > public static async Task Message(
@@ -149,12 +153,14 @@ public static async Task Message(
 3. `TargetId`
 4. `GroupId`
 
-#### ExistenceData
-
-1. `TargetType` supports Users/Connections/Groups
-2. `TargetId`
-
 #### CloseConnectionData
 
 1. `ConnectionId`
 2. `Reason`
+
+#### ExistenceData (Limited)
+
+1. `TargetType` supports Users/Connections/Groups
+2. `TargetId`
+
+> Response result is not able to reflect.
