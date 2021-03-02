@@ -1,0 +1,16 @@
+{
+  "disabled": false,
+  "bindings": [
+    {
+      "type": "webpubsubTrigger",
+      "direction": "in",
+      "name": "invocation"
+    },
+    {
+      "type": "webpubsub",
+      "name": "eventhandler",
+      "hubName": "simplechat",
+      "direction": "out"
+    }
+  ]
+}

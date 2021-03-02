@@ -1,0 +1,10 @@
+{
+  "disabled": false,
+  "bindings": [
+    {
+      "type": "webpubsubTrigger",
+      "direction": "in",
+      "name": "invocation"
+    }
+  ]
+}
