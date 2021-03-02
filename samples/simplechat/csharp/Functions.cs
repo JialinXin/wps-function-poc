@@ -12,50 +12,36 @@ namespace SimpleChat
 {
     public static class Functions
     {
+        //private const string Hub = "simplechat";
+
         [FunctionName("login")]
         public static WebPubSubConnection GetClientConnection(
             [HttpTrigger(AuthorizationLevel.Anonymous, "get", "post")] HttpRequest req,
-            [WebPubSubConnection(UserId = "{query.userid}")] WebPubSubConnection connection)
+            [WebPubSubConnection(UserId = "{query.userid}", Hub = "simplechat")] WebPubSubConnection connection)
         {
             Console.WriteLine("login");
             return connection;
         }
 
-        [FunctionName("connect")]
+        [FunctionName("simplechat-connect")]
         public static void Connect(
             [WebPubSubTrigger]InvocationContext context)
         {
             Console.WriteLine($"Received client connect with connectionId: {context.ConnectionId}");
         }
 
-        [FunctionName("connected")]
-        [return: WebPubSub]
-        public static MessageData Connected(
-            [WebPubSubTrigger] InvocationContext context)
+        // multi tasks sample
+        [FunctionName("simplechat-connected")]
+        public static async Task Connected(
+            [WebPubSubTrigger] InvocationContext context,
+            [WebPubSub] IAsyncCollector<WebPubSubEvent> eventHandler)
         {
-            return new MessageData
+
+            await eventHandler.AddAsync(new MessageData
             {
                 Message = new ClientContent($"{context.UserId} connected.").ToString()
-            };
-        }
+            });
 
-        //[FunctionName("message")]
-        //[return: WebPubSub]
-        //public static MessageData Broadcast(
-        //    [WebPubSubTrigger] InvocationContext context)
-        //{
-        //    return new MessageData
-        //    {
-        //        Message = Encoding.UTF8.GetString(context.Payload.Span)
-        //    };
-        //}
-
-        // Multiple tasks sample
-        [FunctionName("message")]
-        public static async Task Message(
-            [WebPubSubTrigger] InvocationContext context,
-            [WebPubSub]IAsyncCollector<WebPubSubEvent> eventHandler)
-        {
             await eventHandler.AddAsync(new GroupData
             {
                 TargetType = TargetType.Users,
@@ -67,18 +53,30 @@ namespace SimpleChat
             {
                 Message = new ClientContent($"{context.UserId} joined group: group1.").ToString()
             });
-
-            await eventHandler.AddAsync(new MessageData
-            {
-                Message = Encoding.UTF8.GetString(context.Payload.Span)
-            });
         }
 
-        [FunctionName("disconnect")]
-        public static void Disconnect(
+        // single message sample
+        [FunctionName("simplechat-message")]
+        [return: WebPubSub]
+        public static MessageData Broadcast(
+            [WebPubSubTrigger] InvocationContext context)
+        {
+            return new MessageData
+            {
+                Message = Encoding.UTF8.GetString(context.Payload.Span)
+            };
+        }
+
+        [FunctionName("simplechat-disconnect")]
+        [return: WebPubSub]
+        public static MessageData Disconnect(
             [WebPubSubTrigger] InvocationContext context)
         {
             Console.WriteLine("Disconnect.");
+            return new MessageData
+            {
+                Message = new ClientContent($"{context.UserId} disconnect.").ToString()
+            };
         }
 
         [JsonObject]

@@ -26,50 +26,41 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
 
         public string HubName { get; } = string.Empty;
 
+        private readonly string _hubPath;
+
         internal WebPubSubService(string connectionString, string hubName = "")
         {
             (_baseEndpoint, _accessKey, _version, _port) = ParseConnectionString(connectionString);
             _port = string.IsNullOrEmpty(_port) ? string.Empty : $":{_port}";
             HubName = hubName;
+            _hubPath = string.IsNullOrEmpty(hubName) ? string.Empty : $"/hubs/{hubName}";
         }
 
-        internal WebPubSubConnection GetClientConnection(string hubName, IEnumerable<Claim> claims = null)
+        internal WebPubSubConnection GetClientConnection(IEnumerable<Claim> claims = null)
         {
-            var subPath = string.Empty;
-            if (!string.IsNullOrEmpty(hubName))
+            var subPath = "?";
+            if (!string.IsNullOrEmpty(HubName))
             {
-                subPath = $"hub={hubName}";
+                subPath += $"hub={HubName}";
             }
-            var hubUrl = $"{_baseEndpoint}/client{subPath}";
+            var hubUrl = $"{_baseEndpoint}/client/{subPath}";
             var baseEndpoint = new Uri(_baseEndpoint);
             var scheme = baseEndpoint.Scheme == "http" ? "ws" : "wss";
             var token = AuthUtility.GenerateJwtBearer(null, hubUrl, claims, DateTime.UtcNow.AddMinutes(30), _accessKey);
             return new WebPubSubConnection
             {
-                Url = $"{scheme}://{baseEndpoint.Authority}{_port}/client?access_token={token}&{subPath}",
+                Url = $"{scheme}://{baseEndpoint.Authority}{_port}/client{subPath}&access_token={token}",
                 AccessToken = token
             };
         }
 
-        internal WebPubSubConnection GetServerConnection(string hubName = "", string additionalPath = "")
+        internal WebPubSubConnection GetServerConnection(string additionalPath = "")
         {
-            string hubQuery = string.Empty;
-            if (!string.IsNullOrEmpty(hubName))
-            {
-                if (additionalPath.Contains("?"))
-                {
-                    hubQuery = $"&hub={hubName}";
-                }
-                else
-                {
-                    hubQuery = $"?hub={hubName}";
-                }
-            }
-            var audienceUrl = $"{_baseEndpoint}/api{additionalPath}{hubQuery}";
+            var audienceUrl = $"{_baseEndpoint}/api{_hubPath}{additionalPath}";
             var token = AuthUtility.GenerateJwtBearer(null, audienceUrl, null, DateTime.UtcNow.AddMinutes(30), _accessKey);
             return new WebPubSubConnection
             {
-                Url = $"{_baseEndpoint}{_port}/api{additionalPath}{hubQuery}",
+                Url = $"{_baseEndpoint}{_port}/api{_hubPath}{additionalPath}",
                 AccessToken = token
             };
         }
@@ -85,10 +76,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
             if (message.TargetType != TargetType.Connections && message.Excludes?.Length > 0)
             {
                 var excludes = string.Join("&", message.Excludes.Select(x => $"excluded={x}"));
-                subPath += excludes;
+                subPath += $"?{excludes}";
             }
 
-            var connection = GetServerConnection(HubName, subPath);
+            var connection = GetServerConnection(subPath);
             return RequestAsync(connection.Url, message.Message, connection.AccessToken, HttpMethod.Post);
         }
 
@@ -100,7 +91,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
             }
 
             var subPath = $"/{groupData.TargetType.ToString().ToLower()}/{groupData.TargetId}/groups/{groupData.GroupId}";
-            var connection = GetServerConnection(HubName, subPath);
+            var connection = GetServerConnection(subPath);
             return RequestAsync(connection.Url, null, connection.AccessToken, HttpMethod.Put);
         }
 
@@ -112,7 +103,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
             }
 
             var subPath = $"/{groupData.TargetType.ToString().ToLower()}/{groupData.TargetId}/groups/{groupData.GroupId}";
-            var connection = GetServerConnection(HubName, subPath);
+            var connection = GetServerConnection(subPath);
             return RequestAsync(connection.Url, null, connection.AccessToken, HttpMethod.Delete);
         }
 
@@ -124,7 +115,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
             }
 
             var subPath = $"/{existenceData.TargetType.ToString().ToLower()}/{existenceData.TargetId}";
-            var connection = GetServerConnection(HubName, subPath);
+            var connection = GetServerConnection(subPath);
             return RequestAsync(connection.Url, null, connection.AccessToken, HttpMethod.Head);
         }
 
@@ -136,7 +127,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
                 subPath += $"?reason={closeData.Reason}";
             }
 
-            var connection = GetServerConnection(HubName, subPath);
+            var connection = GetServerConnection(subPath);
             return RequestAsync(connection.Url, null, connection.AccessToken, HttpMethod.Delete);
         }
 

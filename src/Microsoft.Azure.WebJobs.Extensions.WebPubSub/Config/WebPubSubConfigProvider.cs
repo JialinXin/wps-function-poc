@@ -49,6 +49,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
                 _options.ConnectionString = _nameResolver.Resolve(Constants.WebPubSubConnectionStringName);
             }
 
+            if (string.IsNullOrEmpty(_options.HubName))
+            {
+                _options.HubName = _nameResolver.Resolve(Constants.HubNameStringName);
+            }
+
             var url = context.GetWebhookHandler();
             _logger.LogInformation($"Registered Web PubSub negotiate Endpoint = {url?.GetLeftPart(UriPartial.Path)}");
 
@@ -105,7 +110,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
         {
             var service = new WebPubSubService(attribute.ConnectionStringSetting, attribute.Hub);
             var claims = attribute.GetClaims();
-            return service.GetClientConnection(attribute.Hub, claims);
+            return service.GetClientConnection(claims);
         }
 
         private void ValidateConnectionString(string attributeConnectionString, string attributeConnectionStringName)

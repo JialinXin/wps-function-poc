@@ -100,7 +100,7 @@
                 <div id="chat" style="flex:1" class="bg-light">
                     <div class="m-2" v-for="message in chat.messages" v-bind:key="message.id">
                         <div class="col-md row" style="display: inline-block;">
-                            <div v-if="message.type =='error' || message.from == 'System'"
+                            <div v-if="message.type =='error' || message.from == '[System]'"
                                 class="font-italic text-warning text-center font-weight-light" role="alert">
                                 {{message.content}}
                             </div>

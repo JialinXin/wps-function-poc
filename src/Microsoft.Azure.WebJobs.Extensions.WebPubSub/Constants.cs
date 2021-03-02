@@ -7,6 +7,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
     internal static class Constants
     {
         public const string WebPubSubConnectionStringName = "WebPubSubConnectionString";
+        public const string HubNameStringName = "HubName";
 
         public static class ContentTypes
         {

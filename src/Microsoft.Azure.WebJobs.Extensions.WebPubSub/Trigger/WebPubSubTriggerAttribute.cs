@@ -31,7 +31,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
         /// The hub of request belongs to.
         /// </summary>
         //[AutoResolve]
-        //public string Hub { get; }
+        //public string Hub { get; set; }
         //
         ///// <summary>
         ///// The event of the request. Required for Connect/Disconnect
