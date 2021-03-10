@@ -11,6 +11,7 @@ using System.Web;
 
 using Newtonsoft.Json;
 using Microsoft.Extensions.Primitives;
+using System.IO;
 
 namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
 {
@@ -20,6 +21,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
 
         public void AddListener(string key, WebPubSubListener listener)
         {
+            if (_listeners.ContainsKey(key))
+            {
+                throw new ArgumentException($"Duplicated binding attribute find: {string.Join(",", key.Split('.'))}");
+            }
             _listeners.Add(key, listener);
         }
 
@@ -35,23 +40,30 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
                 return new HttpResponseMessage(HttpStatusCode.BadRequest);
             }
 
-            if (string.IsNullOrEmpty(context.Function) || !_listeners.ContainsKey(context.Function))
-            {
-                return new HttpResponseMessage(HttpStatusCode.NotFound) { Content = new StringContent($"cannot find function: '{context.Function}'") };
-            }
-
             var tcs = new TaskCompletionSource<object>(TaskCreationOptions.RunContinuationsAsynchronously);
 
-            if (_listeners.TryGetValue(context.Function, out var executor))
+            var function = GetFunctionName(context);
+
+            if (_listeners.TryGetValue(function, out var executor))
             {
-                if (context.Type.StartsWith(Constants.CloudEventTypeUserPrefix))
+                var message = await req.Content.ReadAsStreamAsync();
+                var response = new WebPubSubEventResponse();
+
+                // build correct response regarding type
+                if (IsUserEvent(context.Type))
                 {
-                    context.Payload = new ReadOnlyMemory<byte>(await req.Content.ReadAsByteArrayAsync());
+                    response = new MessageResponse();
+                }
+                else if(IsSystemConnect(context.Type))
+                {
+                    response = new ConnectResponse();
                 }
 
                 var triggerEvent = new WebPubSubTriggerEvent
                 {
                     Context = context,
+                    Message = message,
+                    Response = response,
                     TaskCompletionSource = tcs
                 };
                 await executor.Executor.TryExecuteAsync(new TriggeredFunctionData
@@ -60,9 +72,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
                 }, token);
 
                 // After function processed, return on-hold event reponses.
-                if (context.Event == Constants.Events.ConnectEvent)
+                if (IsUserEvent(context.Type) || IsSystemConnect(context.Type))
                 {
-                    return context.BuildConnectResponse();
+                    return response.BuildResponse();
                 }
 
                 return new HttpResponseMessage(HttpStatusCode.OK);
@@ -74,7 +86,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
         private bool ValidateContentType(InvocationContext context)
         {
             // Check user message content type
-            if (context.Type.StartsWith(Constants.CloudEventTypeUserPrefix))
+            if (IsUserEvent(context.Type))
             {
                 return context.MediaType == Constants.ContentTypes.BinaryContentType || 
                     context.MediaType == Constants.ContentTypes.JsonContentType ||
@@ -104,8 +116,16 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
                 context.UserId = request.Headers.GetValues(Constants.CloudEvents.Headers.UserId).FirstOrDefault();
             }
 
-            context.Function =  context.Hub == Constants.DefaultHub ? $"{context.Event}".ToLower() : $"{context.Hub}-{context.Event}".ToLower();
+            //context.Function =  context.Hub == Constants.DefaultHub ? $"{context.Event}".ToLower() : $"{context.Hub}-{context.Event}".ToLower();
             return true;
+        }
+
+        private static string GetFunctionName(InvocationContext context)
+        {
+            var eventType = context.Type.StartsWith(Constants.CloudEventTypeSystemPrefix, StringComparison.OrdinalIgnoreCase) ? 
+                Constants.EventTypes.System :
+                Constants.EventTypes.User;
+            return $"{context.Hub}.{eventType}.{context.Event}".ToLower();
         }
 
         private static IDictionary<string, string> GetClaimDictionary(string claims)
@@ -120,5 +140,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
                 .Select(p => p.Split(new string[] { Constants.ClaimsSeparator }, StringSplitOptions.RemoveEmptyEntries)).Where(l => l.Length == 2)
                 .ToDictionary(p => p[0].Trim(), p => p[1].Trim());
         }
+
+        private static bool IsUserEvent(string eventType) 
+            => eventType.StartsWith(Constants.CloudEventTypeUserPrefix, StringComparison.OrdinalIgnoreCase);
+
+        private static bool IsSystemConnect(string eventType)
+            => eventType.Equals($"{Constants.CloudEventTypeSystemPrefix}{Constants.Events.ConnectEvent}", StringComparison.OrdinalIgnoreCase);
     }
 }

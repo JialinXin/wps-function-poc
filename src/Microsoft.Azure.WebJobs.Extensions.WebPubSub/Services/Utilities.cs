@@ -3,7 +3,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
@@ -11,11 +10,21 @@ using Microsoft.IdentityModel.Tokens;
 
 namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
 {
-    internal static class AuthUtility
+    internal static class Utilities
     {
         private const int MaxTokenLength = 4096;
 
         private static readonly JwtSecurityTokenHandler JwtTokenHandler = new JwtSecurityTokenHandler();
+
+        public static string GetContentType(MessageDataType dataType) =>
+            dataType switch
+            {
+                MessageDataType.Binary => Constants.ContentTypes.BinaryContentType,
+                MessageDataType.Text => Constants.ContentTypes.PlainTextContentType,
+                MessageDataType.Json => Constants.ContentTypes.JsonContentType,
+                // Default set binary type to align with service side logic
+                _ => Constants.ContentTypes.BinaryContentType
+            };
 
         public static string GenerateJwtBearer(
             string issuer = null,

@@ -19,17 +19,17 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
 
             var jobject = input as JObject;
 
-            if (jobject.TryConvert<MessageData>(out var message))
+            if (jobject.TryConvert<MessageEvent>(out var message))
             {
                 return message;
             }
 
-            if (jobject.TryConvert<GroupData>(out var groupData))
+            if (jobject.TryConvert<GroupEvent>(out var groupData))
             {
                 return groupData;
             }
 
-            if (jobject.TryConvert<ExistenceData>(out var existenceData))
+            if (jobject.TryConvert<ExistenceEvent>(out var existenceData))
             {
                 return existenceData;
             }

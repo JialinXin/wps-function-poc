@@ -24,13 +24,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
 
             // var convertItem = _converter.ConvertToWebPubSubData(item);
 
-            if (item is MessageData message)
+            if (item is MessageEvent message)
             {
                 await _service.Send(message).ConfigureAwait(false);
             }
-            else if (item is GroupData groupData)
+            else if (item is GroupEvent groupData)
             {
-                if (groupData.Action == GroupAction.Add)
+                if (groupData.Action == GroupAction.Join)
                 {
                     await _service.AddToGroup(groupData).ConfigureAwait(false);
                 }
@@ -39,7 +39,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
                     await _service.RemoveFromGroup(groupData).ConfigureAwait(false);
                 }
             }
-            else if (item is ExistenceData existenceData)
+            else if (item is ExistenceEvent existenceData)
             {
                 await _service.CheckExistence(existenceData).ConfigureAwait(false);
             }

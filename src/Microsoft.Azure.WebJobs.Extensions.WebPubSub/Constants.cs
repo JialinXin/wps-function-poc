@@ -21,6 +21,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
         public const string CloudEventTypeSystemPrefix = "azure.webpubsub.sys.";
         public const string CloudEventTypeUserPrefix = "azure.webpubsub.user.";
 
+        public static class EventTypes
+        {
+            public const string User = "user";
+            public const string System = "system";
+        }
+
         //public const string AsrsHeaderPrefix = "X-ASRS-";
         //public const string AsrsConnectionIdHeader = AsrsHeaderPrefix + "Connection-Id";
         //public const string AsrsUserClaims = AsrsHeaderPrefix + "User-Claims";

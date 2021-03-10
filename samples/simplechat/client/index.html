@@ -174,7 +174,11 @@
 
                         this.log("Connecting...");
                         // id in query map to the name in function, use like {query.userid}
-                        axios.post(`http://localhost:7071/api/login?userid=${this.username}`, null, null)
+                        axios.post(`http://localhost:7071/api/login?userid=${this.username}`, {
+                            headers: {
+                                'x-claims': 'a-key=a-value&b-key=b-value'
+                            }
+                        }, null)
                         .then(resp => resp.data)
                         .then(info => {
                             return info.url;

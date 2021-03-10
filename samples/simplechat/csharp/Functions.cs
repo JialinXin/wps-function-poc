@@ -5,6 +5,7 @@ using Microsoft.Azure.WebJobs.Extensions.WebPubSub;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using System;
+using System.IO;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -12,71 +13,81 @@ namespace SimpleChat
 {
     public static class Functions
     {
-        //private const string Hub = "simplechat";
-
         [FunctionName("login")]
         public static WebPubSubConnection GetClientConnection(
             [HttpTrigger(AuthorizationLevel.Anonymous, "get", "post")] HttpRequest req,
-            [WebPubSubConnection(UserId = "{query.userid}", Hub = "simplechat")] WebPubSubConnection connection)
+            [WebPubSubConnection(UserId = "{query.userid}", Hub = "simplechat", CustomClaims = "{headers.x-claims}")] WebPubSubConnection connection)
         {
             Console.WriteLine("login");
             return connection;
         }
 
-        [FunctionName("simplechat-connect")]
+        [FunctionName("connect")]
         public static void Connect(
-            [WebPubSubTrigger]InvocationContext context)
+            [WebPubSubTrigger("simplechat","connect")]InvocationContext context)
         {
             Console.WriteLine($"Received client connect with connectionId: {context.ConnectionId}");
         }
 
         // multi tasks sample
-        [FunctionName("simplechat-connected")]
+        [FunctionName("connected")]
         public static async Task Connected(
-            [WebPubSubTrigger] InvocationContext context,
+            [WebPubSubTrigger("simplechat", "connected")] InvocationContext context,
             [WebPubSub] IAsyncCollector<WebPubSubEvent> eventHandler)
         {
-
-            await eventHandler.AddAsync(new MessageData
+            await eventHandler.AddAsync(new MessageEvent
             {
-                Message = new ClientContent($"{context.UserId} connected.").ToString()
+                Message = GetStream(new ClientContent($"{context.UserId} connected.").ToString()),
+                DataType = MessageDataType.Json
             });
 
-            await eventHandler.AddAsync(new GroupData
+            await eventHandler.AddAsync(new GroupEvent
             {
                 TargetType = TargetType.Users,
                 TargetId = context.UserId,
-                Action = GroupAction.Add,
+                Action = GroupAction.Join,
                 GroupId = "group1"
             });
-            await eventHandler.AddAsync(new MessageData
+            await eventHandler.AddAsync(new MessageEvent
             {
-                Message = new ClientContent($"{context.UserId} joined group: group1.").ToString()
+                Message = GetStream(new ClientContent($"{context.UserId} joined group: group1.").ToString()),
+                DataType = MessageDataType.Json
             });
         }
 
         // single message sample
-        [FunctionName("simplechat-message")]
+        [FunctionName("broadcast")]
         [return: WebPubSub]
-        public static MessageData Broadcast(
-            [WebPubSubTrigger] InvocationContext context)
+        public static MessageEvent Broadcast(
+            [WebPubSubTrigger("simplechat", "message", "user")] InvocationContext context,
+            Stream message,
+            MessageResponse messageResponse)
         {
-            return new MessageData
+            messageResponse.Message = new MemoryStream(Encoding.UTF8.GetBytes("received"));
+            messageResponse.DataType = MessageDataType.Text;
+            return new MessageEvent
             {
-                Message = Encoding.UTF8.GetString(context.Payload.Span)
+                Message = message,
+                DataType = MessageDataType.Json
             };
         }
 
-        [FunctionName("simplechat-disconnect")]
+        [FunctionName("disconnect")]
         [return: WebPubSub]
-        public static MessageData Disconnect(
-            [WebPubSubTrigger] InvocationContext context)
+        public static MessageEvent Disconnect(
+            [WebPubSubTrigger("simplechat", "disconnected")] InvocationContext context)
         {
             Console.WriteLine("Disconnect.");
-            return new MessageData
+            return new MessageEvent
             {
-                Message = new ClientContent($"{context.UserId} disconnect.").ToString()
+                Message = GetStream(new ClientContent($"{context.UserId} disconnect.").ToString()),
+                DataType = MessageDataType.Json
             };
+        }
+
+        private static Stream GetStream(string s)
+        {
+            return new MemoryStream(Encoding.UTF8.GetBytes(s));
         }
 
         [JsonObject]

@@ -1,21 +1,17 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-
-namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
+﻿namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
 {
     public class Error
     {
-        public int Code { get; set; }
+        public ErrorCode Code { get; set; }
 
         public string Message { get; set; }
 
-        public Error(int code)
+        public Error(ErrorCode code)
         {
             Code = code;
         }
 
-        public Error(int code, string message)
+        public Error(ErrorCode code, string message)
         {
             Code = code;
             Message = message;

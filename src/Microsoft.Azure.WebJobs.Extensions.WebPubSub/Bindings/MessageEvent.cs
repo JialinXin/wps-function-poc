@@ -1,10 +1,11 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Text;
 
 namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
 {
-    public class MessageData : WebPubSubEvent
+    public class MessageEvent : WebPubSubEvent
     {
         public TargetType TargetType { get; set; } = TargetType.All;
 
@@ -12,6 +13,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
 
         public string[] Excludes { get; set; }
 
-        public string Message { get; set; }
+        public Stream Message { get; set; }
+
+        public MessageDataType DataType { get; set; }
     }
 }

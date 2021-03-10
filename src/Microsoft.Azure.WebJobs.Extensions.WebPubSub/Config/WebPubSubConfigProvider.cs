@@ -60,9 +60,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
 
             context.AddConverter<string, JObject>(JObject.FromObject)
                    .AddConverter<WebPubSubConnection, JObject>(JObject.FromObject)
-                   .AddConverter<JObject, MessageData>(input => input.ToObject<MessageData>())
-                   .AddConverter<JObject, GroupData>(input => input.ToObject<GroupData>())
-                   .AddConverter<JObject, ExistenceData>(input => input.ToObject<ExistenceData>())
+                   .AddConverter<JObject, MessageEvent>(input => input.ToObject<MessageEvent>())
+                   .AddConverter<JObject, GroupEvent>(input => input.ToObject<GroupEvent>())
+                   .AddConverter<JObject, ExistenceEvent>(input => input.ToObject<ExistenceEvent>())
                    .AddConverter<JObject, ConnectionCloseData>(input => input.ToObject<ConnectionCloseData>());
 
             // Trigger binding

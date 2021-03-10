@@ -4,13 +4,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
 {
     internal interface IWebPubSubService
     {
-        Task Send(MessageData messageData);
+        Task Send(MessageEvent messageData);
 
-        Task AddToGroup(GroupData groupData);
+        Task AddToGroup(GroupEvent groupData);
 
-        Task RemoveFromGroup(GroupData groupData);
+        Task RemoveFromGroup(GroupEvent groupData);
 
-        Task CheckExistence(ExistenceData existenceData);
+        Task CheckExistence(ExistenceEvent existenceData);
 
         Task CloseConnection(ConnectionCloseData closeData);
     }

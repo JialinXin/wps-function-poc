@@ -1,6 +1,7 @@
 ﻿
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Net.Http;
 using System.Net.Http.Headers;
@@ -46,7 +47,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
             var hubUrl = $"{_baseEndpoint}/client/{subPath}";
             var baseEndpoint = new Uri(_baseEndpoint);
             var scheme = baseEndpoint.Scheme == "http" ? "ws" : "wss";
-            var token = AuthUtility.GenerateJwtBearer(null, hubUrl, claims, DateTime.UtcNow.AddMinutes(30), _accessKey);
+            var token = Utilities.GenerateJwtBearer(null, hubUrl, claims, DateTime.UtcNow.AddMinutes(30), _accessKey);
             return new WebPubSubConnection
             {
                 Url = $"{scheme}://{baseEndpoint.Authority}{_port}/client{subPath}&access_token={token}",
@@ -57,7 +58,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
         internal WebPubSubConnection GetServerConnection(string additionalPath = "")
         {
             var audienceUrl = $"{_baseEndpoint}/api{_hubPath}{additionalPath}";
-            var token = AuthUtility.GenerateJwtBearer(null, audienceUrl, null, DateTime.UtcNow.AddMinutes(30), _accessKey);
+            var token = Utilities.GenerateJwtBearer(null, audienceUrl, null, DateTime.UtcNow.AddMinutes(30), _accessKey);
             return new WebPubSubConnection
             {
                 Url = $"{_baseEndpoint}{_port}/api{_hubPath}{additionalPath}",
@@ -65,7 +66,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
             };
         }
 
-        public Task Send(MessageData message)
+        public Task Send(MessageEvent message)
         {
             var subPath = $"/:send";
             if (!string.IsNullOrEmpty(message.TargetId) && message.TargetType != TargetType.All)
@@ -80,10 +81,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
             }
 
             var connection = GetServerConnection(subPath);
-            return RequestAsync(connection.Url, message.Message, connection.AccessToken, HttpMethod.Post);
+            return RequestAsync(connection.Url, connection.AccessToken, HttpMethod.Post, message.Message, message.DataType);
         }
 
-        public Task AddToGroup(GroupData groupData)
+        public Task AddToGroup(GroupEvent groupData)
         {
             if (groupData.TargetType == TargetType.All || groupData.TargetType == TargetType.Groups)
             {
@@ -92,10 +93,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
 
             var subPath = $"/{groupData.TargetType.ToString().ToLower()}/{groupData.TargetId}/groups/{groupData.GroupId}";
             var connection = GetServerConnection(subPath);
-            return RequestAsync(connection.Url, null, connection.AccessToken, HttpMethod.Put);
+            return RequestAsync(connection.Url, connection.AccessToken, HttpMethod.Put);
         }
 
-        public Task RemoveFromGroup(GroupData groupData)
+        public Task RemoveFromGroup(GroupEvent groupData)
         {
             if (groupData.TargetType == TargetType.All || groupData.TargetType == TargetType.Groups)
             {
@@ -104,10 +105,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
 
             var subPath = $"/{groupData.TargetType.ToString().ToLower()}/{groupData.TargetId}/groups/{groupData.GroupId}";
             var connection = GetServerConnection(subPath);
-            return RequestAsync(connection.Url, null, connection.AccessToken, HttpMethod.Delete);
+            return RequestAsync(connection.Url, connection.AccessToken, HttpMethod.Delete);
         }
 
-        public Task CheckExistence(ExistenceData existenceData)
+        public Task CheckExistence(ExistenceEvent existenceData)
         {
             if (existenceData.TargetType == TargetType.All)
             {
@@ -116,7 +117,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
 
             var subPath = $"/{existenceData.TargetType.ToString().ToLower()}/{existenceData.TargetId}";
             var connection = GetServerConnection(subPath);
-            return RequestAsync(connection.Url, null, connection.AccessToken, HttpMethod.Head);
+            return RequestAsync(connection.Url, connection.AccessToken, HttpMethod.Head);
         }
 
         public Task CloseConnection(ConnectionCloseData closeData)
@@ -128,10 +129,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
             }
 
             var connection = GetServerConnection(subPath);
-            return RequestAsync(connection.Url, null, connection.AccessToken, HttpMethod.Delete);
+            return RequestAsync(connection.Url, connection.AccessToken, HttpMethod.Delete);
         }
 
-        private Task<HttpResponseMessage> RequestAsync(string url, string message, string bearer, HttpMethod httpMethod)
+        private Task<HttpResponseMessage> RequestAsync(string url, string bearer, HttpMethod httpMethod, Stream message = null, MessageDataType dataType = MessageDataType.Binary)
         {
             var request = new HttpRequestMessage
             {
@@ -148,8 +149,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
 
             if (message != null)
             {
-                //var content = JsonConvert.SerializeObject(message);
-                request.Content = new StringContent(message, Encoding.UTF8, "text/plain");
+                request.Content = new StreamContent(message);
+                request.Content.Headers.ContentType = new MediaTypeHeaderValue(Utilities.GetContentType(dataType));
             }
             return _httpClient.SendAsync(request);
         }

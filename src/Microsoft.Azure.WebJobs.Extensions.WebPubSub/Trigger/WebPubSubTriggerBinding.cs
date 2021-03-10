@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
@@ -37,7 +38,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
 
             if (value is WebPubSubTriggerEvent triggerEvent)
             {
-                var bindingContext = triggerEvent.Context;
+                //var bindingContext = triggerEvent.Context;
 
                 // attribute settings valids for connect/disconnect only.
                 //if (_attribute.EventName != Constants.Events.Connect && _attribute.EventName != Constants.Events.Disconnect)
@@ -46,7 +47,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
                 //    Console.WriteLine("ignored settings.");
                 //}
 
-                return Task.FromResult<ITriggerData>(new TriggerData(new WebPubSubTriggerValueProvider(_parameterInfo, bindingContext), bindingData)
+                return Task.FromResult<ITriggerData>(new TriggerData(new WebPubSubTriggerValueProvider(_parameterInfo, triggerEvent), bindingData)
                 {
                     ReturnValueProvider = triggerEvent.TaskCompletionSource == null ? null : new TriggerReturnValueProvider(triggerEvent.TaskCompletionSource),
                 });
@@ -62,11 +63,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
                 throw new ArgumentNullException(nameof(context));
             }
 
-            // Get listener key from function name which ensures unique
-            // Format: hub-eventName or eventName(for default hub)
-            // var attributeName = $"{_attribute.Hub}-{_attribute.EventName}".ToLower();
-            var functionName = _parameterInfo.Member.GetCustomAttribute<FunctionNameAttribute>(false);
-            var listernerKey = functionName.Name.ToLower();
+            // Get listener key from attributes.
+            var attributeName = $"{_attribute.Hub}.{_attribute.EventType}.{_attribute.EventName}".ToLower();
+            // var functionName = _parameterInfo.Member.GetCustomAttribute<FunctionNameAttribute>(false);
+            var listernerKey = attributeName;
 
             return Task.FromResult<IListener>(new WebPubSubListener(context.Executor,  listernerKey, _dispatcher));
         }
@@ -87,7 +87,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
             var contract = new Dictionary<string, Type>(StringComparer.OrdinalIgnoreCase)
             {
                 // Functions can bind to parameter name "hubName" directly
-                { "hubName", typeof(string) },
+                //{ "hubName", typeof(string) },
+                { "message", typeof(Stream) },
+                { "messageResponse", typeof(MessageResponse) },
+                { "connectResponse", typeof(ConnectResponse) },
+                { "response", typeof(WebPubSubEventResponse) },
                 { "$return", typeof(object).MakeByRefType() },
             };
 
@@ -100,25 +104,38 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
         /// </summary>
         private class WebPubSubTriggerValueProvider : IValueBinder
         {
-            private readonly InvocationContext _value;
+            private readonly InvocationContext _context;
             private readonly ParameterInfo _parameter;
+            // optional parameters
+            private readonly Stream _message;
+            private readonly WebPubSubEventResponse _response;
 
-            public WebPubSubTriggerValueProvider(ParameterInfo parameter, InvocationContext value)
+            public WebPubSubTriggerValueProvider(ParameterInfo parameter, WebPubSubTriggerEvent triggerEvent)
             {
                 _parameter = parameter ?? throw new ArgumentNullException(nameof(parameter));
-                _value = value ?? throw new ArgumentNullException(nameof(value));
+                _context = triggerEvent.Context ?? throw new ArgumentNullException(nameof(triggerEvent.Context));
+                _message = triggerEvent.Message;
+                _response = triggerEvent.Response;
             }
 
             public Task<object> GetValueAsync()
             {
                 if (_parameter.ParameterType == typeof(InvocationContext))
                 {
-                    return Task.FromResult<object>(_value);
+                    return Task.FromResult<object>(_context);
+                }
+                else if (_parameter.ParameterType == typeof(Stream))
+                {
+                    return Task.FromResult<object>(_message);
+                }
+                else if (_parameter.ParameterType == typeof(WebPubSubEventResponse))
+                {
+                    return Task.FromResult<object>(_response);
                 }
                 else if (_parameter.ParameterType == typeof(object) ||
                          _parameter.ParameterType == typeof(JObject))
                 {
-                    return Task.FromResult<object>(JObject.FromObject(_value));
+                    return Task.FromResult<object>(JObject.FromObject(_context));
                 }
 
                 return Task.FromResult<object>(null);
@@ -126,7 +143,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
 
             public string ToInvokeString()
             {
-                return _value.ToString();
+                return _context.ToString();
             }
 
             public Type Type => _parameter.GetType();
