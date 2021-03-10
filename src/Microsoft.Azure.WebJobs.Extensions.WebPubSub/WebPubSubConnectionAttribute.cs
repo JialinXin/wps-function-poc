@@ -4,7 +4,6 @@ using System.Security.Claims;
 
 using Microsoft.Azure.WebJobs.Description;
 
-
 namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
 {
     [AttributeUsage(AttributeTargets.ReturnValue | AttributeTargets.Parameter)]
@@ -12,19 +11,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
     public class WebPubSubConnectionAttribute : Attribute
     {
         [ConnectionString]
-        public string ConnectionStringSetting { get; set; }
+        public string ConnectionStringSetting { get; set; } = Constants.WebPubSubConnectionStringName;
 
         [AutoResolve]
         public string Hub { get; set; }
 
         [AutoResolve]
         public string UserId { get; set; }
-
-        /// <summary>
-        /// Format: key=value&key1=value1
-        /// </summary>
-        [AutoResolve]
-        public string CustomClaims { get; set; }
 
         internal IEnumerable<Claim> GetClaims()
         {
@@ -33,14 +26,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
             {
                 claims.Add(new Claim(ClaimTypes.NameIdentifier, UserId));
             }
-            if (CustomClaims != null)
-            {
-                foreach (var claim in CustomClaims.Split('&'))
-                {
-                    var items = claim.Split('=');
-                    claims.Add(new Claim(items[0], items[1]));
-                }
-            }
+            
             return claims;
         }
     }

@@ -38,6 +38,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
 
             if (value is WebPubSubTriggerEvent triggerEvent)
             {
+                AddBindingData(bindingData, triggerEvent);
                 //var bindingContext = triggerEvent.Context;
 
                 // attribute settings valids for connect/disconnect only.
@@ -65,7 +66,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
 
             // Get listener key from attributes.
             var attributeName = $"{_attribute.Hub}.{_attribute.EventType}.{_attribute.EventName}".ToLower();
-            // var functionName = _parameterInfo.Member.GetCustomAttribute<FunctionNameAttribute>(false);
             var listernerKey = attributeName;
 
             return Task.FromResult<IListener>(new WebPubSubListener(context.Executor,  listernerKey, _dispatcher));
@@ -79,6 +79,16 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
             };
         }
 
+        private void AddBindingData(Dictionary<string, object> bindingData, WebPubSubTriggerEvent triggerEvent)
+        {
+            bindingData.Add("connection", triggerEvent.Context);
+            bindingData.Add("message", triggerEvent.Message);
+            bindingData.Add("dataType", triggerEvent.DataType);
+            bindingData.Add("claims", triggerEvent.Claims);
+            bindingData.Add("reason", triggerEvent.Reason);
+            bindingData.Add("subprotocols", triggerEvent.Subprotocols);
+        }
+
         /// <summary>
         /// Defined what other bindings can use and return value.
         /// </summary>
@@ -86,12 +96,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
         {
             var contract = new Dictionary<string, Type>(StringComparer.OrdinalIgnoreCase)
             {
-                // Functions can bind to parameter name "hubName" directly
-                //{ "hubName", typeof(string) },
+                { "connection", typeof(ConnectionContext) },
                 { "message", typeof(Stream) },
-                { "messageResponse", typeof(MessageResponse) },
-                { "connectResponse", typeof(ConnectResponse) },
-                { "response", typeof(WebPubSubEventResponse) },
+                { "dataType", typeof(MessageDataType) },
+                { "claims", typeof(IDictionary<string, string[]>) },
+                { "reason", typeof(string) },
+                { "subprotocols", typeof(string[]) },
                 { "$return", typeof(object).MakeByRefType() },
             };
 
@@ -104,38 +114,31 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
         /// </summary>
         private class WebPubSubTriggerValueProvider : IValueBinder
         {
-            private readonly InvocationContext _context;
+            //private readonly ConnectionContext _context;
             private readonly ParameterInfo _parameter;
             // optional parameters
-            private readonly Stream _message;
-            private readonly WebPubSubEventResponse _response;
+            private readonly WebPubSubTriggerEvent _triggerEvent;
 
             public WebPubSubTriggerValueProvider(ParameterInfo parameter, WebPubSubTriggerEvent triggerEvent)
             {
                 _parameter = parameter ?? throw new ArgumentNullException(nameof(parameter));
-                _context = triggerEvent.Context ?? throw new ArgumentNullException(nameof(triggerEvent.Context));
-                _message = triggerEvent.Message;
-                _response = triggerEvent.Response;
+                _triggerEvent = triggerEvent ?? throw new ArgumentNullException(nameof(triggerEvent));
             }
 
             public Task<object> GetValueAsync()
             {
-                if (_parameter.ParameterType == typeof(InvocationContext))
+                if (_parameter.ParameterType == typeof(ConnectionContext))
                 {
-                    return Task.FromResult<object>(_context);
+                    return Task.FromResult<object>(_triggerEvent.Context);
                 }
                 else if (_parameter.ParameterType == typeof(Stream))
                 {
-                    return Task.FromResult<object>(_message);
-                }
-                else if (_parameter.ParameterType == typeof(WebPubSubEventResponse))
-                {
-                    return Task.FromResult<object>(_response);
+                    return Task.FromResult<object>(_triggerEvent.Message);
                 }
                 else if (_parameter.ParameterType == typeof(object) ||
                          _parameter.ParameterType == typeof(JObject))
                 {
-                    return Task.FromResult<object>(JObject.FromObject(_context));
+                    return Task.FromResult<object>(JObject.FromObject(_triggerEvent));
                 }
 
                 return Task.FromResult<object>(null);
@@ -143,7 +146,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
 
             public string ToInvokeString()
             {
-                return _context.ToString();
+                return _triggerEvent.ToString();
             }
 
             public Type Type => _parameter.GetType();

@@ -4,7 +4,7 @@ using System.Collections.Generic;
 
 namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
 {
-    internal class ConnectEventResponse
+    internal sealed class ConnectEventResponse
     {
         [JsonProperty("subprotocol")]
         public string Subprotocol { get; set; }

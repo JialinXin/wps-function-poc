@@ -4,9 +4,13 @@
 using System;
 using System.Collections.Generic;
 using System.IdentityModel.Tokens.Jwt;
+using System.Net;
+using System.Net.Http;
 using System.Security.Claims;
 using System.Text;
 using Microsoft.IdentityModel.Tokens;
+using System.Net.Http.Headers;
+using Newtonsoft.Json;
 
 namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
 {
@@ -24,6 +28,76 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
                 MessageDataType.Json => Constants.ContentTypes.JsonContentType,
                 // Default set binary type to align with service side logic
                 _ => Constants.ContentTypes.BinaryContentType
+            };
+
+        public static MessageDataType GetDataType(string mediaType) =>
+            mediaType switch
+            {
+                Constants.ContentTypes.BinaryContentType => MessageDataType.Binary,
+                Constants.ContentTypes.JsonContentType => MessageDataType.Json,
+                Constants.ContentTypes.PlainTextContentType => MessageDataType.Text,
+                _ => MessageDataType.NotSupported
+            };
+
+        public static bool IsUserEvent(string eventType)
+            => eventType.StartsWith(Constants.CloudEventTypeUserPrefix, StringComparison.OrdinalIgnoreCase);
+
+        public static bool IsSystemConnect(string eventType)
+            => eventType.Equals($"{Constants.CloudEventTypeSystemPrefix}{Constants.Events.ConnectEvent}", StringComparison.OrdinalIgnoreCase);
+
+        public static bool IsSystemDisconnected(string eventType)
+            => eventType.Equals($"{Constants.CloudEventTypeSystemPrefix}{Constants.Events.DisconnectedEvent}", StringComparison.OrdinalIgnoreCase);
+
+        public static bool IsSyncMethod(string eventType)
+            => IsUserEvent(eventType) || IsSystemConnect(eventType);
+
+        public static HttpResponseMessage BuildResponse(MessageResponse response)
+        {
+            HttpResponseMessage result = new HttpResponseMessage();
+
+            if (response.Error != null)
+            {
+                result.StatusCode = GetStatusCode(response.Error.Code);
+                result.Content = new StringContent(response.Error.Message);
+                return result;
+            }
+
+            result.Content = new StreamContent(response.Message);
+            result.Content.Headers.ContentType = new MediaTypeHeaderValue(GetContentType(response.DataType));
+
+            return result;
+        }
+
+        public static HttpResponseMessage BuildResponse(ConnectResponse response)
+        {
+            HttpResponseMessage result = new HttpResponseMessage();
+
+            if (response.Error != null)
+            {
+                result.StatusCode = GetStatusCode(response.Error.Code);
+                result.Content = new StringContent(response.Error.Message);
+                return result;
+            }
+
+            var connectEvent = new ConnectEventResponse
+            {
+                UserId = response.UserId,
+                Groups = response.Groups,
+                Subprotocol = response.Subprotocol,
+                Roles = response.Roles
+            };
+            result.Content = new StringContent(JsonConvert.SerializeObject(connectEvent));
+
+            return result;
+        }
+
+        public static HttpStatusCode GetStatusCode(ErrorCode errorCode) =>
+            errorCode switch
+            {
+                ErrorCode.UserError => HttpStatusCode.BadRequest,
+                ErrorCode.Unauthorized => HttpStatusCode.Unauthorized,
+                ErrorCode.ServerError => HttpStatusCode.InternalServerError,
+                _ => HttpStatusCode.InternalServerError
             };
 
         public static string GenerateJwtBearer(

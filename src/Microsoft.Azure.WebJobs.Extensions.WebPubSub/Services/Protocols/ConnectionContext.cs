@@ -3,7 +3,7 @@ using System.Collections.Generic;
 
 namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
 {
-    public class InvocationContext
+    public class ConnectionContext
     {
         /// <summary>
         /// The type of the message.
@@ -35,22 +35,5 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
         /// Headers with duplicated key will be joined by comma.
         /// </summary>
         public Dictionary<string, StringValues> Headers { get; internal set; }
-
-        /// <summary>
-        /// The query of the request when client connect to the service.
-        /// Queries with duplicated key will be joined by comma.
-        /// </summary>
-        public IDictionary<string, string> Queries { get; internal set; }
-
-        /// <summary>
-        /// The claims of the client.
-        /// If you multiple claims have the same key, only the first one will be reserved.
-        /// </summary>
-        public IDictionary<string, string> Claims { get; internal set; }
-
-        /// <summary>
-        /// The media type of the message.
-        /// </summary>
-        public string MediaType { get; internal set; }
     }
 }

@@ -2,12 +2,12 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.Azure.WebJobs;
 using Microsoft.Azure.WebJobs.Extensions.Http;
 using Microsoft.Azure.WebJobs.Extensions.WebPubSub;
-using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using System;
 using System.IO;
 using System.Text;
 using System.Threading.Tasks;
+using System.Linq;
 
 namespace SimpleChat
 {
@@ -16,23 +16,29 @@ namespace SimpleChat
         [FunctionName("login")]
         public static WebPubSubConnection GetClientConnection(
             [HttpTrigger(AuthorizationLevel.Anonymous, "get", "post")] HttpRequest req,
-            [WebPubSubConnection(UserId = "{query.userid}", Hub = "simplechat", CustomClaims = "{headers.x-claims}")] WebPubSubConnection connection)
+            [WebPubSubConnection(UserId = "{query.userid}", Hub = "simplechat")] WebPubSubConnection connection)
         {
             Console.WriteLine("login");
             return connection;
         }
 
         [FunctionName("connect")]
-        public static void Connect(
-            [WebPubSubTrigger("simplechat","connect")]InvocationContext context)
+        public static ConnectResponse Connect(
+            [WebPubSubTrigger("simplechat","connect")]ConnectionContext context,
+            string[] subprotocols)
         {
             Console.WriteLine($"Received client connect with connectionId: {context.ConnectionId}");
+            return new ConnectResponse
+            {
+                UserId = context.UserId,
+                Subprotocol = subprotocols.FirstOrDefault()
+            };
         }
 
         // multi tasks sample
         [FunctionName("connected")]
         public static async Task Connected(
-            [WebPubSubTrigger("simplechat", "connected")] InvocationContext context,
+            [WebPubSubTrigger("simplechat", "connected")] ConnectionContext context,
             [WebPubSub] IAsyncCollector<WebPubSubEvent> eventHandler)
         {
             await eventHandler.AddAsync(new MessageEvent
@@ -57,25 +63,28 @@ namespace SimpleChat
 
         // single message sample
         [FunctionName("broadcast")]
-        [return: WebPubSub]
-        public static MessageEvent Broadcast(
-            [WebPubSubTrigger("simplechat", "message", "user")] InvocationContext context,
+        public static async Task<MessageResponse> Broadcast(
+            [WebPubSubTrigger("simplechat", "message", "user")] ConnectionContext context,
             Stream message,
-            MessageResponse messageResponse)
+            [WebPubSub] IAsyncCollector<MessageEvent> eventHandler)
         {
-            messageResponse.Message = new MemoryStream(Encoding.UTF8.GetBytes("received"));
-            messageResponse.DataType = MessageDataType.Text;
-            return new MessageEvent
+            await eventHandler.AddAsync(new MessageEvent
             {
                 Message = message,
                 DataType = MessageDataType.Json
+            });
+
+            return new MessageResponse
+            {
+                Message = new MemoryStream(Encoding.UTF8.GetBytes("[Ack] Received")),
+                DataType = MessageDataType.Text
             };
         }
 
         [FunctionName("disconnect")]
         [return: WebPubSub]
         public static MessageEvent Disconnect(
-            [WebPubSubTrigger("simplechat", "disconnected")] InvocationContext context)
+            [WebPubSubTrigger("simplechat", "disconnected")] ConnectionContext context)
         {
             Console.WriteLine("Disconnect.");
             return new MessageEvent

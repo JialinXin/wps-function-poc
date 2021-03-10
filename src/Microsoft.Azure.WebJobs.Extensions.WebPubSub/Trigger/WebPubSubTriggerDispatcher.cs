@@ -30,12 +30,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
 
         public async Task<HttpResponseMessage> ExecuteAsync(HttpRequestMessage req, CancellationToken token = default)
         {
-            if (!TryGetConnectionContext(req, out var context))
-            {
-                return new HttpResponseMessage(HttpStatusCode.BadRequest);
-            }
-
-            if (!ValidateContentType(context))
+            if (!TryParseRequest(req, out var context))
             {
                 return new HttpResponseMessage(HttpStatusCode.BadRequest);
             }
@@ -47,23 +42,37 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
             if (_listeners.TryGetValue(function, out var executor))
             {
                 var message = await req.Content.ReadAsStreamAsync();
-                var response = new WebPubSubEventResponse();
+                IDictionary<string, string[]> claims = null;
+                string[] subprotocols = null;
+                string reason = null;
+                MessageDataType dataType = MessageDataType.Binary;
 
-                // build correct response regarding type
-                if (IsUserEvent(context.Type))
+                if (Utilities.IsSystemConnect(context.Type))
                 {
-                    response = new MessageResponse();
+                    var content = await req.Content.ReadAsStringAsync();
+                    var request = JsonConvert.DeserializeObject<ConnectEventRequest>(content);
+                    claims = request.Claims;
+                    subprotocols = request.Subprotocols;
                 }
-                else if(IsSystemConnect(context.Type))
+                else if (Utilities.IsSystemDisconnected(context.Type))
                 {
-                    response = new ConnectResponse();
+                    var content = await req.Content.ReadAsStringAsync();
+                    var request = JsonConvert.DeserializeObject<DisconnectEventRequest>(content);
+                    reason = request.Reason;
+                }
+                else if (Utilities.IsUserEvent(context.Type))
+                {
+                    dataType = Utilities.GetDataType(req.Content.Headers.ContentType.ToString());
                 }
 
                 var triggerEvent = new WebPubSubTriggerEvent
                 {
                     Context = context,
                     Message = message,
-                    Response = response,
+                    Claims = claims,
+                    Reason = reason,
+                    Subprotocols = subprotocols,
+                    DataType = dataType,
                     TaskCompletionSource = tcs
                 };
                 await executor.Executor.TryExecuteAsync(new TriggeredFunctionData
@@ -72,9 +81,17 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
                 }, token);
 
                 // After function processed, return on-hold event reponses.
-                if (IsUserEvent(context.Type) || IsSystemConnect(context.Type))
+                if (Utilities.IsSyncMethod(context.Type))
                 {
-                    return response.BuildResponse();
+                    var response = await tcs.Task;
+                    if (response is MessageResponse msgResponse)
+                    {
+                        return Utilities.BuildResponse(msgResponse);
+                    }
+                    else if (response is ConnectResponse connectResponse)
+                    {
+                        return Utilities.BuildResponse(connectResponse);
+                    }
                 }
 
                 return new HttpResponseMessage(HttpStatusCode.OK);
@@ -83,44 +100,26 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
             return new HttpResponseMessage(HttpStatusCode.NotFound);
         }
 
-        private bool ValidateContentType(InvocationContext context)
+        private static bool TryParseRequest(HttpRequestMessage request, out ConnectionContext context)
         {
-            // Check user message content type
-            if (IsUserEvent(context.Type))
-            {
-                return context.MediaType == Constants.ContentTypes.BinaryContentType || 
-                    context.MediaType == Constants.ContentTypes.JsonContentType ||
-                    context.MediaType == Constants.ContentTypes.PlainTextContentType;
-            }
-            return true;
-        }
-
-        private bool TryGetConnectionContext(HttpRequestMessage request, out InvocationContext context)
-        {
-            if (!request.Headers.Contains(Constants.CloudEvents.Headers.Hub) || !request.Headers.Contains(Constants.CloudEvents.Headers.ConnectionId))
+            if (!request.Headers.Contains(Constants.Headers.CloudEvents.ConnectionId))
             {
                 context = null;
                 return false;
             }
 
-            context = new InvocationContext();
-            context.ConnectionId = request.Headers.GetValues(Constants.CloudEvents.Headers.ConnectionId).FirstOrDefault();
-            context.Hub = request.Headers.GetValues(Constants.CloudEvents.Headers.Hub).FirstOrDefault();
-            context.Type = request.Headers.GetValues(Constants.CloudEvents.Headers.Type).FirstOrDefault();
-            context.Event = request.Headers.GetValues(Constants.CloudEvents.Headers.EventName).FirstOrDefault();
-            context.MediaType = request.Content.Headers.ContentType?.MediaType;
+            context = new ConnectionContext();
+            context.ConnectionId = request.Headers.GetValues(Constants.Headers.CloudEvents.ConnectionId).FirstOrDefault();
+            context.Hub = request.Headers.GetValues(Constants.Headers.CloudEvents.Hub).FirstOrDefault();
+            context.Type = request.Headers.GetValues(Constants.Headers.CloudEvents.Type).FirstOrDefault();
+            context.Event = request.Headers.GetValues(Constants.Headers.CloudEvents.EventName).FirstOrDefault();
             context.Headers = request.Headers.ToDictionary(x => x.Key, v => new StringValues(v.Value.FirstOrDefault()), StringComparer.OrdinalIgnoreCase);
+            context.UserId = request.Headers.GetValues(Constants.Headers.CloudEvents.UserId).FirstOrDefault();
 
-            if (request.Headers.Contains(Constants.CloudEvents.Headers.UserId))
-            {
-                context.UserId = request.Headers.GetValues(Constants.CloudEvents.Headers.UserId).FirstOrDefault();
-            }
-
-            //context.Function =  context.Hub == Constants.DefaultHub ? $"{context.Event}".ToLower() : $"{context.Hub}-{context.Event}".ToLower();
             return true;
         }
 
-        private static string GetFunctionName(InvocationContext context)
+        private static string GetFunctionName(ConnectionContext context)
         {
             var eventType = context.Type.StartsWith(Constants.CloudEventTypeSystemPrefix, StringComparison.OrdinalIgnoreCase) ? 
                 Constants.EventTypes.System :
@@ -140,11 +139,5 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
                 .Select(p => p.Split(new string[] { Constants.ClaimsSeparator }, StringSplitOptions.RemoveEmptyEntries)).Where(l => l.Length == 2)
                 .ToDictionary(p => p[0].Trim(), p => p[1].Trim());
         }
-
-        private static bool IsUserEvent(string eventType) 
-            => eventType.StartsWith(Constants.CloudEventTypeUserPrefix, StringComparison.OrdinalIgnoreCase);
-
-        private static bool IsSystemConnect(string eventType)
-            => eventType.Equals($"{Constants.CloudEventTypeSystemPrefix}{Constants.Events.ConnectEvent}", StringComparison.OrdinalIgnoreCase);
     }
 }

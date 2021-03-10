@@ -54,9 +54,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
             public const string DisconnectedEvent = "disconnected";
         }
 
-        public static class CloudEvents
+        public static class Headers
         {
-            public static class Headers
+            public static class CloudEvents
             {
                 private const string Prefix = "ce-";
                 public const string Signature = Prefix + "signature";
@@ -70,6 +70,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
                 public const string EventName = Prefix + "eventName";
                 public const string UserId = Prefix + "userId";
             }
+
+            public const string WebSocketSubProtocols = "Sec-WebSocket-Protocol";
         }
     }
 }

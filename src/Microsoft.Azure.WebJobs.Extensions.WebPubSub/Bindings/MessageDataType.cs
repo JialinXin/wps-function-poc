@@ -4,6 +4,7 @@
     {
         Binary,
         Text,
-        Json
+        Json,
+        NotSupported
     }
 }
