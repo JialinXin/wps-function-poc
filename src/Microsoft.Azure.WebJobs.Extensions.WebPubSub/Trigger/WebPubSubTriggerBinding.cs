@@ -39,14 +39,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
             if (value is WebPubSubTriggerEvent triggerEvent)
             {
                 AddBindingData(bindingData, triggerEvent);
-                //var bindingContext = triggerEvent.Context;
-
-                // attribute settings valids for connect/disconnect only.
-                //if (_attribute.EventName != Constants.Events.Connect && _attribute.EventName != Constants.Events.Disconnect)
-                //{
-                //    // TODO: warns 
-                //    Console.WriteLine("ignored settings.");
-                //}
 
                 return Task.FromResult<ITriggerData>(new TriggerData(new WebPubSubTriggerValueProvider(_parameterInfo, triggerEvent), bindingData)
                 {
@@ -85,6 +77,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
             bindingData.Add("message", triggerEvent.Payload != null ? new MemoryStream(triggerEvent.Payload) : null);
             bindingData.Add("dataType", triggerEvent.DataType);
             bindingData.Add("claims", triggerEvent.Claims);
+            bindingData.Add("query", triggerEvent.Query);
             bindingData.Add("reason", triggerEvent.Reason);
             bindingData.Add("subprotocols", triggerEvent.Subprotocols);
         }
@@ -100,23 +93,21 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
                 { "message", typeof(Stream) },
                 { "dataType", typeof(MessageDataType) },
                 { "claims", typeof(IDictionary<string, string[]>) },
-                { "reason", typeof(string) },
+                { "query", typeof(IDictionary<string, string[]>) },
                 { "subprotocols", typeof(string[]) },
+                { "reason", typeof(string) },
                 { "$return", typeof(object).MakeByRefType() },
             };
 
             return contract;
         }
 
-        // TODO: Add more supported type
         /// <summary>
         /// A provider that responsible for providing value in various type to be bond to function method parameter.
         /// </summary>
         private class WebPubSubTriggerValueProvider : IValueBinder
         {
-            //private readonly ConnectionContext _context;
             private readonly ParameterInfo _parameter;
-            // optional parameters
             private readonly WebPubSubTriggerEvent _triggerEvent;
 
             public WebPubSubTriggerValueProvider(ParameterInfo parameter, WebPubSubTriggerEvent triggerEvent)
@@ -133,7 +124,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
                 }
                 else if (_parameter.ParameterType == typeof(Stream))
                 {
-                    return Task.FromResult<object>(new MemoryStream(_triggerEvent.Payload));
+                    var value = _triggerEvent.Payload != null ? new MemoryStream(_triggerEvent.Payload) : null;
+                    return Task.FromResult<object>(value);
                 }
                 else if (_parameter.ParameterType == typeof(string))
                 {
@@ -149,7 +141,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
                 }
                 else if (_parameter.ParameterType == typeof(IDictionary<string, string[]>))
                 {
-                    return Task.FromResult<object>(_triggerEvent.Claims);
+                    if (_parameter.Name.Equals("claims", StringComparison.OrdinalIgnoreCase))
+                    {
+                        return Task.FromResult<object>(_triggerEvent.Claims);
+                    }
+                    return Task.FromResult<object>(_triggerEvent.Query);
                 }
                 else if (_parameter.ParameterType == typeof(object) ||
                          _parameter.ParameterType == typeof(JObject))

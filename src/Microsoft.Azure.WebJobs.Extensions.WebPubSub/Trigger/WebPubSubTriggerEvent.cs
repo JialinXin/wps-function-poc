@@ -1,5 +1,4 @@
 ﻿using System.Collections.Generic;
-using System.IO;
 using System.Threading.Tasks;
 
 namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
@@ -18,6 +17,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
         public string[] Subprotocols { get; set; }
 
         public IDictionary<string, string[]> Claims { get; set; }
+
+        public IDictionary<string, string[]> Query { get; set; }
 
         public string Reason { get; set; }
 

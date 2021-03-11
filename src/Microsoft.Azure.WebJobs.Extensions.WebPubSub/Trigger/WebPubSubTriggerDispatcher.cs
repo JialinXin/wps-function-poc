@@ -30,6 +30,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
 
         public async Task<HttpResponseMessage> ExecuteAsync(HttpRequestMessage req, string serviceHost, CancellationToken token = default)
         {
+            // Handle service abuse check.
             if (RespondToServiceAbuseCheck(req, serviceHost, out var abuseResponse))
             {
                 return abuseResponse;
@@ -136,7 +137,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
         private static bool RespondToServiceAbuseCheck(HttpRequestMessage req, string serviceHost, out HttpResponseMessage response)
         {
             response = new HttpResponseMessage();
-            // TODO: Should be OPTIONS and use Get before function extensions update to supporte version.
+            // TODO: Should be OPTIONS and use GET before function extensions update to supported version.
             if (req.Method == HttpMethod.Get)
             {
                 var hosts = req.Headers.GetValues(Constants.Headers.WebHookRequestOrigin);
@@ -147,19 +148,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
                 }
             }
             return false;
-        }
-
-        private static IDictionary<string, string> GetClaimDictionary(string claims)
-        {
-            if (string.IsNullOrEmpty(claims))
-            {
-                return default;
-            }
-
-            // The claim string looks like "a: v, b: v"
-            return claims.Split(new char[] { Constants.HeaderSeparator }, StringSplitOptions.RemoveEmptyEntries)
-                .Select(p => p.Split(new string[] { Constants.ClaimsSeparator }, StringSplitOptions.RemoveEmptyEntries)).Where(l => l.Length == 2)
-                .ToDictionary(p => p[0].Trim(), p => p[1].Trim());
         }
     }
 }
