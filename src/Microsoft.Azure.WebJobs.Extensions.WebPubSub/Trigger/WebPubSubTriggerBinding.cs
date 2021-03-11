@@ -135,6 +135,22 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
                 {
                     return Task.FromResult<object>(_triggerEvent.Message);
                 }
+                else if (_parameter.ParameterType == typeof(string))
+                {
+                    return Task.FromResult<object>(_triggerEvent.Reason);
+                }
+                else if (_parameter.ParameterType == typeof(MessageDataType))
+                {
+                    return Task.FromResult<object>(_triggerEvent.DataType);
+                }
+                else if (_parameter.ParameterType == typeof(string[]))
+                {
+                    return Task.FromResult<object>(_triggerEvent.Subprotocols);
+                }
+                else if (_parameter.ParameterType == typeof(IDictionary<string, string[]>))
+                {
+                    return Task.FromResult<object>(_triggerEvent.Claims);
+                }
                 else if (_parameter.ParameterType == typeof(object) ||
                          _parameter.ParameterType == typeof(JObject))
                 {

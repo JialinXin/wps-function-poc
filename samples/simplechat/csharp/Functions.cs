@@ -63,7 +63,7 @@ namespace SimpleChat
 
         // single message sample
         [FunctionName("broadcast")]
-        public static async Task<MessageResponse> Broadcast(
+        public static async Task Broadcast(
             [WebPubSubTrigger("simplechat", "message", "user")] ConnectionContext context,
             Stream message,
             [WebPubSub] IAsyncCollector<MessageEvent> eventHandler)
@@ -71,14 +71,8 @@ namespace SimpleChat
             await eventHandler.AddAsync(new MessageEvent
             {
                 Message = message,
-                DataType = MessageDataType.Json
-            });
-
-            return new MessageResponse
-            {
-                Message = new MemoryStream(Encoding.UTF8.GetBytes("[Ack] Received")),
                 DataType = MessageDataType.Text
-            };
+            });
         }
 
         [FunctionName("disconnect")]

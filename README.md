@@ -91,17 +91,23 @@ EventType|(Allowed) Event
 system|connect, connected, disconnect
 user|any, e.g. message or user defined in subprotocol
 
-`ConnectionContext` is a binding object contains common fields among all request, basically refer to [CloudEvents](protocol-cloudevents.md#events) for available fields. Other optional binding objects differs on the scenarios are used can be bind on-demand, like `Message` and `WebPubSubEventResponse`. Refer to below sample for details. Notice that Response only affect synchronous events of `connect` and `message`. `Error` has higher priority than rest fields that if `Error` is set, service will regard this request as failed and take some actions like drop down client connection and log information in service side. Besides, if user need to send message back to current connection, `DataType` is suggested to set within `MessageResponse` to improve data encode/decode. `DataType` is limited to `text`, `json` and `binary` and default value is `binary`.
+`ConnectionContext` is a binding object contains common fields among all request, basically refer to [CloudEvents](protocol-cloudevents.md#events) for available fields. Other optional binding objects differs on the scenarios can be bind on-demand, details are listed below. 
 
 Binding Name | Binding Type | Description | Properties
 --|--|--|--
 context|`ConnectionContext`|Common request information|Type, Event, Hub, ConnectionId, UserId, Headers, Queries, Claims, MediaType
 message|`Stream` |Request message content|-
 dataType|`MessageDataType`|Data type of request message|-
-claims|`List<Claim>`|User Claims in connect request|-
-subprotocols|`string[]`|available subprotocols in connect request|-
-reason|`string`|reason in disconnect request|-
-response|`WebPubSubEventResponse`|Response for user to set and return service|`ConnectResponse` -Groups, UserId, Error, Subprotocol<br />`MessageResponse` - Error, DataType, Message<br />
+claims|`IDictionary<string, string[]>`|User Claims in connect request|-
+subprotocols|`string[]`|Available subprotocols in connect request|-
+reason|`string`|Reason in disconnect request|-
+
+`WebPubSubTrigger` will respect customer returned response for synchronous events of `connect` and `message`. Only matched response will be sent back to service, otherwise, it will be ignored. Notice that `Error` has higher priority than rest fields that if `Error` is set, service will regard this request as failed and take some actions like drop down client connection and log information in service side. If user needs to send message back to current connection using `MessageResponse`, `DataType` is suggested to set within `MessageResponse` to improve data encode/decode. `DataType` is limited to `text`, `json` and `binary` and default value is `binary`.
+
+Return Type | Description | Properties
+--|--|--
+`ConnectResponse`| Response for `connect` event | Error, Groups, Roles, UserId, Subprotocol
+`MessageResponse`| Response for user event | Error, DataType, Message
 
 * csharp usage:
 ```cs
@@ -113,19 +119,17 @@ public static ConnectResponse Connect(
     Console.WriteLine("Connect.");
     if (context.UserId == "abc")
     {
-        var response = new ConnectResponse()
+        return new ConnectResponse()
         {
-            Error = new Error { Code = ErrorCode.Unauthorized, Error = "Invalid User" };
-        }
-        return response;
+            Error = new Error { Code = ErrorCode.Unauthorized, Error = "Invalid User" }
+        };
     }
     else 
     {
-        var response = new ConnectResponse()
+        return new ConnectResponse()
         {
-            Roles = new string[] { "Admin" };
-        }
-        return response;
+            Roles = new string[] { "Admin" }
+        };
     }
 }
 ```
@@ -224,7 +228,7 @@ public static async Task<MessageResponse> Message(
 
     return new MessageResponse
     {
-        Message = new MemoryStream(Encoding.UTF8.GetBytes("[Ack] message received"));
+        Message = new MemoryStream(Encoding.UTF8.GetBytes("[Ack] message received")),
         DataType = MessageDataType.Text
     }；
 }

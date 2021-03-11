@@ -30,6 +30,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
 
         public async Task<HttpResponseMessage> ExecuteAsync(HttpRequestMessage req, CancellationToken token = default)
         {
+            if (RespondToServiceAbuseCheck(req, out var abuseResponse))
+            {
+                return abuseResponse;
+            }
+
             if (!TryParseRequest(req, out var context))
             {
                 return new HttpResponseMessage(HttpStatusCode.BadRequest);
@@ -41,7 +46,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
 
             if (_listeners.TryGetValue(function, out var executor))
             {
-                var message = await req.Content.ReadAsStreamAsync();
+                Stream message = null;
                 IDictionary<string, string[]> claims = null;
                 string[] subprotocols = null;
                 string reason = null;
@@ -62,6 +67,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
                 }
                 else if (Utilities.IsUserEvent(context.Type))
                 {
+                    message = await req.Content.ReadAsStreamAsync();
                     dataType = Utilities.GetDataType(req.Content.Headers.ContentType.ToString());
                 }
 
@@ -83,7 +89,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
                 // After function processed, return on-hold event reponses.
                 if (Utilities.IsSyncMethod(context.Type))
                 {
-                    var response = await tcs.Task;
+                    var response = await tcs.Task.ConfigureAwait(false);
                     if (response is MessageResponse msgResponse)
                     {
                         return Utilities.BuildResponse(msgResponse);
@@ -125,6 +131,18 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
                 Constants.EventTypes.System :
                 Constants.EventTypes.User;
             return $"{context.Hub}.{eventType}.{context.Event}".ToLower();
+        }
+
+        private static bool RespondToServiceAbuseCheck(HttpRequestMessage req, out HttpResponseMessage response)
+        {
+            response = new HttpResponseMessage();
+            if (req.Method == HttpMethod.Options)
+            {
+                var hosts = req.Headers.GetValues(Constants.Headers.WebHookRequestOrigin);
+                response.Headers.Add(Constants.Headers.WebHookAllowedOrigin, hosts);
+                return true;
+            }
+            return false;
         }
 
         private static IDictionary<string, string> GetClaimDictionary(string claims)

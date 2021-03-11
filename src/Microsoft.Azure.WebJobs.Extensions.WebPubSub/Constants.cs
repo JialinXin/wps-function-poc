@@ -72,6 +72,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
             }
 
             public const string WebSocketSubProtocols = "Sec-WebSocket-Protocol";
+
+            public const string WebHookRequestOrigin = "WebHook-Request-Origin";
+            public const string WebHookAllowedOrigin = "WebHook-Allowed-Origin";
         }
     }
 }
