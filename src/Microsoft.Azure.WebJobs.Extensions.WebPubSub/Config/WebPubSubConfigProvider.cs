@@ -82,7 +82,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
 
         public Task<HttpResponseMessage> ConvertAsync(HttpRequestMessage input, CancellationToken cancellationToken)
         {
-            return _dispatcher.ExecuteAsync(input, cancellationToken);
+            var values = Utilities.ParseConnectionString(_options.ConnectionString);
+            return _dispatcher.ExecuteAsync(input, values.EndPoint, cancellationToken);
         }
 
         private void ValidateWebPubSubConnectionAttributeBinding(WebPubSubConnectionAttribute attribute, Type type)

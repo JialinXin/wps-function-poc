@@ -1,5 +1,4 @@
-﻿
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -8,11 +7,7 @@ using System.Net.Http.Headers;
 using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Security.Claims;
-using System.Text;
-using System.Text.RegularExpressions;
 using System.Threading.Tasks;
-
-using Newtonsoft.Json;
 
 namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
 {
@@ -31,7 +26,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
 
         internal WebPubSubService(string connectionString, string hubName = "")
         {
-            (_baseEndpoint, _accessKey, _version, _port) = ParseConnectionString(connectionString);
+            (_baseEndpoint, _accessKey, _version, _port) = Utilities.ParseConnectionString(connectionString);
             _port = string.IsNullOrEmpty(_port) ? string.Empty : $":{_port}";
             HubName = hubName;
             _hubPath = string.IsNullOrEmpty(hubName) ? string.Empty : $"/hubs/{hubName}";
@@ -149,6 +144,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
 
             if (message != null)
             {
+                //request.Content = new StringContent(message);
+                //request.Content.Headers.ContentType = new MediaTypeHeaderValue(Utilities.GetContentType(dataType));
                 request.Content = new StreamContent(message);
                 request.Content.Headers.ContentType = new MediaTypeHeaderValue(Utilities.GetContentType(dataType));
             }
@@ -165,34 +162,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
             var processorArchitecture = RuntimeInformation.ProcessArchitecture.ToString().Trim();
 
             return $"{packageId}/{version} ({runtime}; {operatingSystem}; {processorArchitecture})";
-        }
-
-        private static (string EndPoint, string AccessKey, string Version, string Port) ParseConnectionString(string connectionString)
-        {
-            if (string.IsNullOrEmpty(connectionString))
-            {
-                throw new ArgumentException("Web PubSub Service connection string is empty");
-            }
-
-            var endpointMatch = Regex.Match(connectionString, @"endpoint=([^;]+)", RegexOptions.IgnoreCase);
-            if (!endpointMatch.Success)
-            {
-                throw new ArgumentException("No endpoint present in Web PubSub Service connection string");
-            }
-            var accessKeyMatch = Regex.Match(connectionString, @"accesskey=([^;]+)", RegexOptions.IgnoreCase);
-            if (!accessKeyMatch.Success)
-            {
-                throw new ArgumentException("No access key present in Web PubSub Service connection string");
-            }
-            var versionKeyMatch = Regex.Match(connectionString, @"version=([^;]+)", RegexOptions.IgnoreCase);
-            if (versionKeyMatch.Success && !System.Version.TryParse(versionKeyMatch.Groups[1].Value, out var version))
-            {
-                throw new ArgumentException("Invalid version format in Web PubSub Service connection string");
-            }
-            var portKeyMatch = Regex.Match(connectionString, @"port=([^;]+)", RegexOptions.IgnoreCase);
-            var port = portKeyMatch.Success ? portKeyMatch.Groups[1].Value : string.Empty;
-
-            return (endpointMatch.Groups[1].Value, accessKeyMatch.Groups[1].Value, versionKeyMatch.Groups[1].Value, port);
         }
     }
 }

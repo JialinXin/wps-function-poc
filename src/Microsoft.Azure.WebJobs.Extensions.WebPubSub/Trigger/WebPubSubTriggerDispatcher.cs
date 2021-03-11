@@ -28,9 +28,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
             _listeners.Add(key, listener);
         }
 
-        public async Task<HttpResponseMessage> ExecuteAsync(HttpRequestMessage req, CancellationToken token = default)
+        public async Task<HttpResponseMessage> ExecuteAsync(HttpRequestMessage req, string serviceHost, CancellationToken token = default)
         {
-            if (RespondToServiceAbuseCheck(req, out var abuseResponse))
+            if (RespondToServiceAbuseCheck(req, serviceHost, out var abuseResponse))
             {
                 return abuseResponse;
             }
@@ -46,7 +46,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
 
             if (_listeners.TryGetValue(function, out var executor))
             {
-                Stream message = null;
+                byte[] payload = null;
                 IDictionary<string, string[]> claims = null;
                 string[] subprotocols = null;
                 string reason = null;
@@ -67,14 +67,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
                 }
                 else if (Utilities.IsUserEvent(context.Type))
                 {
-                    message = await req.Content.ReadAsStreamAsync();
-                    dataType = Utilities.GetDataType(req.Content.Headers.ContentType.ToString());
+                    payload = await req.Content.ReadAsByteArrayAsync();
+                    dataType = Utilities.GetDataType(req.Content.Headers.ContentType.MediaType);
                 }
 
                 var triggerEvent = new WebPubSubTriggerEvent
                 {
                     Context = context,
-                    Message = message,
+                    Payload = payload,
                     Claims = claims,
                     Reason = reason,
                     Subprotocols = subprotocols,
@@ -133,14 +133,18 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
             return $"{context.Hub}.{eventType}.{context.Event}".ToLower();
         }
 
-        private static bool RespondToServiceAbuseCheck(HttpRequestMessage req, out HttpResponseMessage response)
+        private static bool RespondToServiceAbuseCheck(HttpRequestMessage req, string serviceHost, out HttpResponseMessage response)
         {
             response = new HttpResponseMessage();
-            if (req.Method == HttpMethod.Options)
+            // TODO: Should be OPTIONS and use Get before function extensions update to supporte version.
+            if (req.Method == HttpMethod.Get)
             {
                 var hosts = req.Headers.GetValues(Constants.Headers.WebHookRequestOrigin);
-                response.Headers.Add(Constants.Headers.WebHookAllowedOrigin, hosts);
-                return true;
+                if (req.RequestUri.AbsoluteUri.Contains(serviceHost))
+                {
+                    response.Headers.Add(Constants.Headers.WebHookAllowedOrigin, hosts);
+                    return true;
+                }
             }
             return false;
         }

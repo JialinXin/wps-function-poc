@@ -8,6 +8,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
     {
         void AddListener(string key, WebPubSubListener listener);
 
-        Task<HttpResponseMessage> ExecuteAsync(HttpRequestMessage req, CancellationToken token = default);
+        Task<HttpResponseMessage> ExecuteAsync(HttpRequestMessage req, string serviceHost, CancellationToken token = default);
     }
 }

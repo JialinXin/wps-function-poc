@@ -82,7 +82,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
         private void AddBindingData(Dictionary<string, object> bindingData, WebPubSubTriggerEvent triggerEvent)
         {
             bindingData.Add("connection", triggerEvent.Context);
-            bindingData.Add("message", triggerEvent.Message);
+            bindingData.Add("message", triggerEvent.Payload != null ? new MemoryStream(triggerEvent.Payload) : null);
             bindingData.Add("dataType", triggerEvent.DataType);
             bindingData.Add("claims", triggerEvent.Claims);
             bindingData.Add("reason", triggerEvent.Reason);
@@ -133,7 +133,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
                 }
                 else if (_parameter.ParameterType == typeof(Stream))
                 {
-                    return Task.FromResult<object>(_triggerEvent.Message);
+                    return Task.FromResult<object>(new MemoryStream(_triggerEvent.Payload));
                 }
                 else if (_parameter.ParameterType == typeof(string))
                 {

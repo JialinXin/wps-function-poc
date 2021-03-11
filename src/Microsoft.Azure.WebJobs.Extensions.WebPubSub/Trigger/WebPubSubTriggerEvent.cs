@@ -11,7 +11,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
         /// </summary>
         public ConnectionContext Context { get; set; }
 
-        public Stream Message { get; set; }
+        public byte[] Payload { get; set; }
 
         public MessageDataType DataType { get; set; }
 
