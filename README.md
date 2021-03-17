@@ -109,6 +109,8 @@ Return Type | Description | Properties
 `ConnectResponse`| Response for `connect` event | Error, Groups, Roles, UserId, Subprotocol
 `MessageResponse`| Response for user event | Error, DataType, Message
 
+> If customer returns wrong response type, it'll be ignored.
+
 * csharp usage:
 ```cs
 [FunctionName("connect")]
@@ -137,18 +139,23 @@ public static ConnectResponse Connect(
 * javascript usage:
 ```js
 {
-    "type": "webpubsubTrigger",
+    "type": "webwebPubSubTrigger",
     "name": "connectionContext",
     "hub": "simplechat",
     "event": "connect",
     "eventType", "system"
     "direction": "in"
-}
+},
+{
+    "type": "connectResponse"
+    "name": "response",
+    "direction": "out"
+},
 ```
 ```js
 module.exports = function (context, connectionContext) {
   context.log('Receive event: ${context.bindingData.event} from connection: ${context.bindingData.connectionId}.');
-  context.bindings.response = [{
+  context.response = [{
       "code": "unauthorized",
       "error": "Invalid User"
   }];
@@ -164,13 +171,15 @@ For a single request, customer can bind to a target operation related event type
 ```cs
 [FunctionName("broadcast")]
 [return: WebPubSub]
-public static MessageEvent Broadcast(
+public static WebPubSubEvent Broadcast(
     [WebPubSubTrigger(Hub = "simplechat", EventName = "message", EventType = "user")] ConnectionContext context,
     Stream message)
 {
-    return new MessageEvent
+    return new WebPubSubEvent
     {
-        Message = message
+        Operation = WebPubSubOperation.SendToAll,
+        Message = message,
+        DataType = MessageDataType.Text
     };
 }
 ```
@@ -178,7 +187,7 @@ public static MessageEvent Broadcast(
 * javascript usage:
 ```js
 {
-    "type": "webpubsubTrigger",
+    "type": "webPubSubTrigger",
     "name": "connectionContext",
     "hub": "simplechat",
     "eventName": "message",
@@ -186,8 +195,8 @@ public static MessageEvent Broadcast(
     "direction": "in"
 },
 {
-    "type": "webpubsub",
-    "name": "messageData",
+    "type": "webPubSub",
+    "name": "webPubSubEvent",
     "hubName": "simplechat",
     "direction": "out"
 }
@@ -206,31 +215,30 @@ To send multiple requests, customer need to work with generic `WebPubSubEvent` a
 
 * csharp usage:
 ```cs
-[FunctionName("message")]
-public static async Task<MessageResponse> Message(
-    [WebPubSubTrigger(Hub = "simplechat", EventName = "message", EventType = "user")] ConnectionContext context,
-    Stream message,
-    MessageDataType dataType,
+[FunctionName("connected")]
+public static async Task Connected(
+    [WebPubSubTrigger(Hub = "simplechat", EventName = "connected", EventType = "system")] ConnectionContext context,
     [WebPubSub] IAsyncCollector<WebPubSubEvent> eventHandler)
 {
-    await eventHandler.AddAsync(new GroupEvent
+    await eventHandler.AddAsync(new WebPubSubEvent
     {
-        Action = GroupAction.Join,
-        TargetType = TargetType.Users,
-        TargetId = context.UserId,
-        GroupId = "group1",
+        Operation = WebPubSubOperation.SendToAll,
+        Message = GetStream(new ClientContent($"{context.UserId} connected.").ToString()),
+        DataType = MessageDataType.Json
     });
-    await eventHandler.AddAsync(new MessageEvent
+    await eventHandler.AddAsync(new WebPubSubEvent
     {
-        Message = message,
-        DataType = dataType
+        Operation = WebPubSubOperation.AddUserToGroup,
+        UserId = context.UserId,
+        GroupId = "group1"
     });
-
-    return new MessageResponse
+    await eventHandler.AddAsync(new WebPubSubEvent
     {
-        Message = new MemoryStream(Encoding.UTF8.GetBytes("[Ack] message received")),
-        DataType = MessageDataType.Text
-    }；
+        Operation = WebPubSubOperation.SendToUser,
+        UserId = context.UserId,
+        Message = GetStream(new ClientContent($"{context.UserId} joined group: group1.").ToString()),
+        DataType = MessageDataType.Json
+    });
 }
 ```
 
@@ -251,31 +259,23 @@ public static async Task<MessageResponse> Message(
 ### Supported object types for Output bindings.
 
 #### WebPubSubEvent 
-A generic base class to send multiple tasks.
+`WebPubSubEvent` is an object contains all the properties user can set to invoke rest calls to service. Among the properties, `Operation` is required which matches rest api method names in swagger file. In the initial version, operations listed below are supported. Rest fields should be set depends on the operation type, and will fail if missed or with wrong values.
 
-#### MessageEvent
+Name|Type|IsRequired|Description
+--|--|--|--
+Operation|`WebPubSubOperation`|True|SendToAll</br>CloseClientCOnnection</br>SendToConnection</br>SendTOGroup</br>AddConnectionToGroup</br>RemoveConnectionFromGroup</br>SendToUser</br>AddUserToGroup</br>RemoveUserFromGroup</br>RemoveUserFromAllGroups</br>GrantGroupPermission</br>RevokeGroupPermission</br>
+GroupId|`string`|False|group id in operations related to groups
+UserId|`string`|False|user id in operations related to user
+ConnectionId|`string`|False|connection id in operations related to connection
+Excluded|`string[]`|False|list of connection to exlude in operations like SendToAll and SendToGroup
+Reason|`string`|False|optional reason when function need to close connection
+Permission|`string`|False|permission need to grant/revoke
+Message|`Stream`|False|message to send in the send methods
+DataType|`MessageDataType`|False|message data type in the send methods
 
-1. `TargetType`, supports All, Users, Connections, Groups, default as All
-2. `TargetId`, use with `TagetType`, where target id should be assigned if `TargetType` is not All.
-3. `Excludes`, excludes connection ids
-4. `Message`
-5. `DataType`, supports `binary`, `text`, `json`
+### Abuse Protection
 
-#### GroupEvent
+Azure Web PubSub service will deliver client events to the upstream webhook using the CloudEvents HTTP protocol. And service will send `OPTIONS` request to upstream(function/server) following [Abuse Protection](https://github.com/cloudevents/spec/blob/v1.0/http-webhook.md#4-abuse-protection). In Azure Web PubSub service function bindings, this check will be handled by the extension. And customers using functions extension don't have to do anything for this.
 
-1. `GroupAction`, supports Join/Leave/LeaveAll
-2. `TargetType`, supports Users/Connections
-3. `TargetId`
-4. `GroupId`
+> Inner logic: Function will check the host from incoming `OPTIONS` requests with available ones from connection strings. If the host is valid, then return service `200OK` with all available hosts with correct format, else, directly return `400BadRequest`.
 
-#### CloseConnectionEvent
-
-1. `ConnectionId`
-2. `Reason`
-
-#### ExistenceEvent (Limited)
-
-1. `TargetType` supports Users/Connections/Groups
-2. `TargetId`
-
-> Response result is not able to reflect. May not be supported in the initial version.
