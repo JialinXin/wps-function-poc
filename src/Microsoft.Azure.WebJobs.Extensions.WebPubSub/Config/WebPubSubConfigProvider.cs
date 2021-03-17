@@ -12,6 +12,7 @@ using System.Linq;
 using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Xml;
 
 namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
 {
@@ -57,17 +58,20 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
             var url = context.GetWebhookHandler();
             _logger.LogInformation($"Registered Web PubSub negotiate Endpoint = {url?.GetLeftPart(UriPartial.Path)}");
 
-
+            // bindings
             context.AddConverter<string, JObject>(JObject.FromObject)
                    .AddConverter<WebPubSubConnection, JObject>(JObject.FromObject)
-                   .AddConverter<JObject, MessageEvent>(input => input.ToObject<MessageEvent>())
-                   .AddConverter<JObject, GroupEvent>(input => input.ToObject<GroupEvent>())
-                   .AddConverter<JObject, ExistenceEvent>(input => input.ToObject<ExistenceEvent>())
-                   .AddConverter<JObject, ConnectionCloseData>(input => input.ToObject<ConnectionCloseData>());
+                   .AddConverter<ConnectResponse, JObject>(JObject.FromObject)
+                   .AddConverter<MessageResponse, JObject>(JObject.FromObject)
+                   .AddConverter<JObject, WebPubSubEvent>(input => input.ToObject<WebPubSubEvent>());
 
             // Trigger binding
             context.AddBindingRule<WebPubSubTriggerAttribute>()
-                .BindToTrigger<ConnectionContext>(new WebPubSubTriggerBindingProvider(_dispatcher));
+                .AddConverter<JObject, ConnectionContext>(input => input.ToObject<ConnectionContext>())
+                .AddConverter<JObject, ConnectResponse>(input => input.ToObject<ConnectResponse>())
+                .AddConverter<JObject, MessageResponse>(input => input.ToObject<MessageResponse>())
+                .AddOpenConverter<JObject, OpenType.Poco>(typeof(JObjectToPocoConverter<>))
+                .BindToTrigger<JObject>(new WebPubSubTriggerBindingProvider(_dispatcher));
 
             var webpubsubConnectionAttributeRule = context.AddBindingRule<WebPubSubConnectionAttribute>();
             webpubsubConnectionAttributeRule.AddValidator(ValidateWebPubSubConnectionAttributeBinding);
@@ -146,6 +150,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
                 }
 
                 return base.IsMatch(type, context);
+            }
+        }
+
+        private sealed class JObjectToPocoConverter<T> : IConverter<JObject, T>
+        {
+            public T Convert(JObject input)
+            {
+                return input.ToObject<T>();
             }
         }
     }

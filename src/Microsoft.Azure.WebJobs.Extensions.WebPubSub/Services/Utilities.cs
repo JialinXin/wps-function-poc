@@ -1,16 +1,16 @@
 ﻿// Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+using Microsoft.IdentityModel.Tokens;
+using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.IdentityModel.Tokens.Jwt;
 using System.Net;
 using System.Net.Http;
+using System.Net.Http.Headers;
 using System.Security.Claims;
 using System.Text;
-using Microsoft.IdentityModel.Tokens;
-using System.Net.Http.Headers;
-using Newtonsoft.Json;
 using System.Text.RegularExpressions;
 
 namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
@@ -21,14 +21,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
 
         private static readonly JwtSecurityTokenHandler JwtTokenHandler = new JwtSecurityTokenHandler();
 
-        public static string GetContentType(MessageDataType dataType) =>
+        public static MediaTypeHeaderValue GetMediaType(MessageDataType dataType) =>
             dataType switch
             {
-                MessageDataType.Binary => Constants.ContentTypes.BinaryContentType,
-                MessageDataType.Text => Constants.ContentTypes.PlainTextContentType,
-                MessageDataType.Json => Constants.ContentTypes.JsonContentType,
+                MessageDataType.Binary => new MediaTypeHeaderValue(Constants.ContentTypes.BinaryContentType),
+                MessageDataType.Text => new MediaTypeHeaderValue(Constants.ContentTypes.PlainTextContentType),
+                MessageDataType.Json => new MediaTypeHeaderValue(Constants.ContentTypes.JsonContentType),
                 // Default set binary type to align with service side logic
-                _ => Constants.ContentTypes.BinaryContentType
+                _ => new MediaTypeHeaderValue(Constants.ContentTypes.BinaryContentType)
             };
 
         public static MessageDataType GetDataType(string mediaType) =>
@@ -86,13 +86,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
 
             if (response.Error != null)
             {
-                result.StatusCode = GetStatusCode(response.Error.Code);
-                result.Content = new StringContent(response.Error.Message);
-                return result;
+                return BuildErrorResponse(response.Error);
             }
 
             result.Content = new StreamContent(response.Message);
-            result.Content.Headers.ContentType = new MediaTypeHeaderValue(GetContentType(response.DataType));
+            result.Content.Headers.ContentType = GetMediaType(response.DataType);
 
             return result;
         }
@@ -103,9 +101,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
 
             if (response.Error != null)
             {
-                result.StatusCode = GetStatusCode(response.Error.Code);
-                result.Content = new StringContent(response.Error.Message);
-                return result;
+                return BuildErrorResponse(response.Error);
             }
 
             var connectEvent = new ConnectEventResponse
@@ -117,6 +113,15 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
             };
             result.Content = new StringContent(JsonConvert.SerializeObject(connectEvent));
 
+            return result;
+        }
+
+        public static HttpResponseMessage BuildErrorResponse(Error error)
+        {
+            HttpResponseMessage result = new HttpResponseMessage();
+
+            result.StatusCode = GetStatusCode(error.Code);
+            result.Content = new StringContent(error.Message);
             return result;
         }
 

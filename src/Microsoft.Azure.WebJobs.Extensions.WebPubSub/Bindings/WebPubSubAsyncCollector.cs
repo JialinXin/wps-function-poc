@@ -1,18 +1,17 @@
 ﻿using System;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Reflection;
 
 namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
 {
     public class WebPubSubAsyncCollector: IAsyncCollector<WebPubSubEvent>
     {
         private readonly IWebPubSubService _service;
-        private readonly WebPubSubOutputConverter _converter;
 
         internal WebPubSubAsyncCollector(IWebPubSubService service, string hub)
         {
             _service = service;
-            _converter = new WebPubSubOutputConverter();
         }
 
         public async Task AddAsync(WebPubSubEvent item, CancellationToken cancellationToken = default)
@@ -22,35 +21,20 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
                 throw new ArgumentNullException("Binding Object.");
             }
 
-            // var convertItem = _converter.ConvertToWebPubSubData(item);
+            try
+            {
+                var method = typeof(IWebPubSubService).GetMethod(item.Operation.ToString(),
+                    BindingFlags.IgnoreCase | BindingFlags.Public | BindingFlags.Instance);
 
-            if (item is MessageEvent message)
-            {
-                await _service.Send(message).ConfigureAwait(false);
+                var task = (Task)method.Invoke(_service, new object[] { item });
+
+                await task.ConfigureAwait(false);
             }
-            else if (item is GroupEvent groupData)
+            catch (Exception ex)
             {
-                if (groupData.Action == GroupAction.Join)
-                {
-                    await _service.AddToGroup(groupData).ConfigureAwait(false);
-                }
-                else
-                {
-                    await _service.RemoveFromGroup(groupData).ConfigureAwait(false);
-                }
+                throw new ArgumentException($"Not supported operation: {item.Operation}, exception: {ex}");
             }
-            else if (item is ExistenceEvent existenceData)
-            {
-                await _service.CheckExistence(existenceData).ConfigureAwait(false);
-            }
-            else if (item is ConnectionCloseData closeData)
-            {
-                await _service.CloseConnection(closeData).ConfigureAwait(false);
-            }
-            else
-            {
-                throw new ArgumentException("Unsupport Binding Type.");
-            }
+            
         }
 
         public Task FlushAsync(CancellationToken cancellationToken = default)

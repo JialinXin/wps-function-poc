@@ -13,10 +13,10 @@
       "name": "res"
     },
     {
-      "type": "webpubsubConnection",
+      "type": "webPubSubConnection",
       "name": "connection",
       "userId": "{query.userid}",
-      "hubName": "simplechat",
+      "hub": "simplechat",
       "direction": "in"
     }
   ]

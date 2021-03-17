@@ -73,7 +73,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
 
         private void AddBindingData(Dictionary<string, object> bindingData, WebPubSubTriggerEvent triggerEvent)
         {
-            bindingData.Add("connection", triggerEvent.Context);
+            bindingData.Add("connectionContext", triggerEvent.ConnectionContext);
             bindingData.Add("message", triggerEvent.Payload != null ? new MemoryStream(triggerEvent.Payload) : null);
             bindingData.Add("dataType", triggerEvent.DataType);
             bindingData.Add("claims", triggerEvent.Claims);
@@ -89,7 +89,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
         {
             var contract = new Dictionary<string, Type>(StringComparer.OrdinalIgnoreCase)
             {
-                { "connection", typeof(ConnectionContext) },
+                { "connectionContext", typeof(ConnectionContext) },
                 { "message", typeof(Stream) },
                 { "dataType", typeof(MessageDataType) },
                 { "claims", typeof(IDictionary<string, string[]>) },
@@ -120,7 +120,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
             {
                 if (_parameter.ParameterType == typeof(ConnectionContext))
                 {
-                    return Task.FromResult<object>(_triggerEvent.Context);
+                    return Task.FromResult<object>(_triggerEvent.ConnectionContext);
                 }
                 else if (_parameter.ParameterType == typeof(Stream))
                 {
@@ -150,6 +150,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
                 else if (_parameter.ParameterType == typeof(object) ||
                          _parameter.ParameterType == typeof(JObject))
                 {
+                    if (_parameter.Name.Equals(nameof(_triggerEvent.ConnectionContext), StringComparison.OrdinalIgnoreCase))
+                    {
+                        return Task.FromResult<object>(JObject.FromObject(_triggerEvent.ConnectionContext));
+                    }
                     return Task.FromResult<object>(JObject.FromObject(_triggerEvent));
                 }
 

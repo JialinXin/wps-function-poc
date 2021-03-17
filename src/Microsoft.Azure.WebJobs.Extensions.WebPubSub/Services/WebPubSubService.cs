@@ -61,93 +61,111 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
             };
         }
 
-        public Task Send(MessageEvent message)
+        public Task SendToAll(WebPubSubEvent webPubSubEvent)
         {
-            var subPath = $"/:send";
-            if (!string.IsNullOrEmpty(message.TargetId) && message.TargetType != TargetType.All)
-            {
-                subPath = $"/{message.TargetType.ToString().ToLower()}/{message.TargetId}/:send";
-            }
-
-            if (message.TargetType != TargetType.Connections && message.Excludes?.Length > 0)
-            {
-                var excludes = string.Join("&", message.Excludes.Select(x => $"excluded={x}"));
-                subPath += $"?{excludes}";
-            }
+            var subPath = GetAdditionalPath(WebPubSubOperation.SendToAll, GetQueryForMultipleValues("excluded", webPubSubEvent.Excluded));
 
             var connection = GetServerConnection(subPath);
-            return RequestAsync(connection.Url, connection.AccessToken, HttpMethod.Post, message.Message, message.DataType);
+            return RequestAsync(connection, HttpMethod.Post, webPubSubEvent.Message, webPubSubEvent.DataType);
         }
 
-        public Task AddToGroup(GroupEvent groupData)
+        public Task CloseClientConnection(WebPubSubEvent webPubSubEvent)
         {
-            if (groupData.TargetType == TargetType.All || groupData.TargetType == TargetType.Groups)
-            {
-                throw new ArgumentException();
-            }
-
-            var subPath = $"/{groupData.TargetType.ToString().ToLower()}/{groupData.TargetId}/groups/{groupData.GroupId}";
+            var subPath = GetAdditionalPath(WebPubSubOperation.CloseClientConnection, webPubSubEvent.ConnectionId, webPubSubEvent.Reason);
             var connection = GetServerConnection(subPath);
-            return RequestAsync(connection.Url, connection.AccessToken, HttpMethod.Put);
+            return RequestAsync(connection, HttpMethod.Delete);
         }
 
-        public Task RemoveFromGroup(GroupEvent groupData)
+        public Task SendToConnection(WebPubSubEvent webPubSubEvent)
         {
-            if (groupData.TargetType == TargetType.All || groupData.TargetType == TargetType.Groups)
-            {
-                throw new ArgumentException();
-            }
-
-            var subPath = $"/{groupData.TargetType.ToString().ToLower()}/{groupData.TargetId}/groups/{groupData.GroupId}";
+            var subPath = GetAdditionalPath(WebPubSubOperation.SendToConnection, webPubSubEvent.ConnectionId);
             var connection = GetServerConnection(subPath);
-            return RequestAsync(connection.Url, connection.AccessToken, HttpMethod.Delete);
+            return RequestAsync(connection, HttpMethod.Post, webPubSubEvent.Message, webPubSubEvent.DataType);
         }
 
-        public Task CheckExistence(ExistenceEvent existenceData)
+        public Task SendToGroup(WebPubSubEvent webPubSubEvent)
         {
-            if (existenceData.TargetType == TargetType.All)
-            {
-                throw new ArgumentException();
-            }
-
-            var subPath = $"/{existenceData.TargetType.ToString().ToLower()}/{existenceData.TargetId}";
+            var subPath = GetAdditionalPath(WebPubSubOperation.SendToGroup, webPubSubEvent.GroupId, GetQueryForMultipleValues("excluded", webPubSubEvent.Excluded));
             var connection = GetServerConnection(subPath);
-            return RequestAsync(connection.Url, connection.AccessToken, HttpMethod.Head);
+            return RequestAsync(connection, HttpMethod.Post, webPubSubEvent.Message, webPubSubEvent.DataType);
         }
 
-        public Task CloseConnection(ConnectionCloseData closeData)
+        public Task AddConnectionToGroup(WebPubSubEvent webPubSubEvent)
         {
-            var subPath = $"/connections/{closeData.ConnectionId}";
-            if (!string.IsNullOrEmpty(closeData.Reason))
-            {
-                subPath += $"?reason={closeData.Reason}";
-            }
-
+            var subPath = GetAdditionalPath(WebPubSubOperation.AddConnectionToGroup, webPubSubEvent.GroupId, webPubSubEvent.ConnectionId);
             var connection = GetServerConnection(subPath);
-            return RequestAsync(connection.Url, connection.AccessToken, HttpMethod.Delete);
+            return RequestAsync(connection, HttpMethod.Put);
         }
 
-        private Task<HttpResponseMessage> RequestAsync(string url, string bearer, HttpMethod httpMethod, Stream message = null, MessageDataType dataType = MessageDataType.Binary)
+        public Task RemoveConnectionFromGroup(WebPubSubEvent webPubSubEvent)
+        {
+            var subPath = GetAdditionalPath(WebPubSubOperation.RemoveConnectionFromGroup, webPubSubEvent.GroupId, webPubSubEvent.ConnectionId);
+            var connection = GetServerConnection(subPath);
+            return RequestAsync(connection, HttpMethod.Delete);
+        }
+
+        public Task SendToUser(WebPubSubEvent webPubSubEvent)
+        {
+            var subPath = GetAdditionalPath(WebPubSubOperation.SendToUser, webPubSubEvent.UserId);
+            var connection = GetServerConnection(subPath);
+            return RequestAsync(connection, HttpMethod.Post, webPubSubEvent.Message, webPubSubEvent.DataType);
+        }
+
+        public Task AddUserToGroup(WebPubSubEvent webPubSubEvent)
+        {
+            var subPath = GetAdditionalPath(WebPubSubOperation.AddUserToGroup, webPubSubEvent.UserId, webPubSubEvent.GroupId);
+            var connection = GetServerConnection(subPath);
+            return RequestAsync(connection, HttpMethod.Put);
+        }
+
+        public Task RemoveUserFromGroup(WebPubSubEvent webPubSubEvent)
+        {
+            var subPath = GetAdditionalPath(WebPubSubOperation.RemoveUserFromGroup, webPubSubEvent.UserId, webPubSubEvent.GroupId);
+            var connection = GetServerConnection(subPath);
+            return RequestAsync(connection, HttpMethod.Delete);
+        }
+
+        public Task RemoveUserFromAllGroups(WebPubSubEvent webPubSubEvent)
+        {
+            var subPath = GetAdditionalPath(WebPubSubOperation.RemoveUserFromAllGroups, webPubSubEvent.UserId);
+            var connection = GetServerConnection(subPath);
+            return RequestAsync(connection, HttpMethod.Delete);
+        }
+
+        public Task GrantGroupPermission(WebPubSubEvent webPubSubEvent)
+        {
+            var subPath = GetAdditionalPath(WebPubSubOperation.GrantGroupPermission, webPubSubEvent.Permission, webPubSubEvent.ConnectionId);
+            var connection = GetServerConnection(subPath);
+            return RequestAsync(connection, HttpMethod.Put);
+        }
+
+        public Task RevokeGroupPermission(WebPubSubEvent webPubSubEvent)
+        {
+            var subPath = GetAdditionalPath(WebPubSubOperation.RevokeGroupPermission, webPubSubEvent.Permission, webPubSubEvent.ConnectionId);
+            var connection = GetServerConnection(subPath);
+            return RequestAsync(connection, HttpMethod.Delete);
+        }
+
+        #region private methods
+        private Task<HttpResponseMessage> RequestAsync(WebPubSubConnection connection, HttpMethod httpMethod, Stream message = null, MessageDataType dataType = MessageDataType.Binary)
         {
             var request = new HttpRequestMessage
             {
                 Method = httpMethod,
-                RequestUri = new Uri(url)
+                RequestUri = new Uri(connection.Url)
             };
 
-            request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", bearer);
+            request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", connection.AccessToken);
             request.Headers.Accept.Clear();
             request.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("*/*"));
             request.Headers.AcceptCharset.Clear();
             request.Headers.AcceptCharset.Add(new StringWithQualityHeaderValue("UTF-8"));
-            request.Headers.Add("wps-User-Agent", GetProductInfo());
+            request.Headers.Add("awps-User-Agent", GetProductInfo());
 
             if (message != null)
             {
-                //request.Content = new StringContent(message);
-                //request.Content.Headers.ContentType = new MediaTypeHeaderValue(Utilities.GetContentType(dataType));
                 request.Content = new StreamContent(message);
-                request.Content.Headers.ContentType = new MediaTypeHeaderValue(Utilities.GetContentType(dataType));
+                request.Content.Headers.ContentType = Utilities.GetMediaType(dataType);
             }
             return _httpClient.SendAsync(request);
         }
@@ -163,5 +181,35 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
 
             return $"{packageId}/{version} ({runtime}; {operatingSystem}; {processorArchitecture})";
         }
+
+        private static string GetAdditionalPath(WebPubSubOperation operation, params object[] parameters) =>
+            operation switch
+            {
+                WebPubSubOperation.SendToAll => $"/:send{parameters[0]}",
+                WebPubSubOperation.CloseClientConnection => $"/connections/{parameters[0]}?reason={parameters[1]}",
+                WebPubSubOperation.SendToConnection => $"/connections/{parameters[0]}/:send",
+                WebPubSubOperation.SendToGroup => $"/groups/{parameters[0]}/:send{parameters[1]}",
+                WebPubSubOperation.AddConnectionToGroup => $"/groups/{parameters[0]}/connections/{parameters[1]}",
+                WebPubSubOperation.RemoveConnectionFromGroup => $"/groups/{parameters[0]}/connections/{parameters[1]}",
+                WebPubSubOperation.SendToUser => $"/users/{parameters[0]}/:send",
+                WebPubSubOperation.AddUserToGroup => $"/users/{parameters[0]}/groups/{parameters[1]}",
+                WebPubSubOperation.RemoveUserFromGroup => $"/users/{parameters[0]}/groups/{parameters[1]}",
+                WebPubSubOperation.RemoveUserFromAllGroups => $"/users/{parameters[0]}/groups",
+                WebPubSubOperation.GrantGroupPermission => $"/permissions/{parameters[0]}/connections/{parameters[1]}",
+                WebPubSubOperation.RevokeGroupPermission => $"/permissions/{parameters[0]}/connections/{parameters[1]}",
+                _ => throw new ArgumentException($"Not supported operation: {operation}")
+            };
+
+        private static string GetQueryForMultipleValues(string key, string[] values)
+        {
+            // works for multiple parameter in query, format: ?key=value[0]&key=value[1]&key=value[2]
+            if (values != null && values.Length > 0)
+            {
+                var query = string.Join("&", values.Select(x => $"{key}={x}"));
+                return $"?{query}";
+            }
+            return string.Empty;
+        }
+        #endregion
     }
 }

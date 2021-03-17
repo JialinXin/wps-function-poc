@@ -5,7 +5,8 @@
 	<DefaultItemExcludes>**</DefaultItemExcludes>
   </PropertyGroup>
   <ItemGroup>
-    <ProjectReference Include="..\..\..\..\src\Microsoft.Azure.WebJobs.Extensions.WebPubSub\Microsoft.Azure.WebJobs.Extensions.WebPubSub.csproj" />
+    <PackageReference Include="Microsoft.Azure.WebJobs.Extensions.WebPubSub" Version="1.0.0" />
     <PackageReference Include="Microsoft.Azure.WebJobs.Script.ExtensionsMetadataGenerator" Version="1.0.0" />
+    <ProjectReference Include="..\..\..\..\src\Microsoft.Azure.WebJobs.Extensions.WebPubSub\Microsoft.Azure.WebJobs.Extensions.WebPubSub.csproj" />
   </ItemGroup>
 </Project>

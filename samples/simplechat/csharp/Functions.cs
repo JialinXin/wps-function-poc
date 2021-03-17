@@ -41,21 +41,24 @@ namespace SimpleChat
             [WebPubSubTrigger("simplechat", "connected")] ConnectionContext context,
             [WebPubSub] IAsyncCollector<WebPubSubEvent> eventHandler)
         {
-            await eventHandler.AddAsync(new MessageEvent
+            await eventHandler.AddAsync(new WebPubSubEvent
             {
+                Operation = WebPubSubOperation.SendToAll,
                 Message = GetStream(new ClientContent($"{context.UserId} connected.").ToString()),
                 DataType = MessageDataType.Json
             });
 
-            await eventHandler.AddAsync(new GroupEvent
+            await eventHandler.AddAsync(new WebPubSubEvent
             {
-                TargetType = TargetType.Users,
-                TargetId = context.UserId,
-                Action = GroupAction.Join,
+                Operation = WebPubSubOperation.AddUserToGroup,
+                UserId = context.UserId,
                 GroupId = "group1"
             });
-            await eventHandler.AddAsync(new MessageEvent
+            await eventHandler.AddAsync(new WebPubSubEvent
             {
+                Operation = WebPubSubOperation.SendToUser,
+                UserId = context.UserId,
+                GroupId = "group1",
                 Message = GetStream(new ClientContent($"{context.UserId} joined group: group1.").ToString()),
                 DataType = MessageDataType.Json
             });
@@ -66,10 +69,11 @@ namespace SimpleChat
         public static async Task<MessageResponse> Broadcast(
             [WebPubSubTrigger("simplechat", "message", "user")] ConnectionContext context,
             Stream message,
-            [WebPubSub] IAsyncCollector<MessageEvent> eventHandler)
+            [WebPubSub] IAsyncCollector<WebPubSubEvent> eventHandler)
         {
-            await eventHandler.AddAsync(new MessageEvent
+            await eventHandler.AddAsync(new WebPubSubEvent
             {
+                Operation = WebPubSubOperation.SendToAll,
                 Message = message,
                 DataType = MessageDataType.Text
             });
@@ -83,12 +87,13 @@ namespace SimpleChat
 
         [FunctionName("disconnect")]
         [return: WebPubSub]
-        public static MessageEvent Disconnect(
+        public static WebPubSubEvent Disconnect(
             [WebPubSubTrigger("simplechat", "disconnected")] ConnectionContext context)
         {
             Console.WriteLine("Disconnect.");
-            return new MessageEvent
+            return new WebPubSubEvent
             {
+                Operation = WebPubSubOperation.SendToAll,
                 Message = GetStream(new ClientContent($"{context.UserId} disconnect.").ToString()),
                 DataType = MessageDataType.Json
             };

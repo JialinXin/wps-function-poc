@@ -8,7 +8,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
         /// <summary>
         /// Web PubSub Context that gets from HTTP request and pass the Function parameters
         /// </summary>
-        public ConnectionContext Context { get; set; }
+        public ConnectionContext ConnectionContext { get; set; }
 
         public byte[] Payload { get; set; }
 
@@ -19,6 +19,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
         public IDictionary<string, string[]> Claims { get; set; }
 
         public IDictionary<string, string[]> Query { get; set; }
+
+        public ClientCertificateInfo ClientCertificaties { get; set; }
 
         public string Reason { get; set; }
 

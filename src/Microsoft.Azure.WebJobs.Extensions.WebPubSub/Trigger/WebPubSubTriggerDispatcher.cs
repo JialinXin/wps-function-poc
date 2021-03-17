@@ -74,7 +74,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
 
                 var triggerEvent = new WebPubSubTriggerEvent
                 {
-                    Context = context,
+                    ConnectionContext = context,
                     Payload = payload,
                     Claims = claims,
                     Reason = reason,
@@ -90,14 +90,22 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
                 // After function processed, return on-hold event reponses.
                 if (Utilities.IsSyncMethod(context.Type))
                 {
-                    var response = await tcs.Task.ConfigureAwait(false);
-                    if (response is MessageResponse msgResponse)
+                    try
                     {
-                        return Utilities.BuildResponse(msgResponse);
+                        var response = await tcs.Task.ConfigureAwait(false);
+                        if (response is MessageResponse msgResponse)
+                        {
+                            return Utilities.BuildResponse(msgResponse);
+                        }
+                        else if (response is ConnectResponse connectResponse)
+                        {
+                            return Utilities.BuildResponse(connectResponse);
+                        }
                     }
-                    else if (response is ConnectResponse connectResponse)
+                    catch (Exception ex)
                     {
-                        return Utilities.BuildResponse(connectResponse);
+                        var error = new Error(ErrorCode.ServerError, ex.Message);
+                        return Utilities.BuildErrorResponse(error);
                     }
                 }
 

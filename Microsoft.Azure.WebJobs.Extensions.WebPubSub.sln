@@ -11,6 +11,10 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{1AAC386C-108
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "samples", "samples", "{9F6B40A4-C90B-4F9F-A626-052EF2D8D5DA}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "test", "test", "{C8F3737F-072B-4620-A7A2-A9EB3B51B6A1}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Microsoft.Azure.WebJobs.Extensions.WebPubSub.Tests", "test\Microsoft.Azure.WebJobs.Extensions.WebPubSub.Tests\Microsoft.Azure.WebJobs.Extensions.WebPubSub.Tests.csproj", "{C7A4D992-56DC-45D2-9E1B-392CEA1E5A6C}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -25,6 +29,10 @@ Global
 		{FBA48C13-D9A2-444E-91C9-C390D83800B1}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{FBA48C13-D9A2-444E-91C9-C390D83800B1}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{FBA48C13-D9A2-444E-91C9-C390D83800B1}.Release|Any CPU.Build.0 = Release|Any CPU
+		{C7A4D992-56DC-45D2-9E1B-392CEA1E5A6C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{C7A4D992-56DC-45D2-9E1B-392CEA1E5A6C}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{C7A4D992-56DC-45D2-9E1B-392CEA1E5A6C}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{C7A4D992-56DC-45D2-9E1B-392CEA1E5A6C}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -32,6 +40,7 @@ Global
 	GlobalSection(NestedProjects) = preSolution
 		{D3F6A924-23C1-4983-9CF8-D505072554B5} = {1AAC386C-108E-4F95-8BB3-2A183A024BF9}
 		{FBA48C13-D9A2-444E-91C9-C390D83800B1} = {9F6B40A4-C90B-4F9F-A626-052EF2D8D5DA}
+		{C7A4D992-56DC-45D2-9E1B-392CEA1E5A6C} = {C8F3737F-072B-4620-A7A2-A9EB3B51B6A1}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {19CE8259-F856-463A-9D49-40FB11B6C68C}
