@@ -147,7 +147,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
         }
 
         #region private methods
-        private Task<HttpResponseMessage> RequestAsync(WebPubSubConnection connection, HttpMethod httpMethod, Stream message = null, MessageDataType dataType = MessageDataType.Binary)
+        private Task<HttpResponseMessage> RequestAsync(WebPubSubConnection connection, HttpMethod httpMethod, WebPubSubMessage message = null, MessageDataType dataType = MessageDataType.Binary)
         {
             var request = new HttpRequestMessage
             {
@@ -160,11 +160,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
             request.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("*/*"));
             request.Headers.AcceptCharset.Clear();
             request.Headers.AcceptCharset.Add(new StringWithQualityHeaderValue("UTF-8"));
-            request.Headers.Add("awps-User-Agent", GetProductInfo());
+            request.Headers.Add("Awps-User-Agent", GetProductInfo());
 
-            if (message != null)
+            if (message != null && message.GetStream() != null)
             {
-                request.Content = new StreamContent(message);
+                request.Content = new StreamContent(message.GetStream());
                 request.Content.Headers.ContentType = Utilities.GetMediaType(dataType);
             }
             return _httpClient.SendAsync(request);

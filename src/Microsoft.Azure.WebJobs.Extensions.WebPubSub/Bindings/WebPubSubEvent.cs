@@ -28,7 +28,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
         public string Permission { get; set; }
 
         [JsonProperty("message")]
-        public Stream Message { get; set; }
+        public WebPubSubMessage Message { get; set; }
 
         [JsonProperty("dataType")]
         public MessageDataType DataType { get; set; }

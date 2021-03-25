@@ -1,10 +1,11 @@
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-module.exports = function (context, connectionContext) {
+module.exports = function (context, message) {
   context.bindings.webPubSubEvent = [{
     "operation": "sendToAll",
-    "message": context.bindingData.message
+    "message": message,
+    "dataType": "text"
   }];
   context.done();
 };

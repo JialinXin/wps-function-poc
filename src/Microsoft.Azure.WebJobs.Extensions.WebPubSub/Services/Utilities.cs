@@ -9,6 +9,7 @@ using System.IdentityModel.Tokens.Jwt;
 using System.Net;
 using System.Net.Http;
 using System.Net.Http.Headers;
+using System.Reflection;
 using System.Security.Claims;
 using System.Text;
 using System.Text.RegularExpressions;
@@ -89,7 +90,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
                 return BuildErrorResponse(response.Error);
             }
 
-            result.Content = new StreamContent(response.Message);
+            result.Content = new StreamContent(response.Message.GetStream());
             result.Content.Headers.ContentType = GetMediaType(response.DataType);
 
             return result;
@@ -194,6 +195,25 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
                 issuedAt: issuedAt,
                 signingCredentials: credentials);
             return JwtTokenHandler.WriteToken(token);
+        }
+
+        public static PropertyInfo[] GetProperties(Type type)
+        {
+            return type.GetProperties(BindingFlags.IgnoreCase | BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
+        }
+
+        public static PropertyInfo GetProperty(Type type, string name)
+        {
+            return type.GetProperty(name, BindingFlags.IgnoreCase | BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
+        }
+
+        public static string GetTriggerEventSupportedNames()
+        {
+            var properties = GetProperties(typeof(WebPubSubTriggerEvent));
+            string names = string.Empty;
+
+            Array.ForEach(properties, x => names += x.Name + ";");
+            return names;
         }
     }
 }

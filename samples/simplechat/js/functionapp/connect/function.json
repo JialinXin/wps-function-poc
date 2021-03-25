@@ -10,9 +10,9 @@
       "eventType": "system"
     },
     {
-      "type": "http",
+      "type": "connectResponse",
       "direction": "out",
-      "name": "res"
+      "name": "response"
     }
   ]
 }

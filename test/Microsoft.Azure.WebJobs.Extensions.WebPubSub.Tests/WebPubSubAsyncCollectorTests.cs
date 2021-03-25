@@ -12,13 +12,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub.Tests
         public async Task AddAsync_WebPubSubEvent_SendAll()
         {
             var serviceMock = new Mock<IWebPubSubService>();
-            var collector = new WebPubSubAsyncCollector(serviceMock.Object, "testhub");
+            var collector = new WebPubSubAsyncCollector(serviceMock.Object);
 
-            var payload = Encoding.UTF8.GetBytes("new message");
+            var message = "new message";
             await collector.AddAsync(new WebPubSubEvent
             {
                 Operation = WebPubSubOperation.SendToAll,
-                Message = new MemoryStream(payload),
+                Message = new WebPubSubMessage(message),
                 DataType = MessageDataType.Text
             });
 
@@ -27,13 +27,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub.Tests
 
             var actualData = (WebPubSubEvent)serviceMock.Invocations[0].Arguments[0];
             Assert.Equal(MessageDataType.Text, actualData.DataType);
-            byte[] message = null;
-            using (var memoryStream = new MemoryStream())
-            {
-                actualData.Message.CopyTo(memoryStream);
-                message = memoryStream.ToArray();
-            }
-            Assert.Equal(payload, message);
+            Assert.Equal(message, actualData.Message.Value);
         }
 
         //[Fact]

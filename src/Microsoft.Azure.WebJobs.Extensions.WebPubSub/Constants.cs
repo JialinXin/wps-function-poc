@@ -8,6 +8,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
     {
         public const string WebPubSubConnectionStringName = "WebPubSubConnectionString";
         public const string HubNameStringName = "HubName";
+        public const string AllowedHostsName = "AllowedHosts";
 
         public static class ContentTypes
         {
@@ -75,6 +76,17 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
 
             public const string WebHookRequestOrigin = "WebHook-Request-Origin";
             public const string WebHookAllowedOrigin = "WebHook-Allowed-Origin";
+        }
+
+        public static class TriggerNames
+        {
+            public const string ConnectionContext = nameof(ConnectionContext);
+            public const string Message = "message";
+            public const string DataType = "datatype";
+            public const string Subprotocols = "subprotocols";
+            public const string Claims = "claims";
+            public const string ClientCertificaties = "clientcertificates";
+            public const string Reason = "reason";
         }
     }
 }

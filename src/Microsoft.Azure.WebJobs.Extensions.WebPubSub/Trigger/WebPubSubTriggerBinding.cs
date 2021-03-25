@@ -74,12 +74,21 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
         private void AddBindingData(Dictionary<string, object> bindingData, WebPubSubTriggerEvent triggerEvent)
         {
             bindingData.Add("connectionContext", triggerEvent.ConnectionContext);
-            bindingData.Add("message", triggerEvent.Payload != null ? new MemoryStream(triggerEvent.Payload) : null);
+            bindingData.Add("message", triggerEvent.Message != null ? triggerEvent.Message : null);
             bindingData.Add("dataType", triggerEvent.DataType);
             bindingData.Add("claims", triggerEvent.Claims);
             bindingData.Add("query", triggerEvent.Query);
             bindingData.Add("reason", triggerEvent.Reason);
             bindingData.Add("subprotocols", triggerEvent.Subprotocols);
+            //var properties = Utilities.GetProperties(triggerEvent.GetType());
+            //foreach (var property in properties)
+            //{
+            //    if (property.PropertyType == typeof(TaskCompletionSource<>))
+            //    {
+            //        continue;
+            //    }
+            //    bindingData.Add(property.Name, Utilities.GetProperty(triggerEvent.GetType(), property.Name).GetValue(triggerEvent));
+            //}
         }
 
         /// <summary>
@@ -90,7 +99,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
             var contract = new Dictionary<string, Type>(StringComparer.OrdinalIgnoreCase)
             {
                 { "connectionContext", typeof(ConnectionContext) },
-                { "message", typeof(Stream) },
+                { "message", typeof(WebPubSubMessage) },
                 { "dataType", typeof(MessageDataType) },
                 { "claims", typeof(IDictionary<string, string[]>) },
                 { "query", typeof(IDictionary<string, string[]>) },
@@ -98,6 +107,16 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
                 { "reason", typeof(string) },
                 { "$return", typeof(object).MakeByRefType() },
             };
+
+            //var properties = Utilities.GetProperties(typeof(WebPubSubTriggerEvent));
+            //foreach (var property in properties)
+            //{
+            //    if (property.PropertyType == typeof(TaskCompletionSource<>))
+            //    {
+            //        continue;
+            //    }
+            //    contract.Add(property.Name, property.PropertyType);
+            //}
 
             return contract;
         }
@@ -118,46 +137,15 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
 
             public Task<object> GetValueAsync()
             {
-                if (_parameter.ParameterType == typeof(ConnectionContext))
-                {
-                    return Task.FromResult<object>(_triggerEvent.ConnectionContext);
-                }
-                else if (_parameter.ParameterType == typeof(Stream))
-                {
-                    var value = _triggerEvent.Payload != null ? new MemoryStream(_triggerEvent.Payload) : null;
-                    return Task.FromResult<object>(value);
-                }
-                else if (_parameter.ParameterType == typeof(string))
-                {
-                    return Task.FromResult<object>(_triggerEvent.Reason);
-                }
-                else if (_parameter.ParameterType == typeof(MessageDataType))
-                {
-                    return Task.FromResult<object>(_triggerEvent.DataType);
-                }
-                else if (_parameter.ParameterType == typeof(string[]))
-                {
-                    return Task.FromResult<object>(_triggerEvent.Subprotocols);
-                }
-                else if (_parameter.ParameterType == typeof(IDictionary<string, string[]>))
-                {
-                    if (_parameter.Name.Equals("claims", StringComparison.OrdinalIgnoreCase))
-                    {
-                        return Task.FromResult<object>(_triggerEvent.Claims);
-                    }
-                    return Task.FromResult<object>(_triggerEvent.Query);
-                }
-                else if (_parameter.ParameterType == typeof(object) ||
+                if (_parameter.ParameterType == typeof(object) ||
                          _parameter.ParameterType == typeof(JObject))
                 {
-                    if (_parameter.Name.Equals(nameof(_triggerEvent.ConnectionContext), StringComparison.OrdinalIgnoreCase))
-                    {
-                        return Task.FromResult<object>(JObject.FromObject(_triggerEvent.ConnectionContext));
-                    }
-                    return Task.FromResult<object>(JObject.FromObject(_triggerEvent));
+                    return Task.FromResult<object>(JObject.FromObject(GetValueByName(_parameter.Name)));
                 }
-
-                return Task.FromResult<object>(null);
+                else
+                {
+                    return Task.FromResult(GetValueByName(_parameter.Name));
+                }
             }
 
             public string ToInvokeString()
@@ -171,6 +159,21 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
             public Task SetValueAsync(object value, CancellationToken cancellationToken)
             {
                 return Task.CompletedTask;
+            }
+
+            private object GetValueByName(string parameterName)
+            {
+                var property = Utilities.GetProperty(typeof(WebPubSubTriggerEvent), parameterName);
+                if (property != null)
+                {
+                    var value = property.GetValue(_triggerEvent);
+                    //if (parameterName.Equals("message", StringComparison.OrdinalIgnoreCase))
+                    //{
+                    //
+                    //}
+                    return value;
+                }
+                throw new ArgumentException($"Invalid parameter name: {parameterName}, supported names are: {Utilities.GetTriggerEventSupportedNames()}");
             }
         }
 

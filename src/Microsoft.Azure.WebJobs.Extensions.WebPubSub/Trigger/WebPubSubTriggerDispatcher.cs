@@ -28,10 +28,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
             _listeners.Add(key, listener);
         }
 
-        public async Task<HttpResponseMessage> ExecuteAsync(HttpRequestMessage req, string serviceHost, CancellationToken token = default)
+        public async Task<HttpResponseMessage> ExecuteAsync(HttpRequestMessage req, HashSet<string> allowedHosts, CancellationToken token = default)
         {
             // Handle service abuse check.
-            if (RespondToServiceAbuseCheck(req, serviceHost, out var abuseResponse))
+            if (RespondToServiceAbuseCheck(req, allowedHosts, out var abuseResponse))
             {
                 return abuseResponse;
             }
@@ -47,7 +47,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
 
             if (_listeners.TryGetValue(function, out var executor))
             {
-                byte[] payload = null;
+                WebPubSubMessage message = null;
                 IDictionary<string, string[]> claims = null;
                 string[] subprotocols = null;
                 string reason = null;
@@ -68,14 +68,28 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
                 }
                 else if (Utilities.IsUserEvent(context.Type))
                 {
-                    payload = await req.Content.ReadAsByteArrayAsync();
                     dataType = Utilities.GetDataType(req.Content.Headers.ContentType.MediaType);
+                    if (dataType == MessageDataType.NotSupported)
+                    {
+                        throw new ArgumentException($"Message only supports text,binary,json. Current value is {req.Content.Headers.ContentType.MediaType}");
+                    }
+
+                    //if (dataType == MessageDataType.Binary)
+                    //{
+                        var payload = await req.Content.ReadAsByteArrayAsync();
+                        message = new WebPubSubMessage(payload);
+                    //}
+                    //else
+                    //{
+                    //    var content = await req.Content.ReadAsStringAsync();
+                    //    message = new WebPubSubMessage(content);
+                    //}
                 }
 
                 var triggerEvent = new WebPubSubTriggerEvent
                 {
                     ConnectionContext = context,
-                    Payload = payload,
+                    Message = message,
                     Claims = claims,
                     Reason = reason,
                     Subprotocols = subprotocols,
@@ -142,17 +156,23 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
             return $"{context.Hub}.{eventType}.{context.Event}".ToLower();
         }
 
-        private static bool RespondToServiceAbuseCheck(HttpRequestMessage req, string serviceHost, out HttpResponseMessage response)
+        private static bool RespondToServiceAbuseCheck(HttpRequestMessage req, HashSet<string> allowedHosts, out HttpResponseMessage response)
         {
             response = new HttpResponseMessage();
-            // TODO: Should be OPTIONS and use GET before function extensions update to supported version.
-            if (req.Method == HttpMethod.Get)
+            if (req.Method == HttpMethod.Options || req.Method == HttpMethod.Get)
             {
                 var hosts = req.Headers.GetValues(Constants.Headers.WebHookRequestOrigin);
-                if (req.RequestUri.AbsoluteUri.Contains(serviceHost))
+                if (hosts != null && hosts.Count() > 0)
                 {
-                    response.Headers.Add(Constants.Headers.WebHookAllowedOrigin, hosts);
-                    return true;
+                    foreach (var item in allowedHosts)
+                    {
+                        if (hosts.Contains(item))
+                        {
+                            response.Headers.Add(Constants.Headers.WebHookAllowedOrigin, hosts);
+                            return true;
+                        }
+                    }
+                    response.StatusCode = HttpStatusCode.BadRequest;
                 }
             }
             return false;

@@ -1,4 +1,5 @@
-﻿using System.Net.Http;
+﻿using System.Collections.Generic;
+using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -8,6 +9,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
     {
         void AddListener(string key, WebPubSubListener listener);
 
-        Task<HttpResponseMessage> ExecuteAsync(HttpRequestMessage req, string serviceHost, CancellationToken token = default);
+        Task<HttpResponseMessage> ExecuteAsync(HttpRequestMessage req, HashSet<string> allowedHosts, CancellationToken token = default);
     }
 }

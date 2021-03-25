@@ -48,6 +48,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
             if (string.IsNullOrEmpty(_options.ConnectionString))
             {
                 _options.ConnectionString = _nameResolver.Resolve(Constants.WebPubSubConnectionStringName);
+                AddAllowedHost(_options.ConnectionString);
             }
 
             if (string.IsNullOrEmpty(_options.HubName))
@@ -55,22 +56,27 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
                 _options.HubName = _nameResolver.Resolve(Constants.HubNameStringName);
             }
 
+            if (_options.AllowedHosts == null && !string.IsNullOrEmpty(_nameResolver.Resolve(Constants.AllowedHostsName)))
+            {
+                _nameResolver.Resolve(Constants.AllowedHostsName).Split(',').Select(x => _options.AllowedHosts.Add(x));
+            }
+
             var url = context.GetWebhookHandler();
             _logger.LogInformation($"Registered Web PubSub negotiate Endpoint = {url?.GetLeftPart(UriPartial.Path)}");
 
             // bindings
-            context.AddConverter<string, JObject>(JObject.FromObject)
-                   .AddConverter<WebPubSubConnection, JObject>(JObject.FromObject)
-                   .AddConverter<ConnectResponse, JObject>(JObject.FromObject)
-                   .AddConverter<MessageResponse, JObject>(JObject.FromObject)
-                   .AddConverter<JObject, WebPubSubEvent>(input => input.ToObject<WebPubSubEvent>());
+            context
+                //.AddConverter<string, JObject>(JObject.FromObject)
+                //.AddConverter<byte[], JObject>(JObject.FromObject)
+                //.AddConverter(new MessageToStringConverter())
+                .AddConverter(new MessageToBinaryConverter())
+                .AddConverter<WebPubSubConnection, JObject>(JObject.FromObject)
+                .AddConverter<ConnectResponse, JObject>(JObject.FromObject)
+                .AddConverter<MessageResponse, JObject>(JObject.FromObject)
+                .AddConverter<JObject, WebPubSubEvent>(input => input.ToObject<WebPubSubEvent>());
 
             // Trigger binding
             context.AddBindingRule<WebPubSubTriggerAttribute>()
-                .AddConverter<JObject, ConnectionContext>(input => input.ToObject<ConnectionContext>())
-                .AddConverter<JObject, ConnectResponse>(input => input.ToObject<ConnectResponse>())
-                .AddConverter<JObject, MessageResponse>(input => input.ToObject<MessageResponse>())
-                .AddOpenConverter<JObject, OpenType.Poco>(typeof(JObjectToPocoConverter<>))
                 .BindToTrigger<JObject>(new WebPubSubTriggerBindingProvider(_dispatcher));
 
             var webpubsubConnectionAttributeRule = context.AddBindingRule<WebPubSubConnectionAttribute>();
@@ -79,15 +85,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
 
             var webPubSubAttributeRule = context.AddBindingRule<WebPubSubAttribute>();
             webPubSubAttributeRule.AddValidator(ValidateWebPubSubAttributeBinding);
-            webPubSubAttributeRule.BindToCollector<WebPubSubOpenType>(typeof(WebPubSubCollectorBuilder), this);
+            webPubSubAttributeRule.BindToCollector(CreateCollector);
 
             _logger.LogInformation("Azure Web PubSub binding initialized");
         }
 
         public Task<HttpResponseMessage> ConvertAsync(HttpRequestMessage input, CancellationToken cancellationToken)
         {
-            var values = Utilities.ParseConnectionString(_options.ConnectionString);
-            return _dispatcher.ExecuteAsync(input, values.EndPoint, cancellationToken);
+            return _dispatcher.ExecuteAsync(input, _options.AllowedHosts, cancellationToken);
         }
 
         private void ValidateWebPubSubConnectionAttributeBinding(WebPubSubConnectionAttribute attribute, Type type)
@@ -111,6 +116,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
             return new WebPubSubService(connectionString, hubName);
         }
 
+        private IAsyncCollector<WebPubSubEvent> CreateCollector(WebPubSubAttribute attribute)
+        {
+            return new WebPubSubAsyncCollector(GetService(attribute));
+        }
+
         private WebPubSubConnection GetClientConnection(WebPubSubConnectionAttribute attribute)
         {
             var service = new WebPubSubService(attribute.ConnectionStringSetting, attribute.Hub);
@@ -120,18 +130,27 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
 
         private void ValidateConnectionString(string attributeConnectionString, string attributeConnectionStringName)
         {
+            AddAllowedHost(attributeConnectionString);
             var connectionString = FirstOrDefault(attributeConnectionString, _options.ConnectionString);
 
             if (string.IsNullOrEmpty(connectionString))
             {
-                throw new InvalidOperationException(string.Format($"The Service connection string must be set either via an '{Constants.WebPubSubConnectionStringName}' app setting, via an '{Constants.WebPubSubConnectionStringName}' environment variable, or directly in code via {nameof(WebPubSubOptions)}.{nameof(WebPubSubOptions.ConnectionString)} or {{0}}.", 
+                throw new InvalidOperationException(string.Format($"The Service connection string must be set either via an '{Constants.WebPubSubConnectionStringName}' app setting, via an '{Constants.WebPubSubConnectionStringName}' environment variable, or directly in code via {nameof(WebPubSubOptions)}.{nameof(WebPubSubOptions.ConnectionString)} or {{0}}.",
                     attributeConnectionStringName));
             }
         }
-        
+
         private string FirstOrDefault(params string[] values)
         {
             return values.FirstOrDefault(v => !string.IsNullOrEmpty(v));
+        }
+
+        private void AddAllowedHost(string connectionString)
+        {
+            if (!string.IsNullOrEmpty(connectionString))
+            {
+                _options.AllowedHosts.Add(new Uri(Utilities.ParseConnectionString(connectionString).EndPoint).Host);
+            }
         }
 
         private sealed class WebPubSubOpenType : OpenType.Poco
@@ -153,12 +172,48 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
             }
         }
 
-        private sealed class JObjectToPocoConverter<T> : IConverter<JObject, T>
+        private sealed class MessageToStringConverter : IAsyncConverter<WebPubSubMessage, string>
         {
-            public T Convert(JObject input)
+            public Task<string> ConvertAsync(WebPubSubMessage input, CancellationToken cancellationToken)
             {
-                return input.ToObject<T>();
+                if (input == null)
+                {
+                    throw new ArgumentNullException();
+                }
+
+                if (input.Value == null)
+                {
+                    return null;
+                }
+
+                return Task.FromResult(input.Value.ToString());
             }
         }
+
+        private sealed class MessageToBinaryConverter : IAsyncConverter<WebPubSubMessage, byte[]>
+        {
+            public Task<byte[]> ConvertAsync(WebPubSubMessage input, CancellationToken cancellationToken)
+            {
+                if (input == null)
+                {
+                    throw new ArgumentNullException();
+                }
+
+                if (input.Value == null)
+                {
+                    return null;
+                }
+
+                return Task.FromResult(input.Payload);
+            }
+        }
+
+        //private sealed class JObjectToPocoConverter<T> : IConverter<JObject, T>
+        //{
+        //    public T Convert(JObject input)
+        //    {
+        //        return input.ToObject<T>();
+        //    }
+        //}
     }
 }

@@ -5,11 +5,11 @@ using System.Reflection;
 
 namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
 {
-    public class WebPubSubAsyncCollector: IAsyncCollector<WebPubSubEvent>
+    internal class WebPubSubAsyncCollector: IAsyncCollector<WebPubSubEvent>
     {
         private readonly IWebPubSubService _service;
 
-        internal WebPubSubAsyncCollector(IWebPubSubService service, string hub)
+        internal WebPubSubAsyncCollector(IWebPubSubService service)
         {
             _service = service;
         }
@@ -26,9 +26,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
                 var method = typeof(IWebPubSubService).GetMethod(item.Operation.ToString(),
                     BindingFlags.IgnoreCase | BindingFlags.Public | BindingFlags.Instance);
 
-                var task = (Task)method.Invoke(_service, new object[] { item });
+                await (Task)method.Invoke(_service, new object[] { item });
 
-                await task.ConfigureAwait(false);
+                //await task.ConfigureAwait(false);
             }
             catch (Exception ex)
             {

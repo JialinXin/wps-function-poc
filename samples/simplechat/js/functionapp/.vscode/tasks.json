@@ -33,6 +33,13 @@
           }
         }
       ]
+    },
+    {
+      "type": "func",
+      "command": "host start",
+      "problemMatcher": "$func-node-watch",
+      "dependsOn": "func: extensions install",
+      "isBackground": true
     }
   ]
 }

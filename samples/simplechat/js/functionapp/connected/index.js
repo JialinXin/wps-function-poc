@@ -2,30 +2,34 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 module.exports = function (context, connectionContext) {
-  context.bindings.webPubSubEvent = [{
-    "operation": "sendToAll",
-    "message": JSON.stringify(
-      {
-          from: '[System]',
-          content: `${connectionContext.userId} connected.`
-      }),
-      "dataType": "text"
-  }];
+  context.bindings.webPubSubEvent = [];
 
-  context.bindings.webPubSubEvent = [{
+  context.bindings.webPubSubEvent.push({
+    "operation": "sendToAll",
+    "message": {
+      "value": JSON.stringify({
+          from: '[System]',
+          content: `${context.bindingData.connectionContext.userId} connected.`
+      })
+    },
+    "dataType": "text"
+  });
+
+  context.bindings.webPubSubEvent.push({
     "operation": "addUserToGroup",
-    "userId": `${connectionContext.userId}`,
+    "userId": `${context.bindingData.connectionContext.userId}`,
     "groupId": "group1"
-  }];
+  });
 
-  context.bindings.webPubSubEvent = [{
+  context.bindings.webPubSubEvent.push({
     "operation": "sendToAll",
-    "message": JSON.stringify(
-      {
+    "message": {
+      "value": JSON.stringify({
           from: '[System]',
-          content: `${connectionContext.userId} joined group: group1.`
-      }),
-      "dataType": "text"
-  }];
+          content: `${context.bindingData.connectionContext.userId} joined group: group1.`
+      })
+    },
+    "dataType": "text"
+  });
   context.done();
 };

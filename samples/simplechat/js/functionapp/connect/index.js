@@ -7,6 +7,7 @@ module.exports = function (context, connectionContext) {
   var connectResponse = {
     "userId": connectionContext.userId
   };
-  context.res = { body: connectResponse};
+  context.response = { body: connectResponse};
   context.done();
 };
+

@@ -4,7 +4,6 @@ using Microsoft.Azure.WebJobs.Description;
 namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
 {
     [JsonObject]
-    [Binding]
     public class ConnectResponse
     {
         [JsonProperty("error")]
