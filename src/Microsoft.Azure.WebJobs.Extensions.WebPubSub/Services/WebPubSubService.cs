@@ -66,7 +66,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
             var subPath = GetAdditionalPath(WebPubSubOperation.SendToAll, GetQueryForMultipleValues("excluded", webPubSubEvent.Excluded));
 
             var connection = GetServerConnection(subPath);
-            return RequestAsync(connection, HttpMethod.Post, webPubSubEvent.Message, webPubSubEvent.DataType);
+            return RequestAsync(connection, HttpMethod.Post, webPubSubEvent.Message);
         }
 
         public Task CloseClientConnection(WebPubSubEvent webPubSubEvent)
@@ -80,14 +80,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
         {
             var subPath = GetAdditionalPath(WebPubSubOperation.SendToConnection, webPubSubEvent.ConnectionId);
             var connection = GetServerConnection(subPath);
-            return RequestAsync(connection, HttpMethod.Post, webPubSubEvent.Message, webPubSubEvent.DataType);
+            return RequestAsync(connection, HttpMethod.Post, webPubSubEvent.Message);
         }
 
         public Task SendToGroup(WebPubSubEvent webPubSubEvent)
         {
             var subPath = GetAdditionalPath(WebPubSubOperation.SendToGroup, webPubSubEvent.GroupId, GetQueryForMultipleValues("excluded", webPubSubEvent.Excluded));
             var connection = GetServerConnection(subPath);
-            return RequestAsync(connection, HttpMethod.Post, webPubSubEvent.Message, webPubSubEvent.DataType);
+            return RequestAsync(connection, HttpMethod.Post, webPubSubEvent.Message);
         }
 
         public Task AddConnectionToGroup(WebPubSubEvent webPubSubEvent)
@@ -108,7 +108,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
         {
             var subPath = GetAdditionalPath(WebPubSubOperation.SendToUser, webPubSubEvent.UserId);
             var connection = GetServerConnection(subPath);
-            return RequestAsync(connection, HttpMethod.Post, webPubSubEvent.Message, webPubSubEvent.DataType);
+            return RequestAsync(connection, HttpMethod.Post, webPubSubEvent.Message);
         }
 
         public Task AddUserToGroup(WebPubSubEvent webPubSubEvent)
@@ -147,7 +147,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
         }
 
         #region private methods
-        private Task<HttpResponseMessage> RequestAsync(WebPubSubConnection connection, HttpMethod httpMethod, WebPubSubMessage message = null, MessageDataType dataType = MessageDataType.Binary)
+        private Task<HttpResponseMessage> RequestAsync(WebPubSubConnection connection, HttpMethod httpMethod, WebPubSubMessage message = null)
         {
             var request = new HttpRequestMessage
             {
@@ -165,7 +165,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
             if (message != null && message.GetStream() != null)
             {
                 request.Content = new StreamContent(message.GetStream());
-                request.Content.Headers.ContentType = Utilities.GetMediaType(dataType);
+                request.Content.Headers.ContentType = Utilities.GetMediaType(message.DataType);
             }
             return _httpClient.SendAsync(request);
         }

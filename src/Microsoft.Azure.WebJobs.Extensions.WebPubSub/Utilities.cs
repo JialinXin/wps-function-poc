@@ -19,6 +19,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
     internal static class Utilities
     {
         private const int MaxTokenLength = 4096;
+        private static readonly char[] HeaderSeparator = { ',' };
 
         private static readonly JwtSecurityTokenHandler JwtTokenHandler = new JwtSecurityTokenHandler();
 
@@ -91,7 +92,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
             }
 
             result.Content = new StreamContent(response.Message.GetStream());
-            result.Content.Headers.ContentType = GetMediaType(response.DataType);
+            result.Content.Headers.ContentType = GetMediaType(response.Message.DataType);
 
             return result;
         }
@@ -195,6 +196,16 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
                 issuedAt: issuedAt,
                 signingCredentials: credentials);
             return JwtTokenHandler.WriteToken(token);
+        }
+
+        public static IReadOnlyList<string> GetSignatureList(string signatures)
+        {
+            if (string.IsNullOrEmpty(signatures))
+            {
+                return default;
+            }
+
+            return signatures.Split(HeaderSeparator, StringSplitOptions.RemoveEmptyEntries);
         }
 
         public static PropertyInfo[] GetProperties(Type type)

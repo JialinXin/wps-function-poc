@@ -3,6 +3,11 @@ using System.Collections.Generic;
 using System.Reflection;
 using System.Text;
 using Xunit;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Bson;
+using System.IO;
+using System.Runtime.Serialization.Formatters.Binary;
+using Newtonsoft.Json.Linq;
 
 namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub.Tests
 {
@@ -12,7 +17,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub.Tests
         [InlineData("connectioncontext")]
         [InlineData("reason")]
         [InlineData("message")]
-        [InlineData("datatype")]
         public void TestGetValueByName(string name)
         {
             var triggerEvent = new WebPubSubTriggerEvent
@@ -27,7 +31,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub.Tests
                 },
                 Reason = "reason",
                 Message = new WebPubSubMessage("message"),
-                DataType = MessageDataType.Text
+                //DataType = MessageDataType.Text
             };
 
             //var value = triggerEvent.GetType().GetProperty(name, BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.IgnoreCase).GetValue(triggerEvent);

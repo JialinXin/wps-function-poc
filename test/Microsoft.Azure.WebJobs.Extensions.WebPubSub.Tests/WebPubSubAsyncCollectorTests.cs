@@ -18,16 +18,15 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub.Tests
             await collector.AddAsync(new WebPubSubEvent
             {
                 Operation = WebPubSubOperation.SendToAll,
-                Message = new WebPubSubMessage(message),
-                DataType = MessageDataType.Text
+                Message = new WebPubSubMessage(message, MessageDataType.Text)
             });
 
             serviceMock.Verify(c => c.SendToAll(It.IsAny<WebPubSubEvent>()), Times.Once);
             serviceMock.VerifyNoOtherCalls();
 
             var actualData = (WebPubSubEvent)serviceMock.Invocations[0].Arguments[0];
-            Assert.Equal(MessageDataType.Text, actualData.DataType);
-            Assert.Equal(message, actualData.Message.Value);
+            Assert.Equal(MessageDataType.Text, actualData.Message.DataType);
+            Assert.Equal(message, actualData.Message.Body);
         }
 
         //[Fact]

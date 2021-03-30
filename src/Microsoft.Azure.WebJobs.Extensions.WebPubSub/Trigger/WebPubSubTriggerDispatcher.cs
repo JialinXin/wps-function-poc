@@ -12,6 +12,8 @@ using System.Web;
 using Newtonsoft.Json;
 using Microsoft.Extensions.Primitives;
 using System.IO;
+using System.Security.Cryptography;
+using System.Text;
 
 namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
 {
@@ -28,7 +30,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
             _listeners.Add(key, listener);
         }
 
-        public async Task<HttpResponseMessage> ExecuteAsync(HttpRequestMessage req, HashSet<string> allowedHosts, CancellationToken token = default)
+        public async Task<HttpResponseMessage> ExecuteAsync(HttpRequestMessage req, 
+            HashSet<string> allowedHosts, 
+            HashSet<string> accessKeys,
+            CancellationToken token = default)
         {
             // Handle service abuse check.
             if (RespondToServiceAbuseCheck(req, allowedHosts, out var abuseResponse))
@@ -41,6 +46,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
                 return new HttpResponseMessage(HttpStatusCode.BadRequest);
             }
 
+            if (!ValidateSignature(context.ConnectionId, context.Signature, accessKeys))
+            {
+                return new HttpResponseMessage(HttpStatusCode.Unauthorized);
+            }
+
             var tcs = new TaskCompletionSource<object>(TaskCreationOptions.RunContinuationsAsynchronously);
 
             var function = GetFunctionName(context);
@@ -51,7 +61,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
                 IDictionary<string, string[]> claims = null;
                 string[] subprotocols = null;
                 string reason = null;
-                MessageDataType dataType = MessageDataType.Binary;
 
                 if (Utilities.IsSystemConnect(context.Type))
                 {
@@ -68,22 +77,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
                 }
                 else if (Utilities.IsUserEvent(context.Type))
                 {
-                    dataType = Utilities.GetDataType(req.Content.Headers.ContentType.MediaType);
+                    var dataType = Utilities.GetDataType(req.Content.Headers.ContentType.MediaType);
                     if (dataType == MessageDataType.NotSupported)
                     {
                         throw new ArgumentException($"Message only supports text,binary,json. Current value is {req.Content.Headers.ContentType.MediaType}");
                     }
 
-                    //if (dataType == MessageDataType.Binary)
-                    //{
-                        var payload = await req.Content.ReadAsByteArrayAsync();
-                        message = new WebPubSubMessage(payload);
-                    //}
-                    //else
-                    //{
-                    //    var content = await req.Content.ReadAsStringAsync();
-                    //    message = new WebPubSubMessage(content);
-                    //}
+                    var payload = await req.Content.ReadAsByteArrayAsync();
+                    message = new WebPubSubMessage(payload, dataType);
                 }
 
                 var triggerEvent = new WebPubSubTriggerEvent
@@ -93,7 +94,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
                     Claims = claims,
                     Reason = reason,
                     Subprotocols = subprotocols,
-                    DataType = dataType,
                     TaskCompletionSource = tcs
                 };
                 await executor.Executor.TryExecuteAsync(new TriggeredFunctionData
@@ -144,8 +144,35 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
             context.Event = request.Headers.GetValues(Constants.Headers.CloudEvents.EventName).FirstOrDefault();
             context.Headers = request.Headers.ToDictionary(x => x.Key, v => new StringValues(v.Value.FirstOrDefault()), StringComparer.OrdinalIgnoreCase);
             context.UserId = request.Headers.GetValues(Constants.Headers.CloudEvents.UserId).FirstOrDefault();
+            context.Signature = request.Headers.GetValues(Constants.Headers.CloudEvents.Signature).FirstOrDefault();
 
             return true;
+        }
+
+        private bool ValidateSignature(string connectionId, string signature, HashSet<string> accessKeys)
+        {
+            foreach (var accessKey in accessKeys)
+            {
+                var signatures = Utilities.GetSignatureList(signature);
+                if (signatures == null)
+                {
+                    continue;
+                }
+                using (var hmac = new HMACSHA256(Encoding.UTF8.GetBytes(accessKey)))
+                {
+                    var hashBytes = hmac.ComputeHash(Encoding.UTF8.GetBytes(connectionId));
+                    var hash = "sha256=" + BitConverter.ToString(hashBytes).Replace("-", "");
+                    if (signatures.Contains(hash, StringComparer.OrdinalIgnoreCase))
+                    {
+                        return true;
+                    }
+                    else
+                    {
+                        continue;
+                    }
+                }
+            }
+            return false;
         }
 
         private static string GetFunctionName(ConnectionContext context)

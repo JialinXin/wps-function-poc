@@ -75,7 +75,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
         {
             bindingData.Add("connectionContext", triggerEvent.ConnectionContext);
             bindingData.Add("message", triggerEvent.Message != null ? triggerEvent.Message : null);
-            bindingData.Add("dataType", triggerEvent.DataType);
             bindingData.Add("claims", triggerEvent.Claims);
             bindingData.Add("query", triggerEvent.Query);
             bindingData.Add("reason", triggerEvent.Reason);
@@ -100,11 +99,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
             {
                 { "connectionContext", typeof(ConnectionContext) },
                 { "message", typeof(WebPubSubMessage) },
-                { "dataType", typeof(MessageDataType) },
                 { "claims", typeof(IDictionary<string, string[]>) },
                 { "query", typeof(IDictionary<string, string[]>) },
-                { "subprotocols", typeof(string[]) },
                 { "reason", typeof(string) },
+                { "subprotocols", typeof(string[]) },
                 { "$return", typeof(object).MakeByRefType() },
             };
 
@@ -166,12 +164,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
                 var property = Utilities.GetProperty(typeof(WebPubSubTriggerEvent), parameterName);
                 if (property != null)
                 {
-                    var value = property.GetValue(_triggerEvent);
-                    //if (parameterName.Equals("message", StringComparison.OrdinalIgnoreCase))
-                    //{
-                    //
-                    //}
-                    return value;
+                    return property.GetValue(_triggerEvent);
                 }
                 throw new ArgumentException($"Invalid parameter name: {parameterName}, supported names are: {Utilities.GetTriggerEventSupportedNames()}");
             }

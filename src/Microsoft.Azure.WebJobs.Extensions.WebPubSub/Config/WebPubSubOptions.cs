@@ -13,5 +13,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
         /// User can add customized values from function settings using comma to separate multiple values.
         /// </summary>
         public HashSet<string> AllowedHosts { get; set; } = new HashSet<string>();
+
+        internal HashSet<string> AccessKeys { get; set; } = new HashSet<string>();
     }
 }

@@ -48,7 +48,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
             if (string.IsNullOrEmpty(_options.ConnectionString))
             {
                 _options.ConnectionString = _nameResolver.Resolve(Constants.WebPubSubConnectionStringName);
-                AddAllowedHost(_options.ConnectionString);
+                AddSettings(_options.ConnectionString);
             }
 
             if (string.IsNullOrEmpty(_options.HubName))
@@ -66,14 +66,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
 
             // bindings
             context
-                //.AddConverter<string, JObject>(JObject.FromObject)
                 //.AddConverter<byte[], JObject>(JObject.FromObject)
-                //.AddConverter(new MessageToStringConverter())
                 .AddConverter(new MessageToBinaryConverter())
                 .AddConverter<WebPubSubConnection, JObject>(JObject.FromObject)
                 .AddConverter<ConnectResponse, JObject>(JObject.FromObject)
                 .AddConverter<MessageResponse, JObject>(JObject.FromObject)
-                .AddConverter<JObject, WebPubSubEvent>(input => input.ToObject<WebPubSubEvent>());
+                .AddOpenConverter<JObject, OpenType.Poco>(typeof(JObjectToPocoConverter<>))
+                .AddOpenConverter<JObject, OpenType.Poco[]>(typeof(JObjectToPocoConverter<>));
 
             // Trigger binding
             context.AddBindingRule<WebPubSubTriggerAttribute>()
@@ -92,7 +91,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
 
         public Task<HttpResponseMessage> ConvertAsync(HttpRequestMessage input, CancellationToken cancellationToken)
         {
-            return _dispatcher.ExecuteAsync(input, _options.AllowedHosts, cancellationToken);
+            return _dispatcher.ExecuteAsync(input, _options.AllowedHosts, _options.AccessKeys, cancellationToken);
         }
 
         private void ValidateWebPubSubConnectionAttributeBinding(WebPubSubConnectionAttribute attribute, Type type)
@@ -130,7 +129,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
 
         private void ValidateConnectionString(string attributeConnectionString, string attributeConnectionStringName)
         {
-            AddAllowedHost(attributeConnectionString);
+            AddSettings(attributeConnectionString);
             var connectionString = FirstOrDefault(attributeConnectionString, _options.ConnectionString);
 
             if (string.IsNullOrEmpty(connectionString))
@@ -145,11 +144,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
             return values.FirstOrDefault(v => !string.IsNullOrEmpty(v));
         }
 
-        private void AddAllowedHost(string connectionString)
+        private void AddSettings(string connectionString)
         {
             if (!string.IsNullOrEmpty(connectionString))
             {
-                _options.AllowedHosts.Add(new Uri(Utilities.ParseConnectionString(connectionString).EndPoint).Host);
+                var item = Utilities.ParseConnectionString(connectionString);
+                _options.AllowedHosts.Add(new Uri(item.EndPoint).Host);
+                _options.AccessKeys.Add(item.AccessKey);
             }
         }
 
@@ -181,12 +182,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
                     throw new ArgumentNullException();
                 }
 
-                if (input.Value == null)
+                if (input.Body == null)
                 {
                     return null;
                 }
 
-                return Task.FromResult(input.Value.ToString());
+                return Task.FromResult(input.Body.ToString());
             }
         }
 
@@ -199,7 +200,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
                     throw new ArgumentNullException();
                 }
 
-                if (input.Value == null)
+                if (input.Body == null)
                 {
                     return null;
                 }
@@ -208,12 +209,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
             }
         }
 
-        //private sealed class JObjectToPocoConverter<T> : IConverter<JObject, T>
-        //{
-        //    public T Convert(JObject input)
-        //    {
-        //        return input.ToObject<T>();
-        //    }
-        //}
+        private sealed class JObjectToPocoConverter<T> : IConverter<JObject, T>
+        {
+            public T Convert(JObject input)
+            {
+                return input.ToObject<T>();
+            }
+        }
     }
 }

@@ -7,12 +7,12 @@ module.exports = function (context, connectionContext) {
   context.bindings.webPubSubEvent.push({
     "operation": "sendToAll",
     "message": {
-      "value": JSON.stringify({
+      "body": JSON.stringify({
           from: '[System]',
           content: `${context.bindingData.connectionContext.userId} connected.`
-      })
-    },
-    "dataType": "text"
+      }),
+      "dataType": "json"
+    }
   });
 
   context.bindings.webPubSubEvent.push({
@@ -24,12 +24,13 @@ module.exports = function (context, connectionContext) {
   context.bindings.webPubSubEvent.push({
     "operation": "sendToAll",
     "message": {
-      "value": JSON.stringify({
+      "body": JSON.stringify({
           from: '[System]',
           content: `${context.bindingData.connectionContext.userId} joined group: group1.`
-      })
-    },
-    "dataType": "text"
+      }),
+      "dataType": "json"
+    }
+    
   });
   context.done();
 };

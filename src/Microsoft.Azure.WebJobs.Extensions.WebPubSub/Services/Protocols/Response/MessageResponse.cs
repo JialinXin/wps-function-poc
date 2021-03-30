@@ -12,7 +12,5 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
         public Error Error { get; set; }
         [JsonProperty("message")]
         public WebPubSubMessage Message { get; set; }
-        [JsonProperty("datatype")]
-        public MessageDataType DataType { get; set; }
     }
 }

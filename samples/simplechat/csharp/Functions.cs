@@ -8,6 +8,7 @@ using System.IO;
 using System.Text;
 using System.Threading.Tasks;
 using System.Linq;
+using System.Collections.Generic;
 
 namespace SimpleChat
 {
@@ -45,7 +46,6 @@ namespace SimpleChat
             {
                 Operation = WebPubSubOperation.SendToAll,
                 Message = new WebPubSubMessage(new ClientContent($"{connectionContext.UserId} connected.").ToString()),
-                DataType = MessageDataType.Json
             });
 
             await eventHandler.AddAsync(new WebPubSubEvent
@@ -60,28 +60,28 @@ namespace SimpleChat
                 UserId = connectionContext.UserId,
                 GroupId = "group1",
                 Message = new WebPubSubMessage(new ClientContent($"{connectionContext.UserId} joined group: group1.").ToString()),
-                DataType = MessageDataType.Json
             });
         }
 
         // single message sample
         [FunctionName("broadcast")]
         public static async Task<MessageResponse> Broadcast(
-            [WebPubSubTrigger("simplechat", "message", "user")] ConnectionContext connectionContext,
+            [WebPubSubTrigger("simplechat", "message", "user")] //ConnectionContext connectionContext, 
             WebPubSubMessage message,
+            string[] subprotocols,
+            byte[] messagebody,
+            IDictionary<string, string[]> claims,
             [WebPubSub] IAsyncCollector<WebPubSubEvent> eventHandler)
         {
             await eventHandler.AddAsync(new WebPubSubEvent
             {
                 Operation = WebPubSubOperation.SendToAll,
                 Message = message,
-                DataType = MessageDataType.Text
             });
 
             return new MessageResponse
             {
-                Message = new WebPubSubMessage(new ClientContent($"ack").ToString()),
-                DataType = MessageDataType.Json
+                Message = new WebPubSubMessage(new ClientContent($"ack").ToString(), MessageDataType.Json),
             };
         }
 
@@ -94,8 +94,7 @@ namespace SimpleChat
             return new WebPubSubEvent
             {
                 Operation = WebPubSubOperation.SendToAll,
-                Message = new WebPubSubMessage(new ClientContent($"{connectionContext.UserId} disconnect.").ToString()),
-                DataType = MessageDataType.Json
+                Message = new WebPubSubMessage(new ClientContent($"{connectionContext.UserId} disconnect.").ToString())
             };
         }
 

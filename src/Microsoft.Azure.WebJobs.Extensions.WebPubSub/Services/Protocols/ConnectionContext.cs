@@ -38,6 +38,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
         public string UserId { get; internal set; }
 
         /// <summary>
+        /// The signature for validation
+        /// </summary>
+        [JsonProperty("signature")]
+        public string Signature { get; internal set; }
+
+        /// <summary>
         /// The headers of request.
         /// Headers with duplicated key will be joined by comma.
         /// </summary>
