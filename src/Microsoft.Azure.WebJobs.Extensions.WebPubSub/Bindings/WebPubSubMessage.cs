@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Buffers;
 using System.IO;
 using System.Text;
 
@@ -25,20 +26,17 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
                         {
                             var decodedBytes = Convert.FromBase64String(stringValue);
                             _value = decodedBytes;
+                            Payload = decodedBytes;
+                            return;
                         }
                         catch (FormatException)
                         {
                             // ignore exception and fallback to string value.
-                            _value = stringValue;
                         }
                     }
-                    else
-                    {
-                        // simple string
-                        _value = stringValue;
-                    }
-
-                    Payload = GetPayload(stringValue);
+                    // simple string
+                    _value = stringValue;
+                    Payload = Encoding.UTF8.GetBytes(stringValue);
                 }
                 else if (value is Stream streamValue)
                 {
@@ -124,11 +122,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
                 stream.CopyTo(ms);
                 return ms.ToArray();
             }
-        }
-
-        private byte[] GetPayload(string strValue)
-        {
-            return Encoding.UTF8.GetBytes(strValue);
         }
 
         private object ConvertMessage(byte[] message, MessageDataType dataType)

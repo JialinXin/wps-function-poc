@@ -25,7 +25,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
             _attribute = attribute ?? throw new ArgumentNullException(nameof(attribute));
             _dispatcher = dispatcher ?? throw new ArgumentNullException(nameof(dispatcher));
 
-            BindingDataContract = CreateBindingContract();
+            BindingDataContract = CreateBindingContract(parameterInfo);
         }
 
         public Type TriggerValueType => typeof(WebPubSubTriggerEvent);
@@ -73,48 +73,25 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
 
         private void AddBindingData(Dictionary<string, object> bindingData, WebPubSubTriggerEvent triggerEvent)
         {
-            bindingData.Add("connectionContext", triggerEvent.ConnectionContext);
-            bindingData.Add("message", triggerEvent.Message != null ? triggerEvent.Message : null);
-            bindingData.Add("claims", triggerEvent.Claims);
-            bindingData.Add("query", triggerEvent.Query);
-            bindingData.Add("reason", triggerEvent.Reason);
-            bindingData.Add("subprotocols", triggerEvent.Subprotocols);
-            //var properties = Utilities.GetProperties(triggerEvent.GetType());
-            //foreach (var property in properties)
-            //{
-            //    if (property.PropertyType == typeof(TaskCompletionSource<>))
-            //    {
-            //        continue;
-            //    }
-            //    bindingData.Add(property.Name, Utilities.GetProperty(triggerEvent.GetType(), property.Name).GetValue(triggerEvent));
-            //}
+            bindingData.Add(nameof(triggerEvent.ConnectionContext), triggerEvent.ConnectionContext);
+            bindingData.Add(nameof(triggerEvent.Message), triggerEvent.Message != null ? triggerEvent.Message : null);
+            bindingData.Add(nameof(triggerEvent.Claims), triggerEvent.Claims);
+            bindingData.Add(nameof(triggerEvent.Query), triggerEvent.Query);
+            bindingData.Add(nameof(triggerEvent.Reason), triggerEvent.Reason);
+            bindingData.Add(nameof(triggerEvent.Subprotocols), triggerEvent.Subprotocols);
         }
 
         /// <summary>
         /// Defined what other bindings can use and return value.
         /// </summary>
-        private IReadOnlyDictionary<string, Type> CreateBindingContract()
+        private IReadOnlyDictionary<string, Type> CreateBindingContract(ParameterInfo parameterInfo)
         {
             var contract = new Dictionary<string, Type>(StringComparer.OrdinalIgnoreCase)
             {
-                { "connectionContext", typeof(ConnectionContext) },
-                { "message", typeof(WebPubSubMessage) },
-                { "claims", typeof(IDictionary<string, string[]>) },
-                { "query", typeof(IDictionary<string, string[]>) },
-                { "reason", typeof(string) },
-                { "subprotocols", typeof(string[]) },
                 { "$return", typeof(object).MakeByRefType() },
             };
 
-            //var properties = Utilities.GetProperties(typeof(WebPubSubTriggerEvent));
-            //foreach (var property in properties)
-            //{
-            //    if (property.PropertyType == typeof(TaskCompletionSource<>))
-            //    {
-            //        continue;
-            //    }
-            //    contract.Add(property.Name, property.PropertyType);
-            //}
+            contract.Add(parameterInfo.Name, parameterInfo.ParameterType);
 
             return contract;
         }
@@ -135,23 +112,28 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
 
             public Task<object> GetValueAsync()
             {
+                // Bind un-restrict name to default ConnectionContext
+                if (_parameter.ParameterType == typeof(ConnectionContext))
+                {
+                    return Task.FromResult<object>(_triggerEvent.ConnectionContext);
+                }
+                // Bind default ConnectionContext in non-csharp for trigger
+                // User get rest metadata from context.bindingData.<name>
                 if (_parameter.ParameterType == typeof(object) ||
                          _parameter.ParameterType == typeof(JObject))
                 {
-                    return Task.FromResult<object>(JObject.FromObject(GetValueByName(_parameter.Name)));
+                    return Task.FromResult<object>(JObject.FromObject(_triggerEvent.ConnectionContext));
                 }
-                else
-                {
-                    return Task.FromResult(GetValueByName(_parameter.Name));
-                }
+                // Bind rest with naming restricted.
+                return Task.FromResult(GetValueByName(_parameter.Name));
             }
 
             public string ToInvokeString()
             {
-                return _triggerEvent.ToString();
+                return _parameter.Name;
             }
 
-            public Type Type => _parameter.GetType();
+            public Type Type => GetType(_parameter.Name);
 
             // No use here
             public Task SetValueAsync(object value, CancellationToken cancellationToken)
@@ -166,7 +148,17 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
                 {
                     return property.GetValue(_triggerEvent);
                 }
-                throw new ArgumentException($"Invalid parameter name: {parameterName}, supported names are: {Utilities.GetTriggerEventSupportedNames()}");
+                throw new ArgumentException($"Invalid parameter name: {parameterName}, supported names are: {string.Join(",", Utilities.GetTypeNames(typeof(WebPubSubTriggerEvent)))}");
+            }
+
+            private Type GetType(string parameterName)
+            {
+                var property = Utilities.GetProperty(typeof(WebPubSubTriggerEvent), parameterName);
+                if (property != null)
+                {
+                    return property.PropertyType;
+                }
+                return typeof(object).MakeByRefType();
             }
         }
 

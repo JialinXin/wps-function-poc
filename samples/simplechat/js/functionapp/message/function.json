@@ -4,8 +4,7 @@
     {
       "type": "webPubSubTrigger",
       "direction": "in",
-      "dataType": "binary",
-      "name": "messagebody",
+      "name": "abc",
       "hub": "simplechat",
       "eventName": "message",
       "eventType": "user"

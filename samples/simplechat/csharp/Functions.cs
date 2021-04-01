@@ -25,14 +25,19 @@ namespace SimpleChat
 
         [FunctionName("connect")]
         public static ConnectResponse Connect(
-            [WebPubSubTrigger("simplechat","connect")]ConnectionContext connectionContext,
-            string[] subprotocols)
+            [WebPubSubTrigger("simplechat","connect")] ConnectionContext connectionContext)
         {
             Console.WriteLine($"Received client connect with connectionId: {connectionContext.ConnectionId}");
+            if (connectionContext.UserId == "attacker")
+            {
+                return new ConnectResponse
+                {
+                    Error = new Error(ErrorCode.Unauthorized)
+                };
+            }
             return new ConnectResponse
             {
-                UserId = connectionContext.UserId,
-                Subprotocol = subprotocols.FirstOrDefault()
+                UserId = connectionContext.UserId
             };
         }
 
@@ -68,9 +73,6 @@ namespace SimpleChat
         public static async Task<MessageResponse> Broadcast(
             [WebPubSubTrigger("simplechat", "message", "user")] //ConnectionContext connectionContext, 
             WebPubSubMessage message,
-            string[] subprotocols,
-            byte[] messagebody,
-            IDictionary<string, string[]> claims,
             [WebPubSub] IAsyncCollector<WebPubSubEvent> eventHandler)
         {
             await eventHandler.AddAsync(new WebPubSubEvent

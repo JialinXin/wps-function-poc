@@ -218,12 +218,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
             return type.GetProperty(name, BindingFlags.IgnoreCase | BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
         }
 
-        public static string GetTriggerEventSupportedNames()
+        public static IReadOnlyList<string> GetTypeNames(Type type)
         {
-            var properties = GetProperties(typeof(WebPubSubTriggerEvent));
-            string names = string.Empty;
+            var properties = GetProperties(type);
+            var names = new List<string>();
 
-            Array.ForEach(properties, x => names += x.Name + ";");
+            Array.ForEach(properties, x => names.Add(x.Name));
             return names;
         }
     }

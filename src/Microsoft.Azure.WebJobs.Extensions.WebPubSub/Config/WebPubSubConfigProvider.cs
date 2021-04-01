@@ -66,8 +66,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
 
             // bindings
             context
-                //.AddConverter<byte[], JObject>(JObject.FromObject)
-                .AddConverter(new MessageToBinaryConverter())
                 .AddConverter<WebPubSubConnection, JObject>(JObject.FromObject)
                 .AddConverter<ConnectResponse, JObject>(JObject.FromObject)
                 .AddConverter<MessageResponse, JObject>(JObject.FromObject)

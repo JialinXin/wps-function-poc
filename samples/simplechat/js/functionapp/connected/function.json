@@ -4,7 +4,7 @@
     {
       "type": "webPubSubTrigger",
       "direction": "in",
-      "name": "connectionContext",
+      "name": "abc",
       "hub": "simplechat",
       "eventName": "connected",
       "eventType": "system"

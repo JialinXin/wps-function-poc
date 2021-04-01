@@ -9,7 +9,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
         public ErrorCode Code { get; set; }
 
         [JsonProperty("message")]
-        public string Message { get; set; }
+        public string Message { get; set; } = string.Empty;
 
         public Error(ErrorCode code)
         {

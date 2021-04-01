@@ -6,7 +6,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
     internal class WebPubSubTriggerEvent
     {
         /// <summary>
-        /// Web PubSub Context that gets from HTTP request and pass the Function parameters
+        /// Web PubSub common request context from cloud event headers.
         /// </summary>
         public ConnectionContext ConnectionContext { get; set; }
 

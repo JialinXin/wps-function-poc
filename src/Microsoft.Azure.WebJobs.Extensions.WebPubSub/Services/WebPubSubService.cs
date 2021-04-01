@@ -24,12 +24,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
 
         private readonly string _hubPath;
 
-        internal WebPubSubService(string connectionString, string hubName = "")
+        internal WebPubSubService(string connectionString, string hubName)
         {
             (_baseEndpoint, _accessKey, _version, _port) = Utilities.ParseConnectionString(connectionString);
             _port = string.IsNullOrEmpty(_port) ? string.Empty : $":{_port}";
             HubName = hubName;
-            _hubPath = string.IsNullOrEmpty(hubName) ? string.Empty : $"/hubs/{hubName}";
+            _hubPath = !string.IsNullOrEmpty(hubName) ? 
+                $"/hubs/{hubName}" : throw new ArgumentNullException("Hub name should be configured in either attribute or appsettings.");
         }
 
         internal WebPubSubConnection GetClientConnection(IEnumerable<Claim> claims = null)
