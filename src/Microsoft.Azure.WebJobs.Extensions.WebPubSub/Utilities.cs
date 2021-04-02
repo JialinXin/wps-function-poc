@@ -6,6 +6,7 @@ using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.IdentityModel.Tokens.Jwt;
+using System.Linq;
 using System.Net;
 using System.Net.Http;
 using System.Net.Http.Headers;
@@ -225,6 +226,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
 
             Array.ForEach(properties, x => names.Add(x.Name));
             return names;
+        }
+
+        public static string FirstOrDefault(params string[] values)
+        {
+            return values.FirstOrDefault(v => !string.IsNullOrEmpty(v));
         }
     }
 }

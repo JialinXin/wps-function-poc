@@ -20,13 +20,32 @@ These bindings allow Azure Functions to integrate with **Azure Web PubSub Servic
 
 [Azure WebPubSub Development Plan](https://github.com/Azure/azure-webpubsub/blob/main/docs/specs/development-plan.md)
 
-- [ ] **Phase 1** Support simple websocket clients
-
-- [ ] **Phase 2** Support subprotocol websocket clients
+- [ ]  Support rest api covered scenarios.
 
 - [ ] **Portal Support** Azure Portal integration for an easy working experience to create/configure Azure Functions for Web PubSub service.
 
-> Subprotocol de-serialization is done by service side. Server will have a consistent `Event` property to understand the request. So not much gap between phase 1 & 2 in function side.
+- [ ] Funcions bundle integration.
+
+> Before function bundle integration is done, user need to install the extension explicitly.
+> 
+> Steps:
+> 1. Add package reference in `extensions.csproj`. Run below command.
+>    ```cmd
+>    func extensions install --package Microsoft.Azure.WebJobs.Extensions.WebPubSub --version 1.0.0
+>    ```
+>    So you extension project will have a package reference like below.
+>    ```xml
+>    <PackageReference Include="Microsoft.Azure.WebJobs.Extensions.WebPubSub" Version="1.0.0" />
+>    ```
+> 1. **Remove** bundle settings in `host.json` if exists to avoid skipping install our extension.
+>    ```js
+>    "extensionBundle": {
+>        "id": "Microsoft.Azure.Functions.ExtensionBundle",
+>        "version": "[1.*, 2.0.0)"
+>    }
+>    ```
+> 
+> Fur futher details. Please refer to [Explicitly install extensions](https://docs.microsoft.com/en-us/azure/azure-functions/functions-bindings-register#explicitly-install-extensions).
 
 ## Bindings and Workflow
 
@@ -49,16 +68,20 @@ When function is triggered, it can send any messaging request by `WebPubSub` out
 
 ## Bindings Usage
 
+### WebPubSubOptions
+
+To work with Azure Web PubSub service, `ConnectionString` and `Hub` name is required for each bindings beside other attributes. To make it convenient to have a centralize settings instead of set it every time, we support to read it from function settings, like `local.settings.json`. But still, user can set the attribute in different functions. Please notice attribute settings will overwrite global settings.
+
 ### Using the WebPubSubConnection input binding
 
- Customer can set `Hub`, `UserId` and `Claims` in the input binding where values can pass through the request parameters. For example, `UserId` can be used with {headers.userid} or {query.userid} depends on where the userid is assigned in the negotiate call. `Hub` is required in the binding.
+ Customer can set `Hub`, `UserId` in the input binding where values can pass through the request parameters. For example, `UserId` can be used with {headers.userid} or {query.userid} depends on where the userid is assigned in the negotiate call. `Hub` is required in the binding.
 
 * csharp usage:
 ```cs
 [FunctionName("login")]
 public static WebPubSubConnection GetClientConnection(
     [HttpTrigger(AuthorizationLevel.Anonymous, "get", "post")] HttpRequest req,
-    [WebPubSubConnection(HubName = "simplechat", UserId = "{query.userid}")] WebPubSubConnection connection,
+    [WebPubSubConnection(Hub = "simplechat", UserId = "{query.userid}")] WebPubSubConnection connection,
     ILogger log)
 {
     return connection;
@@ -71,7 +94,7 @@ public static WebPubSubConnection GetClientConnection(
     "type": "webpubsubConnection",
     "name": "connection",
     "userId": "{query.userid}",
-    "hubName": "simplechat",
+    "hub": "simplechat",
     "direction": "in"
 }
 ```
@@ -93,9 +116,13 @@ user|any, e.g. message or user defined in subprotocol
 
 `ConnectionContext` is a binding object contains common fields among all request, basically refer to [CloudEvents](protocol-cloudevents.md#events) for available fields. Other optional binding objects differs on the scenarios can be bind on-demand, details are listed below. 
 
+> [**Important**]
+> 
+> `ConnectionContext` is a common binding object in all requests. In dotnet, it will be binded by the type without naming restricted. And in non-dotnet like javascript, it will default bind to `WebPubSubTrigger` object. For rest properties listed below, it will be binded with object name. In dotnet, user should bind them both `name` and `type` correctly if needed, using as trigger parameters. In non-dotnet, user can get the values like `context.bindingData.<name>` directly in functions. Sample usages can be refered from later samples.
+
 Binding Name | Binding Type | Description | Properties
 --|--|--|--
-context|`ConnectionContext`|Common request information|Type, Event, Hub, ConnectionId, UserId, Headers, Queries, Claims, MediaType
+connectionContext|`ConnectionContext`|Common request information|Type, Event, Hub, ConnectionId, UserId, Headers, Queries, Claims, MediaType
 message|`Stream` |Request message content|-
 dataType|`MessageDataType`|Data type of request message|-
 claims|`IDictionary<string, string[]>`|User Claims in connect request|-
@@ -197,7 +224,7 @@ public static WebPubSubEvent Broadcast(
 {
     "type": "webPubSub",
     "name": "webPubSubEvent",
-    "hubName": "simplechat",
+    "hub": "simplechat",
     "direction": "out"
 }
 ```
@@ -240,6 +267,61 @@ public static async Task Connected(
         DataType = MessageDataType.Json
     });
 }
+```
+
+* javascript usage
+```js
+"bindings": [
+  {
+    "type": "webPubSubTrigger",
+    "direction": "in",
+    "name": "abc",
+    "hub": "simplechat",
+    "eventName": "connected",
+    "eventType": "system"
+  },
+  {
+    "type": "webPubSub",
+    "name": "webPubSubEvent",
+    "hub": "simplechat",
+    "direction": "out"
+  }
+]
+```
+```js
+module.exports = function (context, connectionContext) {
+  context.bindings.webPubSubEvent = [];
+
+  context.bindings.webPubSubEvent.push({
+    "operation": "sendToAll",
+    "message": {
+      "body": JSON.stringify({
+          from: '[System]',
+          content: `${connectionContext.userId} connected.`
+      }),
+      "dataType": "json"
+    }
+  });
+
+  context.bindings.webPubSubEvent.push({
+    "operation": "addUserToGroup",
+    "userId": `${connectionContext.userId}`,
+    "groupId": "group1"
+  });
+
+  context.bindings.webPubSubEvent.push({
+    "operation": "sendToAll",
+    "message": {
+      "body": JSON.stringify({
+          from: '[System]',
+          content: `${connectionContext.userId} joined group: group1.`
+      }),
+      "dataType": "json"
+    }
+    
+  });
+  context.done();
+};
 ```
 
 > When SDK has better supports, server side could work with server sdk convenience layer methods without output binding data type limited. And method response will have enrich properties.

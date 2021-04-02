@@ -51,9 +51,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
                 AddSettings(_options.ConnectionString);
             }
 
-            if (string.IsNullOrEmpty(_options.HubName))
+            if (string.IsNullOrEmpty(_options.Hub))
             {
-                _options.HubName = _nameResolver.Resolve(Constants.HubNameStringName);
+                _options.Hub = _nameResolver.Resolve(Constants.HubNameStringName);
             }
 
             if (_options.AllowedHosts == null && !string.IsNullOrEmpty(_nameResolver.Resolve(Constants.AllowedHostsName)))
@@ -74,7 +74,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
 
             // Trigger binding
             context.AddBindingRule<WebPubSubTriggerAttribute>()
-                .BindToTrigger<JObject>(new WebPubSubTriggerBindingProvider(_dispatcher));
+                .BindToTrigger<JObject>(new WebPubSubTriggerBindingProvider(_dispatcher, _options));
 
             var webpubsubConnectionAttributeRule = context.AddBindingRule<WebPubSubConnectionAttribute>();
             webpubsubConnectionAttributeRule.AddValidator(ValidateWebPubSubConnectionAttributeBinding);
@@ -108,8 +108,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
 
         internal WebPubSubService GetService(WebPubSubAttribute attribute)
         {
-            var connectionString = FirstOrDefault(attribute.ConnectionStringSetting, _options.ConnectionString);
-            var hubName = FirstOrDefault(attribute.Hub, _options.HubName);
+            var connectionString = Utilities.FirstOrDefault(attribute.ConnectionStringSetting, _options.ConnectionString);
+            var hubName = Utilities.FirstOrDefault(attribute.Hub, _options.Hub);
             return new WebPubSubService(connectionString, hubName);
         }
 
@@ -120,7 +120,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
 
         private WebPubSubConnection GetClientConnection(WebPubSubConnectionAttribute attribute)
         {
-            var service = new WebPubSubService(attribute.ConnectionStringSetting, attribute.Hub);
+            var hub = Utilities.FirstOrDefault(attribute.Hub, _options.Hub);
+            var service = new WebPubSubService(attribute.ConnectionStringSetting, hub);
             var claims = attribute.GetClaims();
             return service.GetClientConnection(claims);
         }
@@ -128,18 +129,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
         private void ValidateConnectionString(string attributeConnectionString, string attributeConnectionStringName)
         {
             AddSettings(attributeConnectionString);
-            var connectionString = FirstOrDefault(attributeConnectionString, _options.ConnectionString);
+            var connectionString = Utilities.FirstOrDefault(attributeConnectionString, _options.ConnectionString);
 
             if (string.IsNullOrEmpty(connectionString))
             {
                 throw new InvalidOperationException(string.Format($"The Service connection string must be set either via an '{Constants.WebPubSubConnectionStringName}' app setting, via an '{Constants.WebPubSubConnectionStringName}' environment variable, or directly in code via {nameof(WebPubSubOptions)}.{nameof(WebPubSubOptions.ConnectionString)} or {{0}}.",
                     attributeConnectionStringName));
             }
-        }
-
-        private string FirstOrDefault(params string[] values)
-        {
-            return values.FirstOrDefault(v => !string.IsNullOrEmpty(v));
         }
 
         private void AddSettings(string connectionString)

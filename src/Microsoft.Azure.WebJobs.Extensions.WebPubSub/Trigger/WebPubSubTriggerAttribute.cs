@@ -21,11 +21,16 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
             EventType = eventType;
         }
 
+        public WebPubSubTriggerAttribute(string eventName, string eventType = "system")
+        {
+            EventName = eventName;
+            EventType = eventType;
+        }
+
         /// <summary>
         /// The hub of request.
         /// </summary>
         [AutoResolve]
-        [Required]
         public string Hub { get; set; }
         
         /// <summary>

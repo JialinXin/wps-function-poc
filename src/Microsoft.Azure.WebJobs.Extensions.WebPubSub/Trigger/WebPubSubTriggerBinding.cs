@@ -18,12 +18,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
         private readonly ParameterInfo _parameterInfo;
         private readonly WebPubSubTriggerAttribute _attribute;
         private readonly IWebPubSubTriggerDispatcher _dispatcher;
+        private readonly WebPubSubOptions _options;
 
-        public WebPubSubTriggerBinding(ParameterInfo parameterInfo, WebPubSubTriggerAttribute attribute, IWebPubSubTriggerDispatcher dispatcher)
+        public WebPubSubTriggerBinding(ParameterInfo parameterInfo, WebPubSubTriggerAttribute attribute, WebPubSubOptions options, IWebPubSubTriggerDispatcher dispatcher)
         {
             _parameterInfo = parameterInfo ?? throw new ArgumentNullException(nameof(parameterInfo));
             _attribute = attribute ?? throw new ArgumentNullException(nameof(attribute));
             _dispatcher = dispatcher ?? throw new ArgumentNullException(nameof(dispatcher));
+            _options = options ?? throw new ArgumentNullException(nameof(options));
 
             BindingDataContract = CreateBindingContract(parameterInfo);
         }
@@ -57,7 +59,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
             }
 
             // Get listener key from attributes.
-            var attributeName = $"{_attribute.Hub}.{_attribute.EventType}.{_attribute.EventName}".ToLower();
+            var hub = Utilities.FirstOrDefault(_attribute.Hub, _options.Hub);
+            if (string.IsNullOrEmpty(hub))
+            {
+                throw new ArgumentNullException("Hub name should be configured in either attribute or appsettings.");
+            }
+            var attributeName = $"{hub}.{_attribute.EventType}.{_attribute.EventName}".ToLower();
             var listernerKey = attributeName;
 
             return Task.FromResult<IListener>(new WebPubSubListener(context.Executor,  listernerKey, _dispatcher));

@@ -8,10 +8,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
     internal class WebPubSubTriggerBindingProvider : ITriggerBindingProvider
     {
         private readonly IWebPubSubTriggerDispatcher _dispatcher;
+        private readonly WebPubSubOptions _options;
 
-        public WebPubSubTriggerBindingProvider(IWebPubSubTriggerDispatcher dispatcher)
+        public WebPubSubTriggerBindingProvider(IWebPubSubTriggerDispatcher dispatcher, WebPubSubOptions options)
         {
             _dispatcher = dispatcher ?? throw new ArgumentNullException(nameof(dispatcher));
+            _options = options ?? throw new ArgumentNullException(nameof(options));
         }
 
         public Task<ITriggerBinding> TryCreateAsync(TriggerBindingProviderContext context)
@@ -28,7 +30,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
                 return Task.FromResult<ITriggerBinding>(null);
             }
 
-            return Task.FromResult<ITriggerBinding>(new WebPubSubTriggerBinding(parameterInfo, attribute, _dispatcher));
+            return Task.FromResult<ITriggerBinding>(new WebPubSubTriggerBinding(parameterInfo, attribute, _options, _dispatcher));
         }
     }
 }

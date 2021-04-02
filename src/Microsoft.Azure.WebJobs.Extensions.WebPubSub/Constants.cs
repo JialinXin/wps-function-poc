@@ -6,8 +6,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
 {
     internal static class Constants
     {
+        // WebPubSubOptions can be set by customers.
         public const string WebPubSubConnectionStringName = "WebPubSubConnectionString";
-        public const string HubNameStringName = "HubName";
+        public const string HubNameStringName = "WebPubSubHub";
         public const string AllowedHostsName = "AllowedHosts";
 
         public static class ContentTypes
@@ -17,29 +18,19 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
             public const string PlainTextContentType = "text/plain";
         }
 
-        public const string DefaultHub = "_default";
+        //public const string DefaultHub = "_default";
 
         public const string CloudEventTypeSystemPrefix = "azure.webpubsub.sys.";
         public const string CloudEventTypeUserPrefix = "azure.webpubsub.user.";
+
+        public const char HeaderSeparator = ',';
+        public const string ClaimsSeparator = ": ";
 
         public static class EventTypes
         {
             public const string User = "user";
             public const string System = "system";
         }
-
-        //public const string AsrsHeaderPrefix = "X-ASRS-";
-        //public const string AsrsConnectionIdHeader = AsrsHeaderPrefix + "Connection-Id";
-        //public const string AsrsUserClaims = AsrsHeaderPrefix + "User-Claims";
-        //public const string AsrsUserId = AsrsHeaderPrefix + "User-Id";
-        //public const string AsrsHubNameHeader = AsrsHeaderPrefix + "Hub";
-        //public const string AsrsCategory = AsrsHeaderPrefix + "Category";
-        //public const string AsrsEvent = AsrsHeaderPrefix + "Event";
-        //public const string AsrsClientQueryString = AsrsHeaderPrefix + "Client-Query";
-        //public const string AsrsSignature = AsrsHeaderPrefix + "Signature";
-
-        public const char HeaderSeparator = ',';
-        public const string ClaimsSeparator = ": ";
 
         public static class Categories
         {
@@ -76,17 +67,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
 
             public const string WebHookRequestOrigin = "WebHook-Request-Origin";
             public const string WebHookAllowedOrigin = "WebHook-Allowed-Origin";
-        }
-
-        public static class TriggerNames
-        {
-            public const string ConnectionContext = nameof(ConnectionContext);
-            public const string Message = "message";
-            public const string DataType = "datatype";
-            public const string Subprotocols = "subprotocols";
-            public const string Claims = "claims";
-            public const string ClientCertificaties = "clientcertificates";
-            public const string Reason = "reason";
         }
     }
 }

@@ -1,53 +1,47 @@
 ﻿using Microsoft.Extensions.Primitives;
 using System.Collections.Generic;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Serialization;
 
 namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
 {
-    [JsonObject]
+    [JsonObject(NamingStrategyType = typeof(CamelCaseNamingStrategy))]
     public class ConnectionContext
     {
         /// <summary>
         /// The type of the message.
         /// </summary>
-        [JsonProperty("type")]
         public string Type { get; internal set; }
 
         /// <summary>
         /// The event of the message.
         /// </summary>
-        [JsonProperty("event")]
         public string Event { get; internal set; }
 
         /// <summary>
         /// The hub which message belongs to.
         /// </summary>
-        [JsonProperty("hub")]
         public string Hub { get; internal set; }
 
         /// <summary>
         /// The connection-id of the client which send the message.
         /// </summary>
-        [JsonProperty("connectionId")]
         public string ConnectionId { get; internal set; }
 
         /// <summary>
         /// The user identity of the client which send the message.
         /// </summary>
-        [JsonProperty("userId")]
         public string UserId { get; internal set; }
 
         /// <summary>
         /// The signature for validation
         /// </summary>
-        [JsonProperty("signature")]
         public string Signature { get; internal set; }
 
         /// <summary>
         /// The headers of request.
         /// Headers with duplicated key will be joined by comma.
         /// </summary>
-        [JsonProperty("headers")]
         public Dictionary<string, StringValues> Headers { get; internal set; }
     }
 }

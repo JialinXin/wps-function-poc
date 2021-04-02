@@ -27,8 +27,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
                     BindingFlags.IgnoreCase | BindingFlags.Public | BindingFlags.Instance);
 
                 await (Task)method.Invoke(_service, new object[] { item });
-
-                //await task.ConfigureAwait(false);
             }
             catch (Exception ex)
             {

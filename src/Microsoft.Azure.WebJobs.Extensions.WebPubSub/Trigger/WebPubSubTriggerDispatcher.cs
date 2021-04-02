@@ -142,9 +142,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
             context.Hub = request.Headers.GetValues(Constants.Headers.CloudEvents.Hub).FirstOrDefault();
             context.Type = request.Headers.GetValues(Constants.Headers.CloudEvents.Type).FirstOrDefault();
             context.Event = request.Headers.GetValues(Constants.Headers.CloudEvents.EventName).FirstOrDefault();
-            context.Headers = request.Headers.ToDictionary(x => x.Key, v => new StringValues(v.Value.FirstOrDefault()), StringComparer.OrdinalIgnoreCase);
-            context.UserId = request.Headers.GetValues(Constants.Headers.CloudEvents.UserId).FirstOrDefault();
             context.Signature = request.Headers.GetValues(Constants.Headers.CloudEvents.Signature).FirstOrDefault();
+            context.Headers = request.Headers.ToDictionary(x => x.Key, v => new StringValues(v.Value.FirstOrDefault()), StringComparer.OrdinalIgnoreCase);
+
+            // UserId is optional.
+            if (request.Headers.TryGetValues(Constants.Headers.CloudEvents.UserId, out var values))
+            {
+                context.UserId = values.FirstOrDefault();
+            }
 
             return true;
         }

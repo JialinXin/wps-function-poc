@@ -17,7 +17,7 @@ namespace SimpleChat
         [FunctionName("login")]
         public static WebPubSubConnection GetClientConnection(
             [HttpTrigger(AuthorizationLevel.Anonymous, "get", "post")] HttpRequest req,
-            [WebPubSubConnection(UserId = "{query.userid}", Hub = "simplechat")] WebPubSubConnection connection)
+            [WebPubSubConnection(Hub = "simplechat")] WebPubSubConnection connection)
         {
             Console.WriteLine("login");
             return connection;
@@ -25,7 +25,7 @@ namespace SimpleChat
 
         [FunctionName("connect")]
         public static ConnectResponse Connect(
-            [WebPubSubTrigger("simplechat","connect")] ConnectionContext connectionContext)
+            [WebPubSubTrigger("connect", "system")] ConnectionContext connectionContext)
         {
             Console.WriteLine($"Received client connect with connectionId: {connectionContext.ConnectionId}");
             if (connectionContext.UserId == "attacker")
@@ -44,7 +44,7 @@ namespace SimpleChat
         // multi tasks sample
         [FunctionName("connected")]
         public static async Task Connected(
-            [WebPubSubTrigger("simplechat", "connected")] ConnectionContext connectionContext,
+            [WebPubSubTrigger("connected", "system")] ConnectionContext connectionContext,
             [WebPubSub] IAsyncCollector<WebPubSubEvent> eventHandler)
         {
             await eventHandler.AddAsync(new WebPubSubEvent
@@ -71,7 +71,7 @@ namespace SimpleChat
         // single message sample
         [FunctionName("broadcast")]
         public static async Task<MessageResponse> Broadcast(
-            [WebPubSubTrigger("simplechat", "message", "user")] //ConnectionContext connectionContext, 
+            [WebPubSubTrigger("message", "user")] //ConnectionContext connectionContext, 
             WebPubSubMessage message,
             [WebPubSub] IAsyncCollector<WebPubSubEvent> eventHandler)
         {
@@ -90,7 +90,7 @@ namespace SimpleChat
         [FunctionName("disconnect")]
         [return: WebPubSub]
         public static WebPubSubEvent Disconnect(
-            [WebPubSubTrigger("simplechat", "disconnected")] ConnectionContext connectionContext)
+            [WebPubSubTrigger("disconnected", "system")] ConnectionContext connectionContext)
         {
             Console.WriteLine("Disconnect.");
             return new WebPubSubEvent

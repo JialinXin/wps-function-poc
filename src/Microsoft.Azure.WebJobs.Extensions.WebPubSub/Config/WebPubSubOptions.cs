@@ -6,7 +6,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
     {
         public string ConnectionString { get; set; }
 
-        public string HubName { get; set; }
+        public string Hub { get; set; }
 
         /// <summary>
         /// Allowed Hosts for Abuse Protection. All service connection strings will be added.
