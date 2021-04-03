@@ -123,8 +123,7 @@ user|any, e.g. message or user defined in subprotocol
 Binding Name | Binding Type | Description | Properties
 --|--|--|--
 connectionContext|`ConnectionContext`|Common request information|Type, Event, Hub, ConnectionId, UserId, Headers, Queries, Claims, MediaType
-message|`Stream` |Request message content|-
-dataType|`MessageDataType`|Data type of request message|-
+message|`WebPubSubMessage`|Request message content and datatype|-
 claims|`IDictionary<string, string[]>`|User Claims in connect request|-
 subprotocols|`string[]`|Available subprotocols in connect request|-
 clientCertificates|`ClientCertificate[]`|A list of certificate thumbprint from clients in connect request|-
@@ -201,7 +200,7 @@ For a single request, customer can bind to a target operation related event type
 [return: WebPubSub]
 public static WebPubSubEvent Broadcast(
     [WebPubSubTrigger(Hub = "simplechat", EventName = "message", EventType = "user")] ConnectionContext context,
-    Stream message)
+    WebPubSubMessage message)
 {
     return new WebPubSubEvent
     {
@@ -251,7 +250,7 @@ public static async Task Connected(
     await eventHandler.AddAsync(new WebPubSubEvent
     {
         Operation = WebPubSubOperation.SendToAll,
-        Message = GetStream(new ClientContent($"{context.UserId} connected.").ToString()),
+        Message = new WebPubSubMessage(new ClientContent($"{context.UserId} connected.").ToString()),
         DataType = MessageDataType.Json
     });
     await eventHandler.AddAsync(new WebPubSubEvent
@@ -264,7 +263,7 @@ public static async Task Connected(
     {
         Operation = WebPubSubOperation.SendToUser,
         UserId = context.UserId,
-        Message = GetStream(new ClientContent($"{context.UserId} joined group: group1.").ToString()),
+        Message = new WebPubSubMessage(new ClientContent($"{context.UserId} joined group: group1.").ToString()),
         DataType = MessageDataType.Json
     });
 }
@@ -330,7 +329,7 @@ module.exports = function (context, connectionContext) {
 > [FunctionName("message")]
 > public static async Task Message(
 >     [WebPubSubTrigger(Hub = "simplechat", EventName = "message", EventType = "user")] ConnectionContext context,
->     Stream message,
+>     WebPubSubMessage message,
 >     MessageDataType dataType)
 > {
 >     var server = context.GetWebPubSubServer();
@@ -353,8 +352,7 @@ ConnectionId|`string`|False|connection id in operations related to connection
 Excluded|`string[]`|False|list of connection to exlude in operations like SendToAll and SendToGroup
 Reason|`string`|False|optional reason when function need to close connection
 Permission|`string`|False|permission need to grant/revoke
-Message|`Stream`|False|message to send in the send methods
-DataType|`MessageDataType`|False|message data type in the send methods
+Message|`WebPubSubMessage`|False|message to send in the send methods
 
 ### Abuse Protection
 
