@@ -40,7 +40,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
 
         /// <summary>
         /// The headers of request.
-        /// Headers with duplicated key will be joined by comma.
         /// </summary>
         public Dictionary<string, StringValues> Headers { get; internal set; }
     }

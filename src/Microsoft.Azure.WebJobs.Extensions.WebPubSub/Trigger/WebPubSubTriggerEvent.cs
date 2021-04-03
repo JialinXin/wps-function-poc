@@ -18,7 +18,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
 
         public IDictionary<string, string[]> Query { get; set; }
 
-        public ClientCertificateInfo ClientCertificaties { get; set; }
+        public ClientCertificateInfo[] ClientCertificaties { get; set; }
 
         public string Reason { get; set; }
 

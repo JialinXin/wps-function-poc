@@ -1,19 +1,17 @@
-﻿using Microsoft.Azure.WebJobs.Host.Executors;
-using System;
-using System.Buffers;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net;
 using System.Net.Http;
-using System.Threading;
-using System.Threading.Tasks;
-using System.Web;
-
-using Newtonsoft.Json;
-using Microsoft.Extensions.Primitives;
-using System.IO;
 using System.Security.Cryptography;
 using System.Text;
+using System.Threading;
+using System.Threading.Tasks;
+
+using Microsoft.Azure.WebJobs.Host.Executors;
+using Microsoft.Azure.WebJobs.Host.Listeners;
+using Microsoft.Extensions.Primitives;
+using Newtonsoft.Json;
 
 namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
 {
@@ -59,31 +57,37 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
             {
                 WebPubSubMessage message = null;
                 IDictionary<string, string[]> claims = null;
+                IDictionary<string, string[]> query = null;
                 string[] subprotocols = null;
+                ClientCertificateInfo[] certificates = null;
                 string reason = null;
 
                 if (Utilities.IsSystemConnect(context.Type))
                 {
-                    var content = await req.Content.ReadAsStringAsync();
+                    var content = await req.Content.ReadAsStringAsync().ConfigureAwait(false);
                     var request = JsonConvert.DeserializeObject<ConnectEventRequest>(content);
                     claims = request.Claims;
                     subprotocols = request.Subprotocols;
+                    query = request.Query;
+                    certificates = request.ClientCertificates;
                 }
                 else if (Utilities.IsSystemDisconnected(context.Type))
                 {
-                    var content = await req.Content.ReadAsStringAsync();
+                    var content = await req.Content.ReadAsStringAsync().ConfigureAwait(false);
                     var request = JsonConvert.DeserializeObject<DisconnectEventRequest>(content);
                     reason = request.Reason;
                 }
                 else if (Utilities.IsUserEvent(context.Type))
                 {
-                    var dataType = Utilities.GetDataType(req.Content.Headers.ContentType.MediaType);
-                    if (dataType == MessageDataType.NotSupported)
+                    if (!ValidateContentType(req.Content.Headers.ContentType.MediaType, out var dataType))
                     {
-                        throw new ArgumentException($"Message only supports text,binary,json. Current value is {req.Content.Headers.ContentType.MediaType}");
+                        return new HttpResponseMessage(HttpStatusCode.BadRequest)
+                        {
+                            Content = new StringContent($"Message only supports text,binary,json. Current value is {req.Content.Headers.ContentType.MediaType}")
+                        };
                     }
 
-                    var payload = await req.Content.ReadAsByteArrayAsync();
+                    var payload = await req.Content.ReadAsByteArrayAsync().ConfigureAwait(false);
                     message = new WebPubSubMessage(payload, dataType);
                 }
 
@@ -92,6 +96,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
                     ConnectionContext = context,
                     Message = message,
                     Claims = claims,
+                    Query = query,
+                    ClientCertificaties = certificates,
                     Reason = reason,
                     Subprotocols = subprotocols,
                     TaskCompletionSource = tcs
@@ -106,14 +112,17 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
                 {
                     try
                     {
-                        var response = await tcs.Task.ConfigureAwait(false);
-                        if (response is MessageResponse msgResponse)
+                        using (token.Register(() => tcs.TrySetCanceled()))
                         {
-                            return Utilities.BuildResponse(msgResponse);
-                        }
-                        else if (response is ConnectResponse connectResponse)
-                        {
-                            return Utilities.BuildResponse(connectResponse);
+                            var response = await tcs.Task.ConfigureAwait(false);
+                            if (response is MessageResponse msgResponse)
+                            {
+                                return Utilities.BuildResponse(msgResponse);
+                            }
+                            else if (response is ConnectResponse connectResponse)
+                            {
+                                return Utilities.BuildResponse(connectResponse);
+                            }
                         }
                     }
                     catch (Exception ex)
@@ -125,30 +134,39 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
 
                 return new HttpResponseMessage(HttpStatusCode.OK);
             }
-            // No target hub in functions
+            // No function map to current request
             return new HttpResponseMessage(HttpStatusCode.NotFound);
         }
 
         private static bool TryParseRequest(HttpRequestMessage request, out ConnectionContext context)
         {
-            if (!request.Headers.Contains(Constants.Headers.CloudEvents.ConnectionId))
+            // ConnectionId is required in upstream request, and method is POST.
+            if (!request.Headers.Contains(Constants.Headers.CloudEvents.ConnectionId)
+                || request.Method != HttpMethod.Post)
             {
                 context = null;
                 return false;
             }
 
             context = new ConnectionContext();
-            context.ConnectionId = request.Headers.GetValues(Constants.Headers.CloudEvents.ConnectionId).FirstOrDefault();
-            context.Hub = request.Headers.GetValues(Constants.Headers.CloudEvents.Hub).FirstOrDefault();
-            context.Type = request.Headers.GetValues(Constants.Headers.CloudEvents.Type).FirstOrDefault();
-            context.Event = request.Headers.GetValues(Constants.Headers.CloudEvents.EventName).FirstOrDefault();
-            context.Signature = request.Headers.GetValues(Constants.Headers.CloudEvents.Signature).FirstOrDefault();
-            context.Headers = request.Headers.ToDictionary(x => x.Key, v => new StringValues(v.Value.FirstOrDefault()), StringComparer.OrdinalIgnoreCase);
-
-            // UserId is optional.
-            if (request.Headers.TryGetValues(Constants.Headers.CloudEvents.UserId, out var values))
+            try
             {
-                context.UserId = values.FirstOrDefault();
+                context.ConnectionId = request.Headers.GetValues(Constants.Headers.CloudEvents.ConnectionId).FirstOrDefault();
+                context.Hub = request.Headers.GetValues(Constants.Headers.CloudEvents.Hub).FirstOrDefault();
+                context.Type = request.Headers.GetValues(Constants.Headers.CloudEvents.Type).FirstOrDefault();
+                context.Event = request.Headers.GetValues(Constants.Headers.CloudEvents.EventName).FirstOrDefault();
+                context.Signature = request.Headers.GetValues(Constants.Headers.CloudEvents.Signature).FirstOrDefault();
+                context.Headers = request.Headers.ToDictionary(x => x.Key, v => new StringValues(v.Value.ToArray()), StringComparer.OrdinalIgnoreCase);
+
+                // UserId is optional, e.g. connect
+                if (request.Headers.TryGetValues(Constants.Headers.CloudEvents.UserId, out var values))
+                {
+                    context.UserId = values.FirstOrDefault();
+                }
+            }
+            catch (Exception)
+            {
+                return false;
             }
 
             return true;
@@ -180,9 +198,15 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
             return false;
         }
 
+        private static bool ValidateContentType(string mediaType, out MessageDataType dataType)
+        {
+            dataType = Utilities.GetDataType(mediaType);
+            return dataType != MessageDataType.NotSupported;
+        }
+
         private static string GetFunctionName(ConnectionContext context)
         {
-            var eventType = context.Type.StartsWith(Constants.CloudEventTypeSystemPrefix, StringComparison.OrdinalIgnoreCase) ? 
+            var eventType = context.Type.StartsWith(Constants.Headers.CloudEvents.TypeSystemPrefix, StringComparison.OrdinalIgnoreCase) ? 
                 Constants.EventTypes.System :
                 Constants.EventTypes.User;
             return $"{context.Hub}.{eventType}.{context.Event}".ToLower();
@@ -191,6 +215,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
         private static bool RespondToServiceAbuseCheck(HttpRequestMessage req, HashSet<string> allowedHosts, out HttpResponseMessage response)
         {
             response = new HttpResponseMessage();
+            // TODO: remove Get when function core is fully supported and AWPS service is updated.
             if (req.Method == HttpMethod.Options || req.Method == HttpMethod.Get)
             {
                 var hosts = req.Headers.GetValues(Constants.Headers.WebHookRequestOrigin);
@@ -206,6 +231,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
                     }
                     response.StatusCode = HttpStatusCode.BadRequest;
                 }
+                return true;
             }
             return false;
         }

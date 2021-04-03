@@ -86,6 +86,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
             bindingData.Add(nameof(triggerEvent.Query), triggerEvent.Query);
             bindingData.Add(nameof(triggerEvent.Reason), triggerEvent.Reason);
             bindingData.Add(nameof(triggerEvent.Subprotocols), triggerEvent.Subprotocols);
+            bindingData.Add(nameof(triggerEvent.ClientCertificaties), triggerEvent.ClientCertificaties);
         }
 
         /// <summary>

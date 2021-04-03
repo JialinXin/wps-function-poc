@@ -44,13 +44,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
             };
 
         public static bool IsUserEvent(string eventType)
-            => eventType.StartsWith(Constants.CloudEventTypeUserPrefix, StringComparison.OrdinalIgnoreCase);
+            => eventType.StartsWith(Constants.Headers.CloudEvents.TypeUserPrefix, StringComparison.OrdinalIgnoreCase);
 
         public static bool IsSystemConnect(string eventType)
-            => eventType.Equals($"{Constants.CloudEventTypeSystemPrefix}{Constants.Events.ConnectEvent}", StringComparison.OrdinalIgnoreCase);
+            => eventType.Equals($"{Constants.Headers.CloudEvents.TypeSystemPrefix}{Constants.Events.ConnectEvent}", StringComparison.OrdinalIgnoreCase);
 
         public static bool IsSystemDisconnected(string eventType)
-            => eventType.Equals($"{Constants.CloudEventTypeSystemPrefix}{Constants.Events.DisconnectedEvent}", StringComparison.OrdinalIgnoreCase);
+            => eventType.Equals($"{Constants.Headers.CloudEvents.TypeSystemPrefix}{Constants.Events.DisconnectedEvent}", StringComparison.OrdinalIgnoreCase);
 
         public static bool IsSyncMethod(string eventType)
             => IsUserEvent(eventType) || IsSystemConnect(eventType);

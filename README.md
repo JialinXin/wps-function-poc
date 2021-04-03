@@ -127,6 +127,7 @@ message|`Stream` |Request message content|-
 dataType|`MessageDataType`|Data type of request message|-
 claims|`IDictionary<string, string[]>`|User Claims in connect request|-
 subprotocols|`string[]`|Available subprotocols in connect request|-
+clientCertificates|`ClientCertificate[]`|A list of certificate thumbprint from clients in connect request|-
 reason|`string`|Reason in disconnect request|-
 
 `WebPubSubTrigger` will respect customer returned response for synchronous events of `connect` and `message`. Only matched response will be sent back to service, otherwise, it will be ignored. Notice that `Error` has higher priority than rest fields that if `Error` is set, service will regard this request as failed and take some actions like drop down client connection and log information in service side. If user needs to send message back to current connection using `MessageResponse`, `DataType` is suggested to set within `MessageResponse` to improve data encode/decode. `DataType` is limited to `text`, `json` and `binary` and default value is `binary`.

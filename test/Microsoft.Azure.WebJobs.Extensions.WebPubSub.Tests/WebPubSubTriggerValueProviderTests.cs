@@ -31,26 +31,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub.Tests
                 },
                 Reason = "reason",
                 Message = new WebPubSubMessage("message"),
-                //DataType = MessageDataType.Text
             };
 
             //var value = triggerEvent.GetType().GetProperty(name, BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.IgnoreCase).GetValue(triggerEvent);
             var ttt = typeof(WebPubSubTriggerEvent).GetProperty(name, BindingFlags.IgnoreCase | BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
             var value = ttt.GetValue(triggerEvent);
             Assert.NotNull(value);
-        }
-
-        [Fact]
-        public void TestGetValueByName_Invalid()
-        {
-            var properties = typeof(WebPubSubTriggerEvent)
-                    .GetProperties(BindingFlags.IgnoreCase | BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
-            string names = string.Empty;
-            foreach (var property in properties)
-            {
-                names += property.Name + ";";
-            }
-            Console.WriteLine(names);
         }
     }
 }

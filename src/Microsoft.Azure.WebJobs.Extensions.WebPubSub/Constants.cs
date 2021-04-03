@@ -18,14 +18,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
             public const string PlainTextContentType = "text/plain";
         }
 
-        //public const string DefaultHub = "_default";
-
-        public const string CloudEventTypeSystemPrefix = "azure.webpubsub.sys.";
-        public const string CloudEventTypeUserPrefix = "azure.webpubsub.user.";
-
-        public const char HeaderSeparator = ',';
-        public const string ClaimsSeparator = ": ";
-
         public static class EventTypes
         {
             public const string User = "user";
@@ -61,6 +53,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
                 public const string Source = Prefix + "source";
                 public const string EventName = Prefix + "eventName";
                 public const string UserId = Prefix + "userId";
+
+                public const string TypeSystemPrefix = "azure.webpubsub.sys.";
+                public const string TypeUserPrefix = "azure.webpubsub.user.";
             }
 
             public const string WebSocketSubProtocols = "Sec-WebSocket-Protocol";
