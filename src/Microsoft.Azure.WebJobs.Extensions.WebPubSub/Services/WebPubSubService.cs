@@ -162,9 +162,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
             request.Headers.AcceptCharset.Add(new StringWithQualityHeaderValue("UTF-8"));
             request.Headers.Add("Awps-User-Agent", GetProductInfo());
 
-            if (message != null && message.GetStream() != null)
+            if (message != null && message.Body.ToStream() != null)
             {
-                request.Content = new StreamContent(message.GetStream());
+                request.Content = new StreamContent(message.Body.ToStream());
                 request.Content.Headers.ContentType = Utilities.GetMediaType(message.DataType);
             }
             return _httpClient.SendAsync(request);

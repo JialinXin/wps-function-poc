@@ -167,42 +167,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
             }
         }
 
-        private sealed class MessageToStringConverter : IAsyncConverter<WebPubSubMessage, string>
-        {
-            public Task<string> ConvertAsync(WebPubSubMessage input, CancellationToken cancellationToken)
-            {
-                if (input == null)
-                {
-                    throw new ArgumentNullException();
-                }
-
-                if (input.Body == null)
-                {
-                    return null;
-                }
-
-                return Task.FromResult(input.Body.ToString());
-            }
-        }
-
-        private sealed class MessageToBinaryConverter : IAsyncConverter<WebPubSubMessage, byte[]>
-        {
-            public Task<byte[]> ConvertAsync(WebPubSubMessage input, CancellationToken cancellationToken)
-            {
-                if (input == null)
-                {
-                    throw new ArgumentNullException();
-                }
-
-                if (input.Body == null)
-                {
-                    return null;
-                }
-
-                return Task.FromResult(input.Payload);
-            }
-        }
-
         private sealed class JObjectToPocoConverter<T> : IConverter<JObject, T>
         {
             public T Convert(JObject input)

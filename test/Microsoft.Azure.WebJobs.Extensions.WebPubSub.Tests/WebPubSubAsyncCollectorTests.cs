@@ -26,7 +26,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub.Tests
 
             var actualData = (WebPubSubEvent)serviceMock.Invocations[0].Arguments[0];
             Assert.Equal(MessageDataType.Text, actualData.Message.DataType);
-            Assert.Equal(message, actualData.Message.Body);
+            Assert.Equal(message, actualData.Message.Body.ToString());
         }
 
         //[Fact]

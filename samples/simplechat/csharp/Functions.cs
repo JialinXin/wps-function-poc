@@ -4,11 +4,7 @@ using Microsoft.Azure.WebJobs.Extensions.Http;
 using Microsoft.Azure.WebJobs.Extensions.WebPubSub;
 using Newtonsoft.Json;
 using System;
-using System.IO;
-using System.Text;
 using System.Threading.Tasks;
-using System.Linq;
-using System.Collections.Generic;
 
 namespace SimpleChat
 {
@@ -17,7 +13,7 @@ namespace SimpleChat
         [FunctionName("login")]
         public static WebPubSubConnection GetClientConnection(
             [HttpTrigger(AuthorizationLevel.Anonymous, "get", "post")] HttpRequest req,
-            [WebPubSubConnection(Hub = "simplechat")] WebPubSubConnection connection)
+            [WebPubSubConnection(UserId = "{query.userid}")] WebPubSubConnection connection)
         {
             Console.WriteLine("login");
             return connection;
@@ -25,7 +21,7 @@ namespace SimpleChat
 
         [FunctionName("connect")]
         public static ConnectResponse Connect(
-            [WebPubSubTrigger("connect", "system")] ConnectionContext connectionContext)
+            [WebPubSubTrigger("simplechat", "connect", "system")] ConnectionContext connectionContext)
         {
             Console.WriteLine($"Received client connect with connectionId: {connectionContext.ConnectionId}");
             if (connectionContext.UserId == "attacker")
