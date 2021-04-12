@@ -1,4 +1,5 @@
 ﻿using Newtonsoft.Json.Linq;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Text;
@@ -11,7 +12,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub.Tests
         public static IEnumerable<object[]> MessageTestData =>
             new List<object[]>
             {
-                new object[] {new WebPubSubMessage("SGVsbG8=", MessageDataType.Binary), "SGVsbG8=" },
+                new object[] {new WebPubSubMessage("Hello", MessageDataType.Binary), "SGVsbG8=" },
                 new object[] {new WebPubSubMessage("Hello", MessageDataType.Text), "Hello" },
                 new object[] {new WebPubSubMessage("Hello", MessageDataType.Json), "Hello" },
                 new object[] {new WebPubSubMessage(Encoding.UTF8.GetBytes("Hello"), MessageDataType.Binary), "SGVsbG8=" },
@@ -37,7 +38,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub.Tests
             
             var result = jsevent.ToObject<WebPubSubEvent>();
 
-            Assert.Equal("test", result.Message.Body);
+            Assert.Equal("test", result.Message.Body.ToString());
             Assert.Equal(MessageDataType.Text, result.Message.DataType);
             Assert.Equal(WebPubSubOperation.SendToUser, result.Operation);
             Assert.Equal("abc", result.UserId);
@@ -63,10 +64,18 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub.Tests
 
             var result = jsObject.ToObject<WebPubSubEvent>();
 
-            Assert.Equal(expected, result.Message.Body);
+            Assert.Equal(expected, result.Message.Body.ToString());
             Assert.Equal(dataType, result.Message.DataType);
             Assert.Equal(WebPubSubOperation.SendToConnection, result.Operation);
             Assert.Equal("abc", result.ConnectionId);
+        }
+
+        [Fact]
+        public void TestBinaryData()
+        {
+            var test = BinaryData.FromString("test");
+
+            var aaa = test.ToString();
         }
     }
 }

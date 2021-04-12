@@ -6,5 +6,14 @@ module.exports = function (context, abc) {
     "operation": "sendToAll",
     "message": context.bindingData.message
   }];
+  context.response = {
+    "message": {
+      "body": JSON.stringify({
+        from: '[System]',
+        content: 'ack.'
+      }),
+      "dataType" : "json"
+    }
+  };
   context.done();
 };
