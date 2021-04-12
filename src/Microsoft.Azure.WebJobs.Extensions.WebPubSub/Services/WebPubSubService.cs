@@ -1,6 +1,8 @@
-﻿using System;
+﻿// Copyright (c) Microsoft. All rights reserved.
+// Licensed under the MIT license. See LICENSE file in the project root for full license information.
+
+using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Linq;
 using System.Net.Http;
 using System.Net.Http.Headers;
@@ -161,7 +163,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
             request.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("*/*"));
             request.Headers.AcceptCharset.Clear();
             request.Headers.AcceptCharset.Add(new StringWithQualityHeaderValue("UTF-8"));
-            request.Headers.Add("Awps-User-Agent", GetProductInfo());
+            request.Headers.Add("Awps-User-Agent", Utilities.GetProductInfo());
 
             if (message != null && message.Body != null)
             {
@@ -169,18 +171,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
                 request.Content.Headers.ContentType = Utilities.GetMediaType(message.DataType);
             }
             return _httpClient.SendAsync(request);
-        }
-
-        private static string GetProductInfo()
-        {
-            var assembly = typeof(WebPubSubService).GetTypeInfo().Assembly;
-            var packageId = assembly.GetName().Name;
-            var version = assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>().InformationalVersion;
-            var runtime = RuntimeInformation.FrameworkDescription?.Trim();
-            var operatingSystem = RuntimeInformation.OSDescription?.Trim();
-            var processorArchitecture = RuntimeInformation.ProcessArchitecture.ToString().Trim();
-
-            return $"{packageId}/{version} ({runtime}; {operatingSystem}; {processorArchitecture})";
         }
 
         private static string GetAdditionalPath(WebPubSubOperation operation, params object[] parameters) =>

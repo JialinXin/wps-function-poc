@@ -1,8 +1,6 @@
 ﻿// Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using Microsoft.IdentityModel.Tokens;
-using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.IdentityModel.Tokens.Jwt;
@@ -11,9 +9,13 @@ using System.Net;
 using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Reflection;
+using System.Runtime.InteropServices;
 using System.Security.Claims;
 using System.Text;
 using System.Text.RegularExpressions;
+
+using Microsoft.IdentityModel.Tokens;
+using Newtonsoft.Json;
 
 namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
 {
@@ -230,6 +232,18 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
         public static string FirstOrDefault(params string[] values)
         {
             return values.FirstOrDefault(v => !string.IsNullOrEmpty(v));
+        }
+
+        public static string GetProductInfo()
+        {
+            var assembly = typeof(WebPubSubService).GetTypeInfo().Assembly;
+            var packageId = assembly.GetName().Name;
+            var version = assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>().InformationalVersion;
+            var runtime = RuntimeInformation.FrameworkDescription?.Trim();
+            var operatingSystem = RuntimeInformation.OSDescription?.Trim();
+            var processorArchitecture = RuntimeInformation.ProcessArchitecture.ToString().Trim();
+
+            return $"{packageId}/{version} ({runtime}; {operatingSystem}; {processorArchitecture})";
         }
     }
 }

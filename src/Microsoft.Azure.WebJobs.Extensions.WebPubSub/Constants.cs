@@ -1,6 +1,5 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
+﻿// Copyright (c) Microsoft. All rights reserved.
+// Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
 {
@@ -57,8 +56,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
                 public const string TypeSystemPrefix = "azure.webpubsub.sys.";
                 public const string TypeUserPrefix = "azure.webpubsub.user.";
             }
-
-            public const string WebSocketSubProtocols = "Sec-WebSocket-Protocol";
 
             public const string WebHookRequestOrigin = "WebHook-Request-Origin";
             public const string WebHookAllowedOrigin = "WebHook-Allowed-Origin";
