@@ -32,7 +32,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
             {
                 throw new ArgumentException($"Not supported operation: {item.Operation}, exception: {ex}");
             }
-            
         }
 
         public Task FlushAsync(CancellationToken cancellationToken = default)

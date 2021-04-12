@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Net.Http;
 using System.Net.Http.Headers;
@@ -162,9 +163,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
             request.Headers.AcceptCharset.Add(new StringWithQualityHeaderValue("UTF-8"));
             request.Headers.Add("Awps-User-Agent", GetProductInfo());
 
-            if (message != null && message.Body.ToStream() != null)
+            if (message != null && message.Body != null)
             {
-                request.Content = new StreamContent(message.Body.ToStream());
+                request.Content = new StreamContent(message.GetStream());
                 request.Content.Headers.ContentType = Utilities.GetMediaType(message.DataType);
             }
             return _httpClient.SendAsync(request);

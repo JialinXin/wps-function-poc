@@ -3,15 +3,14 @@
 
 module.exports = function (context, connectionContext) {
   context.bindings.webPubSubEvent = [];
-
   context.bindings.webPubSubEvent.push({
     "operation": "sendToAll",
     "message": {
       "body": JSON.stringify({
-          from: '[System]',
-          content: `${context.bindingData.connectionContext.userId} connected.`
+        from: '[System]',
+        content: `${context.bindingData.connectionContext.userId} connected.`
       }),
-      "dataType": "json"
+      "dataType" : "json"
     }
   });
 

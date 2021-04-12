@@ -1,6 +1,4 @@
-﻿using System.IO;
-using Newtonsoft.Json;
-using Microsoft.Azure.WebJobs.Description;
+﻿using Newtonsoft.Json;
 using Newtonsoft.Json.Serialization;
 
 namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub

@@ -1,14 +1,15 @@
 ﻿using Newtonsoft.Json;
+using Newtonsoft.Json.Converters;
+using Newtonsoft.Json.Serialization;
 
 namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
 {
-    [JsonObject]
+    [JsonObject(NamingStrategyType = typeof(CamelCaseNamingStrategy))]
     public class Error
     {
-        [JsonProperty("code")]
+        [JsonConverter(typeof(StringEnumConverter))]
         public ErrorCode Code { get; set; }
 
-        [JsonProperty("message")]
         public string Message { get; set; } = string.Empty;
 
         public Error(ErrorCode code)

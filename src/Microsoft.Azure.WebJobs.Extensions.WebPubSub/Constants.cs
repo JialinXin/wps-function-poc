@@ -63,5 +63,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
             public const string WebHookRequestOrigin = "WebHook-Request-Origin";
             public const string WebHookAllowedOrigin = "WebHook-Allowed-Origin";
         }
+
+        public class ErrorMessages
+        {
+            public const string NotSupportedDataType = "Message only supports text, binary, json. Current value is: ";
+        }
     }
 }

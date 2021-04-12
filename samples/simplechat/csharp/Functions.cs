@@ -41,21 +41,20 @@ namespace SimpleChat
         [FunctionName("connected")]
         public static async Task Connected(
             [WebPubSubTrigger("connected", "system")] ConnectionContext connectionContext,
-            [WebPubSub] IAsyncCollector<WebPubSubEvent> eventHandler)
+            [WebPubSub] IAsyncCollector<WebPubSubEvent> webpubsubEvent)
         {
-            await eventHandler.AddAsync(new WebPubSubEvent
+            await webpubsubEvent.AddAsync(new WebPubSubEvent
             {
-                Operation = WebPubSubOperation.SendToAll,
                 Message = new WebPubSubMessage(new ClientContent($"{connectionContext.UserId} connected.").ToString()),
             });
 
-            await eventHandler.AddAsync(new WebPubSubEvent
+            await webpubsubEvent.AddAsync(new WebPubSubEvent
             {
                 Operation = WebPubSubOperation.AddUserToGroup,
                 UserId = connectionContext.UserId,
                 GroupId = "group1"
             });
-            await eventHandler.AddAsync(new WebPubSubEvent
+            await webpubsubEvent.AddAsync(new WebPubSubEvent
             {
                 Operation = WebPubSubOperation.SendToUser,
                 UserId = connectionContext.UserId,

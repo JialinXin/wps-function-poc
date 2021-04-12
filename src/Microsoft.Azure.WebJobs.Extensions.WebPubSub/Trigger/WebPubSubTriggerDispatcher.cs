@@ -62,7 +62,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
                 ClientCertificateInfo[] certificates = null;
                 string reason = null;
 
-                if (Utilities.IsSystemConnect(context.Type))
+                if (context.EventType.Equals(Constants.EventTypes.System) && context.Event.Equals(Constants.Events.ConnectEvent))
                 {
                     var content = await req.Content.ReadAsStringAsync().ConfigureAwait(false);
                     var request = JsonConvert.DeserializeObject<ConnectEventRequest>(content);
@@ -71,19 +71,19 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
                     query = request.Query;
                     certificates = request.ClientCertificates;
                 }
-                else if (Utilities.IsSystemDisconnected(context.Type))
+                else if (context.EventType.Equals(Constants.EventTypes.System) && context.Event.Equals(Constants.Events.ConnectEvent))
                 {
                     var content = await req.Content.ReadAsStringAsync().ConfigureAwait(false);
                     var request = JsonConvert.DeserializeObject<DisconnectEventRequest>(content);
                     reason = request.Reason;
                 }
-                else if (Utilities.IsUserEvent(context.Type))
+                else if (context.EventType.Equals(Constants.EventTypes.User))
                 {
                     if (!ValidateContentType(req.Content.Headers.ContentType.MediaType, out var dataType))
                     {
                         return new HttpResponseMessage(HttpStatusCode.BadRequest)
                         {
-                            Content = new StringContent($"Message only supports text,binary,json. Current value is {req.Content.Headers.ContentType.MediaType}")
+                            Content = new StringContent($"{Constants.ErrorMessages.NotSupportedDataType}{req.Content.Headers.ContentType.MediaType}")
                         };
                     }
 
@@ -97,9 +97,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
                     Message = message,
                     Claims = claims,
                     Query = query,
+                    Subprotocols = subprotocols,
                     ClientCertificaties = certificates,
                     Reason = reason,
-                    Subprotocols = subprotocols,
                     TaskCompletionSource = tcs
                 };
                 await executor.Executor.TryExecuteAsync(new TriggeredFunctionData
@@ -108,7 +108,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
                 }, token);
 
                 // After function processed, return on-hold event reponses.
-                if (Utilities.IsSyncMethod(context.Type))
+                if (Utilities.IsSyncMethod(context.EventType, context.Event))
                 {
                     try
                     {
@@ -153,7 +153,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
             {
                 context.ConnectionId = request.Headers.GetValues(Constants.Headers.CloudEvents.ConnectionId).FirstOrDefault();
                 context.Hub = request.Headers.GetValues(Constants.Headers.CloudEvents.Hub).FirstOrDefault();
-                context.Type = request.Headers.GetValues(Constants.Headers.CloudEvents.Type).FirstOrDefault();
+                context.EventType = Utilities.GetEventType(request.Headers.GetValues(Constants.Headers.CloudEvents.Type).FirstOrDefault());
                 context.Event = request.Headers.GetValues(Constants.Headers.CloudEvents.EventName).FirstOrDefault();
                 context.Signature = request.Headers.GetValues(Constants.Headers.CloudEvents.Signature).FirstOrDefault();
                 context.Headers = request.Headers.ToDictionary(x => x.Key, v => new StringValues(v.Value.ToArray()), StringComparer.OrdinalIgnoreCase);
@@ -172,7 +172,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
             return true;
         }
 
-        private bool ValidateSignature(string connectionId, string signature, HashSet<string> accessKeys)
+        private static bool ValidateSignature(string connectionId, string signature, HashSet<string> accessKeys)
         {
             foreach (var accessKey in accessKeys)
             {
@@ -200,16 +200,21 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
 
         private static bool ValidateContentType(string mediaType, out MessageDataType dataType)
         {
-            dataType = Utilities.GetDataType(mediaType);
-            return dataType != MessageDataType.NotSupported;
+            try
+            {
+                dataType = Utilities.GetDataType(mediaType);
+                return true;
+            }
+            catch (Exception)
+            {
+                dataType = MessageDataType.Binary;
+                return false;
+            }
         }
 
         private static string GetFunctionName(ConnectionContext context)
         {
-            var eventType = context.Type.StartsWith(Constants.Headers.CloudEvents.TypeSystemPrefix, StringComparison.OrdinalIgnoreCase) ? 
-                Constants.EventTypes.System :
-                Constants.EventTypes.User;
-            return $"{context.Hub}.{eventType}.{context.Event}".ToLower();
+            return $"{context.Hub}.{context.EventType}.{context.Event}".ToLower();
         }
 
         private static bool RespondToServiceAbuseCheck(HttpRequestMessage req, HashSet<string> allowedHosts, out HttpResponseMessage response)

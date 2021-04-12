@@ -7,12 +7,10 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Newtonsoft.Json.Linq;
 using System;
-using System.Collections.Generic;
 using System.Linq;
 using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
-using System.Xml;
 
 namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
 {
@@ -145,25 +143,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
                 var item = Utilities.ParseConnectionString(connectionString);
                 _options.AllowedHosts.Add(new Uri(item.EndPoint).Host);
                 _options.AccessKeys.Add(item.AccessKey);
-            }
-        }
-
-        private sealed class WebPubSubOpenType : OpenType.Poco
-        {
-            public override bool IsMatch(Type type, OpenTypeMatchContext context)
-            {
-                if (type.IsGenericType
-                    && type.GetGenericTypeDefinition() == typeof(IEnumerable<>))
-                {
-                    return false;
-                }
-
-                if (type.FullName == "System.Object")
-                {
-                    return true;
-                }
-
-                return base.IsMatch(type, context);
             }
         }
 

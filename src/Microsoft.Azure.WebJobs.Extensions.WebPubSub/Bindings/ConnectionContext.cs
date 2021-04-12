@@ -11,7 +11,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
         /// <summary>
         /// The type of the message.
         /// </summary>
-        public string Type { get; internal set; }
+        public string EventType { get; internal set; }
 
         /// <summary>
         /// The event of the message.

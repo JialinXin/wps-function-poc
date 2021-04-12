@@ -8,6 +8,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
     [Binding]
     public class WebPubSubTriggerAttribute : Attribute
     {
+
         /// <summary>
         /// Used to map to method name automatically
         /// </summary>
@@ -16,35 +17,40 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
         /// <param name="eventType"></param>
         public WebPubSubTriggerAttribute(string hub, string eventName, string eventType = "system")
         {
+            if (!eventType.ToLower().Equals(Constants.EventTypes.User) && 
+                !eventType.ToLower().Equals(Constants.EventTypes.System))
+            {
+                throw new ArgumentException("Not supported event type");
+            }
+
             Hub = hub;
             EventName = eventName;
             EventType = eventType;
         }
 
         public WebPubSubTriggerAttribute(string eventName, string eventType = "system")
+            : this ("", eventName, eventType)
         {
-            EventName = eventName;
-            EventType = eventType;
         }
 
         /// <summary>
         /// The hub of request.
         /// </summary>
         [AutoResolve]
-        public string Hub { get; set; }
+        public string Hub { get; }
         
         /// <summary>
         /// The event of the request
         /// </summary>
-        [AutoResolve]
         [Required]
-        public string EventName { get; set; }
+        [AutoResolve]
+        public string EventName { get; }
 
         /// <summary>
-        /// The event type, allowed value in system or user
+        /// The event type, allowed value is system or user
         /// </summary>
         [AutoResolve]
-        [RegularExpression("(?i)(user|system)", ErrorMessage = "EventType must be either 'system' or 'user'.")]
-        public string EventType { get; set; } = "system";
+        public string EventType { get; }
+
     }
 }

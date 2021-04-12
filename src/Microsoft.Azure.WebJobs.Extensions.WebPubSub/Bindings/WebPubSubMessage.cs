@@ -1,42 +1,41 @@
-﻿using System;
+﻿using Newtonsoft.Json;
+using Newtonsoft.Json.Converters;
+using Newtonsoft.Json.Serialization;
+using System;
 using System.IO;
+using System.Text;
 
 namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
 {
+    [JsonObject(NamingStrategyType = typeof(CamelCaseNamingStrategy))]
     public class WebPubSubMessage
     {
         /// <summary>
         /// Web PubSub data message
+        /// Binary data is string(base64 encoded) to align <see cref="https://www.newtonsoft.com/json/help/html/SerializationGuide.htm"/>
         /// </summary>
-        public BinaryData Body { get; private set; }
+        public string Body { get; }
+
+        internal byte[] Payload { get; }
 
         /// <summary>
         /// DataType of the message.
         /// </summary>
-        public MessageDataType DataType { get; private set; } = MessageDataType.Text;
+        [JsonConverter(typeof(StringEnumConverter))]
+        public MessageDataType DataType { get; } = MessageDataType.Text;
 
         /// <summary>
         /// Constructor for string/json typed message
         /// </summary>
+        [JsonConstructor]
         public WebPubSubMessage(string message, MessageDataType dataType = MessageDataType.Text)
         {
+            Body = message;
+            // string message from js will be base64 encoded
+            Payload = dataType == MessageDataType.Binary ?
+                Convert.FromBase64String(message) :
+                Encoding.UTF8.GetBytes(message);
             DataType = dataType;
-
-            if (DataType == MessageDataType.Binary)
-            {
-                try
-                {
-                    var decodedBytes = Convert.FromBase64String(message);
-                    Body = BinaryData.FromBytes(decodedBytes);
-                    return;
-                }
-                catch (FormatException)
-                {
-                    // ignore exception and fallback to string value.
-                }
-            }
-            // simple string
-            Body = BinaryData.FromString(message);
         }
 
         /// <summary>
@@ -44,7 +43,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
         /// </summary>
         public WebPubSubMessage(Stream message, MessageDataType dataType)
         {
-            Body = BinaryData.FromStream(message);
+            Payload = ReadBytes(message);
+            Body = dataType == MessageDataType.Binary ?
+                Convert.ToBase64String(Payload) :
+                Encoding.UTF8.GetString(Payload);
             DataType = dataType;
         }
 
@@ -53,13 +55,30 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
         /// </summary>
         public WebPubSubMessage(byte[] message, MessageDataType dataType)
         {
-            Body = BinaryData.FromBytes(message);
+            Payload = message;
+            Body = dataType == MessageDataType.Binary ?
+                Convert.ToBase64String(Payload) :
+                Encoding.UTF8.GetString(Payload);
             DataType = dataType;
         }
 
         public override string ToString()
         {
-            return Body.ToString();
+            return Body;
+        }
+
+        public Stream GetStream()
+        {
+            return new MemoryStream(Payload);
+        }
+
+        private static byte[] ReadBytes(Stream stream)
+        {
+            using (var ms = new MemoryStream())
+            {
+                stream.CopyTo(ms);
+                return ms.ToArray();
+            }
         }
     }
 }

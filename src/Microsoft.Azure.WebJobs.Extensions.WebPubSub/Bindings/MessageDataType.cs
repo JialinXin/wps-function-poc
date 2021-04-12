@@ -9,11 +9,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
     {
         [EnumMember(Value = "binary")]
         Binary,
-        [EnumMember(Value = "text")]
-        Text,
         [EnumMember(Value = "json")]
         Json,
-        [EnumMember(Value = "")]
-        NotSupported
+        [EnumMember(Value = "text")]
+        Text
     }
 }

@@ -25,7 +25,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub.Tests
                 {
                     ConnectionId = "000000",
                     Event = "message",
-                    Type = "user",
+                    EventType = "user",
                     Hub = "testhub",
                     UserId = "user1"
                 },

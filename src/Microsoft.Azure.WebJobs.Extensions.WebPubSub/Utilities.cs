@@ -40,20 +40,19 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
                 Constants.ContentTypes.BinaryContentType => MessageDataType.Binary,
                 Constants.ContentTypes.JsonContentType => MessageDataType.Json,
                 Constants.ContentTypes.PlainTextContentType => MessageDataType.Text,
-                _ => MessageDataType.NotSupported
+                _ => throw new ArgumentException($"{Constants.ErrorMessages.NotSupportedDataType}{mediaType}")
             };
 
-        public static bool IsUserEvent(string eventType)
-            => eventType.StartsWith(Constants.Headers.CloudEvents.TypeUserPrefix, StringComparison.OrdinalIgnoreCase);
+        public static string GetEventType(string ceType)
+        {
+            return ceType.StartsWith(Constants.Headers.CloudEvents.TypeSystemPrefix) ?
+                Constants.EventTypes.System :
+                Constants.EventTypes.User;
+        }
 
-        public static bool IsSystemConnect(string eventType)
-            => eventType.Equals($"{Constants.Headers.CloudEvents.TypeSystemPrefix}{Constants.Events.ConnectEvent}", StringComparison.OrdinalIgnoreCase);
-
-        public static bool IsSystemDisconnected(string eventType)
-            => eventType.Equals($"{Constants.Headers.CloudEvents.TypeSystemPrefix}{Constants.Events.DisconnectedEvent}", StringComparison.OrdinalIgnoreCase);
-
-        public static bool IsSyncMethod(string eventType)
-            => IsUserEvent(eventType) || IsSystemConnect(eventType);
+        public static bool IsSyncMethod(string eventType, string eventName)
+            => eventType.Equals(Constants.EventTypes.User) ||
+            (eventType.Equals(Constants.EventTypes.System) && eventName.Equals(Constants.Events.ConnectEvent));
 
         public static (string EndPoint, string AccessKey, string Version, string Port) ParseConnectionString(string connectionString)
         {
@@ -92,7 +91,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
                 return BuildErrorResponse(response.Error);
             }
 
-            result.Content = new StreamContent(response.Message.Body.ToStream());
+            result.Content = new StreamContent(response.Message.GetStream());
             result.Content.Headers.ContentType = GetMediaType(response.Message.DataType);
 
             return result;
