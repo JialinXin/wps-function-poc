@@ -1,9 +1,9 @@
 ﻿using Newtonsoft.Json.Linq;
-using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Text;
 using Xunit;
+using static Microsoft.Azure.WebJobs.Extensions.WebPubSub.WebPubSubTriggerBinding;
 
 namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub.Tests
 {
@@ -71,11 +71,34 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub.Tests
         }
 
         [Fact]
-        public void TestBinaryData()
+        public void ParseErrorResponse()
         {
-            var test = BinaryData.FromString("test");
+            var test = @"{""code"":""unauthorized"",""errorMessage"":""not valid user.""}";
+            var jObject = JObject.Parse(test);
 
-            var aaa = test.ToString();
+            var result = TriggerReturnValueProvider.ConvertToResponseIfPossible(jObject);
+
+            Assert.NotNull(result);
+            Assert.Equal(typeof(ErrorResponse), result.GetType());
+
+            var converted = (ErrorResponse)result;
+            Assert.Equal(ErrorCode.Unauthorized, converted.Code);
+            Assert.Equal("not valid user.", converted.ErrorMessage);
+        }
+
+        [Fact]
+        public void ParseConnectResponse()
+        {
+            var test = @"{""userId"":""aaa""}";
+            var jObject = JObject.Parse(test);
+
+            var result = TriggerReturnValueProvider.ConvertToResponseIfPossible(jObject);
+
+            Assert.NotNull(result);
+            Assert.Equal(typeof(ConnectResponse), result.GetType());
+
+            var converted = (ConnectResponse)result;
+            Assert.Equal("aaa", converted.UserId);
         }
     }
 }

@@ -8,8 +8,10 @@ using Microsoft.Azure.WebJobs.Description;
 
 namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
 {
-    [AttributeUsage(AttributeTargets.ReturnValue | AttributeTargets.Parameter)]
-    [Binding]
+    [AttributeUsage(AttributeTargets.Parameter)]
+#pragma warning disable CS0618 // Type or member is obsolete
+    [Binding(TriggerHandlesReturnValue = true)]
+#pragma warning restore CS0618 // Type or member is obsolete
     public class WebPubSubTriggerAttribute : Attribute
     {
 
@@ -19,20 +21,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
         /// <param name="hub"></param>
         /// <param name="eventName"></param>
         /// <param name="eventType"></param>
-        public WebPubSubTriggerAttribute(string hub, string eventName, string eventType = "system")
+        public WebPubSubTriggerAttribute(string hub, string eventName, EventType eventType)
         {
-            if (!eventType.ToLower().Equals(Constants.EventTypes.User) && 
-                !eventType.ToLower().Equals(Constants.EventTypes.System))
-            {
-                throw new ArgumentException("Not supported event type");
-            }
-
             Hub = hub;
             EventName = eventName;
             EventType = eventType;
         }
 
-        public WebPubSubTriggerAttribute(string eventName, string eventType = "system")
+        public WebPubSubTriggerAttribute(string eventName, EventType eventType)
             : this ("", eventName, eventType)
         {
         }
@@ -54,7 +50,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
         /// The event type, allowed value is system or user
         /// </summary>
         [AutoResolve]
-        public string EventType { get; }
+        public EventType EventType { get; }
 
     }
 }

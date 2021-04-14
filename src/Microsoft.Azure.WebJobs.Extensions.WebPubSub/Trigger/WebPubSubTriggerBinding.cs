@@ -46,7 +46,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
 
                 return Task.FromResult<ITriggerData>(new TriggerData(new WebPubSubTriggerValueProvider(_parameterInfo, triggerEvent), bindingData)
                 {
-                    ReturnValueProvider = triggerEvent.TaskCompletionSource == null ? null : new TriggerReturnValueProvider(triggerEvent.TaskCompletionSource),
+                    ReturnValueProvider = new TriggerReturnValueProvider(triggerEvent.TaskCompletionSource),
                 });
             }
 
@@ -109,7 +109,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
         /// <summary>
         /// A provider that responsible for providing value in various type to be bond to function method parameter.
         /// </summary>
-        private class WebPubSubTriggerValueProvider : IValueBinder
+        internal class WebPubSubTriggerValueProvider : IValueBinder
         {
             private readonly ParameterInfo _parameter;
             private readonly WebPubSubTriggerEvent _triggerEvent;
@@ -127,15 +127,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
                 {
                     return Task.FromResult<object>(_triggerEvent.ConnectionContext);
                 }
-                // Bind default ConnectionContext in non-csharp for trigger
-                // User get rest metadata from context.bindingData.<name>
-                if (_parameter.ParameterType == typeof(object) ||
-                         _parameter.ParameterType == typeof(JObject))
-                {
-                    return Task.FromResult<object>(JObject.FromObject(_triggerEvent.ConnectionContext));
-                }
-                // Bind rest with naming restricted.
-                return Task.FromResult(GetValueByName(_parameter.Name));
+
+                // Bind rest with name and type restricted.
+                return Task.FromResult(GetValueByName(_parameter.Name, _parameter.ParameterType));
             }
 
             public string ToInvokeString()
@@ -143,7 +137,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
                 return _parameter.Name;
             }
 
-            public Type Type => GetType(_parameter.Name);
+            public Type Type => _parameter.ParameterType;
 
             // No use here
             public Task SetValueAsync(object value, CancellationToken cancellationToken)
@@ -151,31 +145,36 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
                 return Task.CompletedTask;
             }
 
-            private object GetValueByName(string parameterName)
+            private object GetValueByName(string parameterName, Type targetType)
             {
                 var property = Utilities.GetProperty(typeof(WebPubSubTriggerEvent), parameterName);
                 if (property != null)
                 {
-                    return property.GetValue(_triggerEvent);
+                    var value = property.GetValue(_triggerEvent);
+                    if (value == null || value.GetType() == targetType)
+                    {
+                        return value;
+                    }
+                    // non-csharp(js) will load trigger object as string
+                    else if (targetType == typeof(string))
+                    {
+                        return JObject.FromObject(value).ToString();
+                    }
+                    throw new ArgumentException($"Not supported parameter type: {targetType}, expected: {value.GetType()} or dataType limited to string in javascript.");
+                }
+                // return ConnectionContext as a default bind to convenient non-csharp.
+                else if (targetType == typeof(string))
+                {
+                    return JObject.FromObject(_triggerEvent.ConnectionContext).ToString();
                 }
                 throw new ArgumentException($"Invalid parameter name: {parameterName}, supported names are: {string.Join(",", Utilities.GetTypeNames(typeof(WebPubSubTriggerEvent)))}");
-            }
-
-            private Type GetType(string parameterName)
-            {
-                var property = Utilities.GetProperty(typeof(WebPubSubTriggerEvent), parameterName);
-                if (property != null)
-                {
-                    return property.PropertyType;
-                }
-                return typeof(object).MakeByRefType();
             }
         }
 
         /// <summary>
         /// A provider to handle return value.
         /// </summary>
-        private class TriggerReturnValueProvider : IValueBinder
+        internal class TriggerReturnValueProvider : IValueBinder
         {
             private readonly TaskCompletionSource<object> _tcs;
 
@@ -200,8 +199,44 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
 
             public Task SetValueAsync(object value, CancellationToken cancellationToken)
             {
-                _tcs.TrySetResult(value);
+                if (value is string strValue)
+                {
+                    var converted = ConvertToResponseIfPossible(JObject.Parse(strValue));
+                    _tcs.TrySetResult(converted);
+                }
+                else if (value is JObject jValue)
+                {
+                    var converted = ConvertToResponseIfPossible(jValue);
+                    _tcs.TrySetResult(converted);
+                }
+                else
+                {
+                    _tcs.TrySetResult(value);
+                }
                 return Task.CompletedTask;
+            }
+
+            internal static object ConvertToResponseIfPossible(JObject value)
+            {
+                // try cast by required field in order.
+                if (value["code"] != null)
+                {
+                    return value.ToObject<ErrorResponse>();
+                }
+
+                if (value["message"] != null)
+                {
+                    return value.ToObject<MessageResponse>();
+                }
+
+                var connect = value.ToObject<ConnectResponse>();
+                if (connect != null)
+                {
+                    return connect;
+                }
+
+                // return null and not supported response will be ignored.
+                return null;
             }
         }
     }

@@ -14,11 +14,6 @@
       "name": "webPubSubEvent",
       "hub": "simplechat",
       "direction": "out"
-    },
-    {
-      "type": "messageResponse",
-      "direction": "out",
-      "name": "response"
     }
   ]
 }

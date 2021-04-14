@@ -3,16 +3,11 @@
   "bindings": [
     {
       "type": "webPubSubTrigger",
-      "name": "connectionContext",
+      "name": "abc",
       "direction": "in",
       "hub": "simplechat",
       "eventName": "connect",
       "eventType": "system"
-    },
-    {
-      "type": "connectResponse",
-      "direction": "out",
-      "name": "response"
     }
   ]
 }

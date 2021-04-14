@@ -20,16 +20,13 @@ namespace SimpleChat
         }
 
         [FunctionName("connect")]
-        public static ConnectResponse Connect(
-            [WebPubSubTrigger("simplechat", "connect", "system")] ConnectionContext connectionContext)
+        public static ServiceResponse Connect(
+            [WebPubSubTrigger("simplechat", "connect", EventType.System)] ConnectionContext connectionContext)
         {
             Console.WriteLine($"Received client connect with connectionId: {connectionContext.ConnectionId}");
             if (connectionContext.UserId == "attacker")
             {
-                return new ConnectResponse
-                {
-                    Error = new Error(ErrorCode.Unauthorized)
-                };
+                return new ErrorResponse(ErrorCode.Unauthorized);
             }
             return new ConnectResponse
             {
@@ -40,7 +37,7 @@ namespace SimpleChat
         // multi tasks sample
         [FunctionName("connected")]
         public static async Task Connected(
-            [WebPubSubTrigger("connected", "system")] ConnectionContext connectionContext,
+            [WebPubSubTrigger("connected", EventType.System)] ConnectionContext connectionContext,
             [WebPubSub] IAsyncCollector<WebPubSubEvent> webpubsubEvent)
         {
             await webpubsubEvent.AddAsync(new WebPubSubEvent
@@ -52,13 +49,13 @@ namespace SimpleChat
             {
                 Operation = WebPubSubOperation.AddUserToGroup,
                 UserId = connectionContext.UserId,
-                GroupId = "group1"
+                Group = "group1"
             });
             await webpubsubEvent.AddAsync(new WebPubSubEvent
             {
                 Operation = WebPubSubOperation.SendToUser,
                 UserId = connectionContext.UserId,
-                GroupId = "group1",
+                Group = "group1",
                 Message = new WebPubSubMessage(new ClientContent($"{connectionContext.UserId} joined group: group1.").ToString()),
             });
         }
@@ -66,7 +63,7 @@ namespace SimpleChat
         // single message sample
         [FunctionName("broadcast")]
         public static async Task<MessageResponse> Broadcast(
-            [WebPubSubTrigger("message", "user")] //ConnectionContext connectionContext, 
+            [WebPubSubTrigger("message", EventType.User)] //ConnectionContext connectionContext, 
             WebPubSubMessage message,
             [WebPubSub] IAsyncCollector<WebPubSubEvent> eventHandler)
         {
@@ -85,7 +82,7 @@ namespace SimpleChat
         [FunctionName("disconnect")]
         [return: WebPubSub]
         public static WebPubSubEvent Disconnect(
-            [WebPubSubTrigger("disconnected", "system")] ConnectionContext connectionContext)
+            [WebPubSubTrigger("disconnected", EventType.System)] ConnectionContext connectionContext)
         {
             Console.WriteLine("Disconnect.");
             return new WebPubSubEvent

@@ -64,33 +64,42 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
                 ClientCertificateInfo[] certificates = null;
                 string reason = null;
 
-                if (context.EventType.Equals(Constants.EventTypes.System) && context.Event.Equals(Constants.Events.ConnectEvent))
+                var requestType = Utilities.GetRequestType(context.EventType, context.Event);
+                switch (requestType)
                 {
-                    var content = await req.Content.ReadAsStringAsync().ConfigureAwait(false);
-                    var request = JsonConvert.DeserializeObject<ConnectEventRequest>(content);
-                    claims = request.Claims;
-                    subprotocols = request.Subprotocols;
-                    query = request.Query;
-                    certificates = request.ClientCertificates;
-                }
-                else if (context.EventType.Equals(Constants.EventTypes.System) && context.Event.Equals(Constants.Events.ConnectEvent))
-                {
-                    var content = await req.Content.ReadAsStringAsync().ConfigureAwait(false);
-                    var request = JsonConvert.DeserializeObject<DisconnectEventRequest>(content);
-                    reason = request.Reason;
-                }
-                else if (context.EventType.Equals(Constants.EventTypes.User))
-                {
-                    if (!ValidateContentType(req.Content.Headers.ContentType.MediaType, out var dataType))
-                    {
-                        return new HttpResponseMessage(HttpStatusCode.BadRequest)
+                    case RequestType.Connect:
                         {
-                            Content = new StringContent($"{Constants.ErrorMessages.NotSupportedDataType}{req.Content.Headers.ContentType.MediaType}")
-                        };
-                    }
+                            var content = await req.Content.ReadAsStringAsync().ConfigureAwait(false);
+                            var request = JsonConvert.DeserializeObject<ConnectEventRequest>(content);
+                            claims = request.Claims;
+                            subprotocols = request.Subprotocols;
+                            query = request.Query;
+                            certificates = request.ClientCertificates;
+                            break;
+                        }
+                    case RequestType.Disconnect:
+                        {
+                            var content = await req.Content.ReadAsStringAsync().ConfigureAwait(false);
+                            var request = JsonConvert.DeserializeObject<DisconnectEventRequest>(content);
+                            reason = request.Reason;
+                            break;
+                        }
+                    case RequestType.User:
+                        {
+                            if (!ValidateContentType(req.Content.Headers.ContentType.MediaType, out var dataType))
+                            {
+                                return new HttpResponseMessage(HttpStatusCode.BadRequest)
+                                {
+                                    Content = new StringContent($"{Constants.ErrorMessages.NotSupportedDataType}{req.Content.Headers.ContentType.MediaType}")
+                                };
+                            }
 
-                    var payload = await req.Content.ReadAsByteArrayAsync().ConfigureAwait(false);
-                    message = new WebPubSubMessage(payload, dataType);
+                            var payload = await req.Content.ReadAsByteArrayAsync().ConfigureAwait(false);
+                            message = new WebPubSubMessage(payload, dataType);
+                            break;
+                        }
+                    default:
+                        break;
                 }
 
                 var triggerEvent = new WebPubSubTriggerEvent
@@ -110,26 +119,30 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
                 }, token);
 
                 // After function processed, return on-hold event reponses.
-                if (Utilities.IsSyncMethod(context.EventType, context.Event))
+                if (requestType.IsSyncMethod())
                 {
                     try
                     {
                         using (token.Register(() => tcs.TrySetCanceled()))
                         {
                             var response = await tcs.Task.ConfigureAwait(false);
-                            if (response is MessageResponse msgResponse)
+                            if (response is ErrorResponse error)
+                            {
+                                return Utilities.BuildErrorResponse(error);
+                            }
+                            else if (requestType == RequestType.Connect && response is ConnectResponse connect)
+                            {
+                                return Utilities.BuildResponse(connect);
+                            }
+                            else if (requestType == RequestType.User && response is MessageResponse msgResponse)
                             {
                                 return Utilities.BuildResponse(msgResponse);
-                            }
-                            else if (response is ConnectResponse connectResponse)
-                            {
-                                return Utilities.BuildResponse(connectResponse);
                             }
                         }
                     }
                     catch (Exception ex)
                     {
-                        var error = new Error(ErrorCode.ServerError, ex.Message);
+                        var error = new ErrorResponse(ErrorCode.ServerError, ex.Message);
                         return Utilities.BuildErrorResponse(error);
                     }
                 }

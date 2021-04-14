@@ -1,12 +1,12 @@
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-module.exports = function (context, abc) {
+module.exports = async function (context, abc) {
   context.bindings.webPubSubEvent = [{
     "operation": "sendToAll",
     "message": context.bindingData.message
   }];
-  context.response = {
+  var response = { 
     "message": {
       "body": JSON.stringify({
         from: '[System]',
@@ -15,5 +15,6 @@ module.exports = function (context, abc) {
       "dataType" : "json"
     }
   };
-  context.done();
+  //context.response = response;
+  return response;
 };

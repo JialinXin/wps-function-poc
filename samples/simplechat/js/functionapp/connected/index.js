@@ -17,7 +17,7 @@ module.exports = function (context, connectionContext) {
   context.bindings.webPubSubEvent.push({
     "operation": "addUserToGroup",
     "userId": `${context.bindingData.connectionContext.userId}`,
-    "groupId": "group1"
+    "group": "group1"
   });
 
   context.bindings.webPubSubEvent.push({
