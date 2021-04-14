@@ -24,13 +24,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub.Tests
                 ConnectionContext = new ConnectionContext
                 {
                     ConnectionId = "000000",
-                    Event = "message",
+                    EventName = "message",
                     EventType = "user",
                     Hub = "testhub",
                     UserId = "user1"
                 },
                 Reason = "reason",
-                Message = new WebPubSubMessage("message"),
+                Message = new Message("message"),
             };
 
             //var value = triggerEvent.GetType().GetProperty(name, BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.IgnoreCase).GetValue(triggerEvent);

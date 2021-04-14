@@ -2,6 +2,7 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System.ComponentModel.DataAnnotations;
+
 using Azure.Messaging.WebPubSub;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Converters;
@@ -14,7 +15,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
     {
         [Required]
         [JsonRequired]
-        public WebPubSubOperation Operation { get; set; }
+        public Operation Operation { get; set; }
 
         public string Group { get; set; }
 
@@ -29,6 +30,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
         [JsonConverter(typeof(StringEnumConverter))]
         public WebPubSubPermission Permission { get; set; }
 
-        public WebPubSubMessage Message { get; set; }
+        public Message Message { get; set; }
+
+        public MessageDataType DataType { get; set; } = MessageDataType.Text;
     }
 }

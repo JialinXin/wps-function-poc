@@ -21,15 +21,15 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
         /// <param name="hub"></param>
         /// <param name="eventName"></param>
         /// <param name="eventType"></param>
-        public WebPubSubTriggerAttribute(string hub, string eventName, EventType eventType)
+        public WebPubSubTriggerAttribute(string hub, EventType eventType, string eventName)
         {
             Hub = hub;
             EventName = eventName;
             EventType = eventType;
         }
 
-        public WebPubSubTriggerAttribute(string eventName, EventType eventType)
-            : this ("", eventName, eventType)
+        public WebPubSubTriggerAttribute(EventType eventType, string eventName)
+            : this ("", eventType, eventName)
         {
         }
 

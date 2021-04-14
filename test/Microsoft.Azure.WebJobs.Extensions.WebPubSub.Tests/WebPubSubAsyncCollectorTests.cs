@@ -17,8 +17,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub.Tests
             var message = "new message";
             await collector.AddAsync(new WebPubSubEvent
             {
-                Operation = WebPubSubOperation.SendToAll,
-                Message = new WebPubSubMessage(message, MessageDataType.Text)
+                Operation = Operation.SendToAll,
+                Message = new Message(message, MessageDataType.Text)
             });
 
             serviceMock.Verify(c => c.SendToAll(It.IsAny<WebPubSubEvent>()), Times.Once);

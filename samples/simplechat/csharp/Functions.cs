@@ -21,7 +21,7 @@ namespace SimpleChat
 
         [FunctionName("connect")]
         public static ServiceResponse Connect(
-            [WebPubSubTrigger("simplechat", "connect", EventType.System)] ConnectionContext connectionContext)
+            [WebPubSubTrigger("simplechat", EventType.System, "connect")] ConnectionContext connectionContext)
         {
             Console.WriteLine($"Received client connect with connectionId: {connectionContext.ConnectionId}");
             if (connectionContext.UserId == "attacker")
@@ -37,58 +37,57 @@ namespace SimpleChat
         // multi tasks sample
         [FunctionName("connected")]
         public static async Task Connected(
-            [WebPubSubTrigger("connected", EventType.System)] ConnectionContext connectionContext,
+            [WebPubSubTrigger(EventType.System, "connected")] ConnectionContext connectionContext,
             [WebPubSub] IAsyncCollector<WebPubSubEvent> webpubsubEvent)
         {
             await webpubsubEvent.AddAsync(new WebPubSubEvent
             {
-                Message = new WebPubSubMessage(new ClientContent($"{connectionContext.UserId} connected.").ToString()),
+                Message = new Message(new ClientContent($"{connectionContext.UserId} connected.").ToString()),
             });
 
             await webpubsubEvent.AddAsync(new WebPubSubEvent
             {
-                Operation = WebPubSubOperation.AddUserToGroup,
+                Operation = Operation.AddUserToGroup,
                 UserId = connectionContext.UserId,
                 Group = "group1"
             });
             await webpubsubEvent.AddAsync(new WebPubSubEvent
             {
-                Operation = WebPubSubOperation.SendToUser,
+                Operation = Operation.SendToUser,
                 UserId = connectionContext.UserId,
                 Group = "group1",
-                Message = new WebPubSubMessage(new ClientContent($"{connectionContext.UserId} joined group: group1.").ToString()),
+                Message = new Message(new ClientContent($"{connectionContext.UserId} joined group: group1.").ToString()),
             });
         }
 
         // single message sample
         [FunctionName("broadcast")]
         public static async Task<MessageResponse> Broadcast(
-            [WebPubSubTrigger("message", EventType.User)] //ConnectionContext connectionContext, 
-            WebPubSubMessage message,
-            [WebPubSub] IAsyncCollector<WebPubSubEvent> eventHandler)
+            [WebPubSubTrigger(EventType.User, "message")] Message message,
+            [WebPubSub(Hub = "simplechat")] IAsyncCollector<WebPubSubEvent> webpubsubEvent)
         {
-            await eventHandler.AddAsync(new WebPubSubEvent
+            await webpubsubEvent.AddAsync(new WebPubSubEvent
             {
-                Operation = WebPubSubOperation.SendToAll,
+                Operation = Operation.SendToAll,
                 Message = message,
             });
 
             return new MessageResponse
             {
-                Message = new WebPubSubMessage(new ClientContent($"ack").ToString(), MessageDataType.Json),
+                Message = new Message("ack"),
             };
         }
 
         [FunctionName("disconnect")]
         [return: WebPubSub]
         public static WebPubSubEvent Disconnect(
-            [WebPubSubTrigger("disconnected", EventType.System)] ConnectionContext connectionContext)
+            [WebPubSubTrigger(EventType.System, "disconnected")] ConnectionContext connectionContext)
         {
             Console.WriteLine("Disconnect.");
             return new WebPubSubEvent
             {
-                Operation = WebPubSubOperation.SendToAll,
-                Message = new WebPubSubMessage(new ClientContent($"{connectionContext.UserId} disconnect.").ToString())
+                Operation = Operation.SendToAll,
+                Message = new Message(new ClientContent($"{connectionContext.UserId} disconnect.").ToString())
             };
         }
 

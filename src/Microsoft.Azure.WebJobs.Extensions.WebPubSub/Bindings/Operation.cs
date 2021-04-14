@@ -9,7 +9,7 @@ using Newtonsoft.Json.Converters;
 namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
 {
     [JsonConverter(typeof(StringEnumConverter))]
-    public enum WebPubSubOperation
+    public enum Operation
     {
         [EnumMember(Value = "sendToAll")]
         SendToAll,

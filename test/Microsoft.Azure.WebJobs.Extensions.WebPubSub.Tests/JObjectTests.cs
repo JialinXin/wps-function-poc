@@ -12,15 +12,15 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub.Tests
         public static IEnumerable<object[]> MessageTestData =>
             new List<object[]>
             {
-                new object[] {new WebPubSubMessage("Hello", MessageDataType.Binary), "SGVsbG8=" },
-                new object[] {new WebPubSubMessage("Hello", MessageDataType.Text), "Hello" },
-                new object[] {new WebPubSubMessage("Hello", MessageDataType.Json), "Hello" },
-                new object[] {new WebPubSubMessage(Encoding.UTF8.GetBytes("Hello"), MessageDataType.Binary), "SGVsbG8=" },
-                new object[] {new WebPubSubMessage(Encoding.UTF8.GetBytes("Hello"), MessageDataType.Json), "Hello" },
-                new object[] {new WebPubSubMessage(Encoding.UTF8.GetBytes("Hello"), MessageDataType.Text), "Hello" },
-                new object[] {new WebPubSubMessage(new MemoryStream(Encoding.UTF8.GetBytes("Hello")), MessageDataType.Binary), "SGVsbG8=" },
-                new object[] {new WebPubSubMessage(new MemoryStream(Encoding.UTF8.GetBytes("Hello")), MessageDataType.Json), "Hello" },
-                new object[] {new WebPubSubMessage(new MemoryStream(Encoding.UTF8.GetBytes("Hello")), MessageDataType.Text), "Hello" }
+                new object[] {new Message("Hello", MessageDataType.Binary), "SGVsbG8=" },
+                new object[] {new Message("Hello", MessageDataType.Text), "Hello" },
+                new object[] {new Message("Hello", MessageDataType.Json), "Hello" },
+                new object[] {new Message(Encoding.UTF8.GetBytes("Hello"), MessageDataType.Binary), "SGVsbG8=" },
+                new object[] {new Message(Encoding.UTF8.GetBytes("Hello"), MessageDataType.Json), "Hello" },
+                new object[] {new Message(Encoding.UTF8.GetBytes("Hello"), MessageDataType.Text), "Hello" },
+                new object[] {new Message(new MemoryStream(Encoding.UTF8.GetBytes("Hello")), MessageDataType.Binary), "SGVsbG8=" },
+                new object[] {new Message(new MemoryStream(Encoding.UTF8.GetBytes("Hello")), MessageDataType.Json), "Hello" },
+                new object[] {new Message(new MemoryStream(Encoding.UTF8.GetBytes("Hello")), MessageDataType.Text), "Hello" }
             };
 
         [Fact]
@@ -40,18 +40,18 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub.Tests
 
             Assert.Equal("test", result.Message.Body.ToString());
             Assert.Equal(MessageDataType.Text, result.Message.DataType);
-            Assert.Equal(WebPubSubOperation.SendToUser, result.Operation);
+            Assert.Equal(Operation.SendToUser, result.Operation);
             Assert.Equal("abc", result.UserId);
         }
 
         [Theory]
         [MemberData(nameof(MessageTestData))]
-        public void TestConvertMessageToAndFromJObject(WebPubSubMessage message, string expected)
+        public void TestConvertMessageToAndFromJObject(Message message, string expected)
         {
             var dataType = message.DataType;
             var wpsEvent = new WebPubSubEvent
             {
-                Operation = WebPubSubOperation.SendToConnection,
+                Operation = Operation.SendToConnection,
                 ConnectionId = "abc",
                 Message = message
             };
@@ -66,7 +66,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub.Tests
 
             Assert.Equal(expected, result.Message.Body.ToString());
             Assert.Equal(dataType, result.Message.DataType);
-            Assert.Equal(WebPubSubOperation.SendToConnection, result.Operation);
+            Assert.Equal(Operation.SendToConnection, result.Operation);
             Assert.Equal("abc", result.ConnectionId);
         }
 

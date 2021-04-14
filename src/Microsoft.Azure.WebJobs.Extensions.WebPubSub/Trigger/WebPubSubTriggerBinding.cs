@@ -3,7 +3,9 @@
 
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Reflection;
+using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -83,7 +85,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
         private void AddBindingData(Dictionary<string, object> bindingData, WebPubSubTriggerEvent triggerEvent)
         {
             bindingData.Add(nameof(triggerEvent.ConnectionContext), triggerEvent.ConnectionContext);
-            bindingData.Add(nameof(triggerEvent.Message), triggerEvent.Message != null ? triggerEvent.Message : null);
+            bindingData.Add(nameof(triggerEvent.Message), triggerEvent.Message);
+            bindingData.Add(nameof(triggerEvent.DataType), triggerEvent.DataType);
             bindingData.Add(nameof(triggerEvent.Claims), triggerEvent.Claims);
             bindingData.Add(nameof(triggerEvent.Query), triggerEvent.Query);
             bindingData.Add(nameof(triggerEvent.Reason), triggerEvent.Reason);
@@ -122,13 +125,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
 
             public Task<object> GetValueAsync()
             {
-                // Bind un-restrict name to default ConnectionContext
+                // Bind un-restrict name to default ConnectionContext with type recognized.
                 if (_parameter.ParameterType == typeof(ConnectionContext))
                 {
                     return Task.FromResult<object>(_triggerEvent.ConnectionContext);
                 }
 
-                // Bind rest with name and type restricted.
+                // Bind rest with name and type repected.
                 return Task.FromResult(GetValueByName(_parameter.Name, _parameter.ParameterType));
             }
 
@@ -138,6 +141,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
             }
 
             public Type Type => _parameter.ParameterType;
+
+            public object Endoding { get; private set; }
 
             // No use here
             public Task SetValueAsync(object value, CancellationToken cancellationToken)
@@ -155,19 +160,41 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
                     {
                         return value;
                     }
+                    return ConvertTypeIfPossible(value, targetType);
                     // non-csharp(js) will load trigger object as string
-                    else if (targetType == typeof(string))
-                    {
-                        return JObject.FromObject(value).ToString();
-                    }
-                    throw new ArgumentException($"Not supported parameter type: {targetType}, expected: {value.GetType()} or dataType limited to string in javascript.");
+                    //else if (targetType == typeof(string))
+                    //{
+                    //    return JObject.FromObject(value).ToString();
+                    //}
+                    //throw new ArgumentException($"Not supported parameter type: {targetType}, expected: {value.GetType()} or dataType limited to string in javascript.");
                 }
-                // return ConnectionContext as a default bind to convenient non-csharp.
-                else if (targetType == typeof(string))
+                // return null
+                return null;
+            }
+
+            private object ConvertTypeIfPossible(object source, Type target)
+            {
+                if (source is Message message)
                 {
-                    return JObject.FromObject(_triggerEvent.ConnectionContext).ToString();
+                    return message.Convert(target);
                 }
-                throw new ArgumentException($"Invalid parameter name: {parameterName}, supported names are: {string.Join(",", Utilities.GetTypeNames(typeof(WebPubSubTriggerEvent)))}");
+                if (target == typeof(JObject))
+                {
+                    return JObject.FromObject(target);
+                }
+                if (target == typeof(string))
+                {
+                    return JObject.FromObject(target).ToString();
+                }
+                if (target == typeof(byte[]))
+                {
+                    return Encoding.UTF8.GetBytes(JObject.FromObject(target).ToString());
+                }
+                if (target == typeof(Stream))
+                {
+                    return new MemoryStream(Encoding.UTF8.GetBytes(JObject.FromObject(target).ToString()));
+                }
+                return null;
             }
         }
 

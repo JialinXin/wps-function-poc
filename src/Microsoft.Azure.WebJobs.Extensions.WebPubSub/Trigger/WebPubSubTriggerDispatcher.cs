@@ -57,14 +57,15 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
 
             if (_listeners.TryGetValue(function, out var executor))
             {
-                WebPubSubMessage message = null;
+                Message message = null;
+                MessageDataType dataType = MessageDataType.Text;
                 IDictionary<string, string[]> claims = null;
                 IDictionary<string, string[]> query = null;
                 string[] subprotocols = null;
                 ClientCertificateInfo[] certificates = null;
                 string reason = null;
 
-                var requestType = Utilities.GetRequestType(context.EventType, context.Event);
+                var requestType = Utilities.GetRequestType(context.EventType, context.EventName);
                 switch (requestType)
                 {
                     case RequestType.Connect:
@@ -86,7 +87,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
                         }
                     case RequestType.User:
                         {
-                            if (!ValidateContentType(req.Content.Headers.ContentType.MediaType, out var dataType))
+                            if (!ValidateContentType(req.Content.Headers.ContentType.MediaType, out dataType))
                             {
                                 return new HttpResponseMessage(HttpStatusCode.BadRequest)
                                 {
@@ -95,7 +96,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
                             }
 
                             var payload = await req.Content.ReadAsByteArrayAsync().ConfigureAwait(false);
-                            message = new WebPubSubMessage(payload, dataType);
+                            message = new Message(payload);
                             break;
                         }
                     default:
@@ -106,6 +107,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
                 {
                     ConnectionContext = context,
                     Message = message,
+                    DataType = dataType,
                     Claims = claims,
                     Query = query,
                     Subprotocols = subprotocols,
@@ -169,7 +171,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
                 context.ConnectionId = request.Headers.GetValues(Constants.Headers.CloudEvents.ConnectionId).FirstOrDefault();
                 context.Hub = request.Headers.GetValues(Constants.Headers.CloudEvents.Hub).FirstOrDefault();
                 context.EventType = Utilities.GetEventType(request.Headers.GetValues(Constants.Headers.CloudEvents.Type).FirstOrDefault());
-                context.Event = request.Headers.GetValues(Constants.Headers.CloudEvents.EventName).FirstOrDefault();
+                context.EventName = request.Headers.GetValues(Constants.Headers.CloudEvents.EventName).FirstOrDefault();
                 context.Signature = request.Headers.GetValues(Constants.Headers.CloudEvents.Signature).FirstOrDefault();
                 context.Headers = request.Headers.ToDictionary(x => x.Key, v => new StringValues(v.Value.ToArray()), StringComparer.OrdinalIgnoreCase);
 
@@ -229,7 +231,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
 
         private static string GetFunctionName(ConnectionContext context)
         {
-            return $"{context.Hub}.{context.EventType}.{context.Event}".ToLower();
+            return $"{context.Hub}.{context.EventType}.{context.EventName}".ToLower();
         }
 
         private static bool RespondToServiceAbuseCheck(HttpRequestMessage req, HashSet<string> allowedHosts, out HttpResponseMessage response)

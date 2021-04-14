@@ -71,7 +71,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
             // bindings
             context
                 .AddConverter<WebPubSubConnection, JObject>(JObject.FromObject)
-                //.AddConverter<string, JObject>(JObject.FromObject)
                 .AddOpenConverter<JObject, OpenType.Poco>(typeof(JObjectToPocoConverter<>))
                 .AddOpenConverter<JObject, OpenType.Poco[]>(typeof(JObjectToPocoConverter<>));
 
