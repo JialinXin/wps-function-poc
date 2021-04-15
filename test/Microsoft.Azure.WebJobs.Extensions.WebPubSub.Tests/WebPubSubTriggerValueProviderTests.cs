@@ -30,7 +30,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub.Tests
                     UserId = "user1"
                 },
                 Reason = "reason",
-                Message = new Message("message"),
+                Message = new WebPubSubMessage("message"),
             };
 
             //var value = triggerEvent.GetType().GetProperty(name, BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.IgnoreCase).GetValue(triggerEvent);

@@ -21,14 +21,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
         /// <param name="hub"></param>
         /// <param name="eventName"></param>
         /// <param name="eventType"></param>
-        public WebPubSubTriggerAttribute(string hub, EventType eventType, string eventName)
+        public WebPubSubTriggerAttribute(string hub, WebPubSubEventType eventType, string eventName)
         {
             Hub = hub;
             EventName = eventName;
             EventType = eventType;
         }
 
-        public WebPubSubTriggerAttribute(EventType eventType, string eventName)
+        public WebPubSubTriggerAttribute(WebPubSubEventType eventType, string eventName)
             : this ("", eventType, eventName)
         {
         }
@@ -50,7 +50,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
         /// The event type, allowed value is system or user
         /// </summary>
         [AutoResolve]
-        public EventType EventType { get; }
+        public WebPubSubEventType EventType { get; }
 
     }
 }

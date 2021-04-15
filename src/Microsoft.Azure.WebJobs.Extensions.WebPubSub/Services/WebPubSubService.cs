@@ -82,29 +82,29 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
 
         public async Task SendToAll(WebPubSubEvent webPubSubEvent)
         {
-            var content = RequestContent.Create(webPubSubEvent.Message.Body);
-            var contentType = Utilities.GetContentType(webPubSubEvent.Message.DataType);
+            var content = RequestContent.Create(webPubSubEvent.Message);
+            var contentType = Utilities.GetContentType(webPubSubEvent.DataType);
             await _client.SendToAllAsync(content, contentType, webPubSubEvent.Excluded).ConfigureAwait(false);
         }
 
         public async Task SendToConnection(WebPubSubEvent webPubSubEvent)
         {
-            var content = RequestContent.Create(webPubSubEvent.Message.Body);
-            var contentType = Utilities.GetContentType(webPubSubEvent.Message.DataType);
+            var content = RequestContent.Create(webPubSubEvent.Message.ToBinaryData());
+            var contentType = Utilities.GetContentType(webPubSubEvent.DataType);
             await _client.SendToConnectionAsync(webPubSubEvent.ConnectionId, content, contentType).ConfigureAwait(false);
         }
 
         public async Task SendToGroup(WebPubSubEvent webPubSubEvent)
         {
-            var content = RequestContent.Create(webPubSubEvent.Message.Body);
-            var contentType = Utilities.GetContentType(webPubSubEvent.Message.DataType);
+            var content = RequestContent.Create(webPubSubEvent.Message.ToBinaryData());
+            var contentType = Utilities.GetContentType(webPubSubEvent.DataType);
             await _client.SendToGroupAsync(webPubSubEvent.Group, content, contentType, webPubSubEvent.Excluded).ConfigureAwait(false);
         }
 
         public async Task SendToUser(WebPubSubEvent webPubSubEvent)
         {
-            var content = RequestContent.Create(webPubSubEvent.Message.Body);
-            var contentType = Utilities.GetContentType(webPubSubEvent.Message.DataType);
+            var content = RequestContent.Create(webPubSubEvent.Message.ToBinaryData());
+            var contentType = Utilities.GetContentType(webPubSubEvent.DataType);
             await _client.SendToUserAsync(webPubSubEvent.UserId, content, contentType).ConfigureAwait(false);
         }
     }

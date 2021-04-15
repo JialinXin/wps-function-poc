@@ -14,7 +14,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
     public class MessageResponse : ServiceResponse
     {
         [JsonProperty(Required = Required.Always)]
-        public Message Message { get; set; }
+        public WebPubSubMessage Message { get; set; }
 
         public MessageDataType DataType { get; set; } = MessageDataType.Text;
     }
@@ -39,13 +39,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
     public class ErrorResponse : ServiceResponse
     {
         [JsonProperty(Required = Required.Always)]
-        public ErrorCode Code { get; set; }
+        public WebPubSubErrorCode Code { get; set; }
 
         [JsonProperty(Required = Required.Default)]
         public string ErrorMessage { get; set; }
 
 
-        public ErrorResponse(ErrorCode code, string message = null)
+        public ErrorResponse(WebPubSubErrorCode code, string message = null)
         {
             Code = code;
             ErrorMessage = message;

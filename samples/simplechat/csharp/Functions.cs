@@ -13,7 +13,7 @@ namespace SimpleChat
         [FunctionName("login")]
         public static WebPubSubConnection GetClientConnection(
             [HttpTrigger(AuthorizationLevel.Anonymous, "get", "post")] HttpRequest req,
-            [WebPubSubConnection(UserId = "{query.userid}")] WebPubSubConnection connection)
+            [WebPubSubConnection(UserId = "{query.userid}", ConnectionStringSetting = "abc", Hub ="testhub")] WebPubSubConnection connection)
         {
             Console.WriteLine("login");
             return connection;
@@ -21,12 +21,12 @@ namespace SimpleChat
 
         [FunctionName("connect")]
         public static ServiceResponse Connect(
-            [WebPubSubTrigger("simplechat", EventType.System, "connect")] ConnectionContext connectionContext)
+            [WebPubSubTrigger("simplechat", WebPubSubEventType.System, "connect")] ConnectionContext connectionContext)
         {
             Console.WriteLine($"Received client connect with connectionId: {connectionContext.ConnectionId}");
             if (connectionContext.UserId == "attacker")
             {
-                return new ErrorResponse(ErrorCode.Unauthorized);
+                return new ErrorResponse(WebPubSubErrorCode.Unauthorized);
             }
             return new ConnectResponse
             {
@@ -37,57 +37,57 @@ namespace SimpleChat
         // multi tasks sample
         [FunctionName("connected")]
         public static async Task Connected(
-            [WebPubSubTrigger(EventType.System, "connected")] ConnectionContext connectionContext,
+            [WebPubSubTrigger(WebPubSubEventType.System, "connected")] ConnectionContext connectionContext,
             [WebPubSub] IAsyncCollector<WebPubSubEvent> webpubsubEvent)
         {
             await webpubsubEvent.AddAsync(new WebPubSubEvent
             {
-                Message = new Message(new ClientContent($"{connectionContext.UserId} connected.").ToString()),
+                Message = new WebPubSubMessage(new ClientContent($"{connectionContext.UserId} connected.").ToString()),
             });
 
             await webpubsubEvent.AddAsync(new WebPubSubEvent
             {
-                Operation = Operation.AddUserToGroup,
+                Operation = WebPubSubOperation.AddUserToGroup,
                 UserId = connectionContext.UserId,
                 Group = "group1"
             });
             await webpubsubEvent.AddAsync(new WebPubSubEvent
             {
-                Operation = Operation.SendToUser,
+                Operation = WebPubSubOperation.SendToUser,
                 UserId = connectionContext.UserId,
                 Group = "group1",
-                Message = new Message(new ClientContent($"{connectionContext.UserId} joined group: group1.").ToString()),
+                Message = new WebPubSubMessage(new ClientContent($"{connectionContext.UserId} joined group: group1.").ToString()),
             });
         }
 
         // single message sample
         [FunctionName("broadcast")]
         public static async Task<MessageResponse> Broadcast(
-            [WebPubSubTrigger(EventType.User, "message")] Message message,
+            [WebPubSubTrigger(WebPubSubEventType.User, "message")] WebPubSubMessage message,
             [WebPubSub(Hub = "simplechat")] IAsyncCollector<WebPubSubEvent> webpubsubEvent)
         {
             await webpubsubEvent.AddAsync(new WebPubSubEvent
             {
-                Operation = Operation.SendToAll,
+                Operation = WebPubSubOperation.SendToAll,
                 Message = message,
             });
 
             return new MessageResponse
             {
-                Message = new Message("ack"),
+                Message = new WebPubSubMessage("ack"),
             };
         }
 
         [FunctionName("disconnect")]
         [return: WebPubSub]
         public static WebPubSubEvent Disconnect(
-            [WebPubSubTrigger(EventType.System, "disconnected")] ConnectionContext connectionContext)
+            [WebPubSubTrigger(WebPubSubEventType.System, "disconnected")] ConnectionContext connectionContext)
         {
             Console.WriteLine("Disconnect.");
             return new WebPubSubEvent
             {
-                Operation = Operation.SendToAll,
-                Message = new Message(new ClientContent($"{connectionContext.UserId} disconnect.").ToString())
+                Operation = WebPubSubOperation.SendToAll,
+                Message = new WebPubSubMessage(new ClientContent($"{connectionContext.UserId} disconnect.").ToString())
             };
         }
 

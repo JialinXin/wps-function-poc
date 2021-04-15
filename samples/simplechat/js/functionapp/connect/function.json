@@ -3,7 +3,7 @@
   "bindings": [
     {
       "type": "webPubSubTrigger",
-      "name": "abc",
+      "name": "connectionContext",
       "direction": "in",
       "hub": "simplechat",
       "eventName": "connect",

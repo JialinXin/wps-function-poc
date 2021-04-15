@@ -3,6 +3,8 @@
 
 using System.Collections.Generic;
 using Microsoft.Azure.WebJobs.Hosting;
+using Newtonsoft.Json.Linq;
+using Newtonsoft.Json;
 
 namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
 {
@@ -26,7 +28,19 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
         /// <returns>Options formatted as JSON.</returns>
         public string Format()
         {
-            throw new System.NotImplementedException();
+            JArray allowedHosts = null;
+            if (AllowedHosts.Count > 0)
+            {
+                allowedHosts = new JArray(AllowedHosts);
+            }
+
+            JObject options = new JObject
+            {
+                { nameof(Hub), Hub },
+                { nameof(AllowedHosts), allowedHosts }
+            };
+
+            return options.ToString(Formatting.Indented);
         }
     }
 }

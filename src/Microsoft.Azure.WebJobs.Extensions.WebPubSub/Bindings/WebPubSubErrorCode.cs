@@ -9,7 +9,7 @@ using Newtonsoft.Json.Converters;
 namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
 {
     [JsonConverter(typeof(StringEnumConverter))]
-    public enum ErrorCode
+    public enum WebPubSubErrorCode
     {
         [EnumMember(Value = "unauthorized")]
         Unauthorized,

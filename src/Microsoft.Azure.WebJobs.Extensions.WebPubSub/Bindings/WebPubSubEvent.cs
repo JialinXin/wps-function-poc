@@ -10,12 +10,15 @@ using Newtonsoft.Json.Serialization;
 
 namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
 {
+    /// <summary>
+    /// Output binding object to invoke rest calls to services
+    /// </summary>
     [JsonObject(NamingStrategyType = typeof(CamelCaseNamingStrategy))]
     public class WebPubSubEvent
     {
         [Required]
         [JsonRequired]
-        public Operation Operation { get; set; }
+        public WebPubSubOperation Operation { get; set; }
 
         public string Group { get; set; }
 
@@ -30,7 +33,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
         [JsonConverter(typeof(StringEnumConverter))]
         public WebPubSubPermission Permission { get; set; }
 
-        public Message Message { get; set; }
+        public WebPubSubMessage Message { get; set; }
 
         public MessageDataType DataType { get; set; } = MessageDataType.Text;
     }

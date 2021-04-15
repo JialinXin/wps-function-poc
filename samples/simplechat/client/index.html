@@ -73,6 +73,10 @@
             <form v-on:submit.prevent="login()" class="bg-light p-3" style="width: 70%;">
                 <h5>Welcome to the Chatroom</h5>
                 <div class="form-group">
+                    <label for="functionHost">Function Endpoint</label>
+                    <input type="text" class="form-control" v-model="endpoint" id="functionEndpoint" placeholder="https://jixin-simplechat-linux.azurewebsites.net/">
+                </div>
+                <div class="form-group">
                     <label for="usernameInput">User</label>
                     <input type="text" class="form-control" v-model="username" id="usernameInput"
                         aria-describedby="usernameHelp" placeholder="Type your user name">
@@ -156,7 +160,7 @@
         const data = {
             websocket: null,
             username: generateUser(), // todo: oauth
-            endpoint: 'localhost:7071',
+            endpoint: "http://localhost:7071",
             newMessage: '',
             chat: { messages: [] },
             logs: [],
@@ -174,11 +178,7 @@
 
                         this.log("Connecting...");
                         // id in query map to the name in function, use like {query.userid}
-                        axios.post(`http://localhost:7071/api/login?userid=${this.username}`, {
-                            headers: {
-                                'x-claims': 'a-key=a-value&b-key=b-value'
-                            }
-                        }, null)
+                        axios.post(`${this.endpoint}/api/login?userid=${this.username}`, null, null)
                         .then(resp => resp.data)
                         .then(info => {
                             return info.url;

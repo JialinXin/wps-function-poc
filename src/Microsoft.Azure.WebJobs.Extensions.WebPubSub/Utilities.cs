@@ -61,11 +61,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
         {
             HttpResponseMessage result = new HttpResponseMessage();
 
-            if (response.Message.Body != null)
+            if (response.Message != null)
             {
-                result.Content = new StreamContent(response.Message.Body.ToStream());
+                result.Content = new StreamContent(response.Message.ToStream());
             }
-            result.Content.Headers.ContentType = GetMediaType(response.Message.DataType);
+            result.Content.Headers.ContentType = GetMediaType(response.DataType);
 
             return result;
         }
@@ -95,12 +95,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
             return result;
         }
 
-        public static HttpStatusCode GetStatusCode(ErrorCode errorCode) =>
+        public static HttpStatusCode GetStatusCode(WebPubSubErrorCode errorCode) =>
             errorCode switch
             {
-                ErrorCode.UserError => HttpStatusCode.BadRequest,
-                ErrorCode.Unauthorized => HttpStatusCode.Unauthorized,
-                ErrorCode.ServerError => HttpStatusCode.InternalServerError,
+                WebPubSubErrorCode.UserError => HttpStatusCode.BadRequest,
+                WebPubSubErrorCode.Unauthorized => HttpStatusCode.Unauthorized,
+                WebPubSubErrorCode.ServerError => HttpStatusCode.InternalServerError,
                 _ => HttpStatusCode.InternalServerError
             };
 

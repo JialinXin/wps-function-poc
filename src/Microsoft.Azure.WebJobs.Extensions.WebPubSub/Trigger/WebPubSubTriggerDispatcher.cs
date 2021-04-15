@@ -57,7 +57,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
 
             if (_listeners.TryGetValue(function, out var executor))
             {
-                Message message = null;
+                WebPubSubMessage message = null;
                 MessageDataType dataType = MessageDataType.Text;
                 IDictionary<string, string[]> claims = null;
                 IDictionary<string, string[]> query = null;
@@ -96,7 +96,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
                             }
 
                             var payload = await req.Content.ReadAsByteArrayAsync().ConfigureAwait(false);
-                            message = new Message(payload);
+                            message = new WebPubSubMessage(payload);
                             break;
                         }
                     default:
@@ -144,7 +144,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
                     }
                     catch (Exception ex)
                     {
-                        var error = new ErrorResponse(ErrorCode.ServerError, ex.Message);
+                        var error = new ErrorResponse(WebPubSubErrorCode.ServerError, ex.Message);
                         return Utilities.BuildErrorResponse(error);
                     }
                 }

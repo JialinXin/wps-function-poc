@@ -71,8 +71,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
             // bindings
             context
                 .AddConverter<WebPubSubConnection, JObject>(JObject.FromObject)
-                .AddOpenConverter<JObject, OpenType.Poco>(typeof(JObjectToPocoConverter<>))
-                .AddOpenConverter<JObject, OpenType.Poco[]>(typeof(JObjectToPocoConverter<>));
+                .AddConverter<JObject, WebPubSubEvent>(ConvertFromJObject<WebPubSubEvent>)
+                .AddConverter<JObject, WebPubSubEvent[]>(ConvertFromJObject<WebPubSubEvent[]>);
 
             // Trigger binding
             context.AddBindingRule<WebPubSubTriggerAttribute>()
@@ -148,6 +148,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
                 _options.AllowedHosts.Add(new Uri(item.Endpoint).Host);
                 _options.AccessKeys.Add(item.AccessKey);
             }
+        }
+
+        private T ConvertFromJObject<T>(JObject input)
+        {
+            return input.ToObject<T>();
         }
 
         private sealed class JObjectToPocoConverter<T> : IConverter<JObject, T>

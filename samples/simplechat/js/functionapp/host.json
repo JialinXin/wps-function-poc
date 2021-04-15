@@ -3,7 +3,6 @@
   "extensions": {
     "http": {
       "routePrefix": "api"
-    },
-    "abc":"2.0"
+    }
   }
 }

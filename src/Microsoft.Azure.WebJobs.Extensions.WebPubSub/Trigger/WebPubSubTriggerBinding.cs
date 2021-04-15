@@ -142,8 +142,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
 
             public Type Type => _parameter.ParameterType;
 
-            public object Endoding { get; private set; }
-
             // No use here
             public Task SetValueAsync(object value, CancellationToken cancellationToken)
             {
@@ -161,38 +159,31 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
                         return value;
                     }
                     return ConvertTypeIfPossible(value, targetType);
-                    // non-csharp(js) will load trigger object as string
-                    //else if (targetType == typeof(string))
-                    //{
-                    //    return JObject.FromObject(value).ToString();
-                    //}
-                    //throw new ArgumentException($"Not supported parameter type: {targetType}, expected: {value.GetType()} or dataType limited to string in javascript.");
                 }
-                // return null
                 return null;
             }
 
             private object ConvertTypeIfPossible(object source, Type target)
             {
-                if (source is Message message)
+                if (source is WebPubSubMessage message)
                 {
                     return message.Convert(target);
                 }
                 if (target == typeof(JObject))
                 {
-                    return JObject.FromObject(target);
+                    return JToken.FromObject(source);
                 }
                 if (target == typeof(string))
                 {
-                    return JObject.FromObject(target).ToString();
+                    return JToken.FromObject(source).ToString();
                 }
                 if (target == typeof(byte[]))
                 {
-                    return Encoding.UTF8.GetBytes(JObject.FromObject(target).ToString());
+                    return Encoding.UTF8.GetBytes(JToken.FromObject(source).ToString());
                 }
                 if (target == typeof(Stream))
                 {
-                    return new MemoryStream(Encoding.UTF8.GetBytes(JObject.FromObject(target).ToString()));
+                    return new MemoryStream(Encoding.UTF8.GetBytes(JToken.FromObject(source).ToString()));
                 }
                 return null;
             }
