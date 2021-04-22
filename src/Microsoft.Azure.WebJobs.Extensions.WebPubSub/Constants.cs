@@ -8,25 +8,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
         // WebPubSubOptions can be set by customers.
         public const string WebPubSubConnectionStringName = "WebPubSubConnectionString";
         public const string HubNameStringName = "WebPubSubHub";
-        public const string AllowedHostsName = "AllowedHosts";
 
         public static class ContentTypes
         {
             public const string JsonContentType = "application/json";
             public const string BinaryContentType = "application/octet-stream";
             public const string PlainTextContentType = "text/plain";
-        }
-
-        public static class EventTypes
-        {
-            public const string User = "user";
-            public const string System = "system";
-        }
-
-        public static class Categories
-        {
-            public const string Messages = "messages";
-            public const string Connections = "connections";
         }
 
         public static class Events

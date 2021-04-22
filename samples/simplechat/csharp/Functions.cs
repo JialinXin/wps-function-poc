@@ -13,7 +13,7 @@ namespace SimpleChat
         [FunctionName("login")]
         public static WebPubSubConnection GetClientConnection(
             [HttpTrigger(AuthorizationLevel.Anonymous, "get", "post")] HttpRequest req,
-            [WebPubSubConnection(UserId = "{query.userid}", ConnectionStringSetting = "abc", Hub ="testhub")] WebPubSubConnection connection)
+            [WebPubSubConnection(UserId = "{query.userid}")] WebPubSubConnection connection)
         {
             Console.WriteLine("login");
             return connection;
@@ -42,7 +42,9 @@ namespace SimpleChat
         {
             await webpubsubEvent.AddAsync(new WebPubSubEvent
             {
+                Operation = WebPubSubOperation.SendToAll,
                 Message = new WebPubSubMessage(new ClientContent($"{connectionContext.UserId} connected.").ToString()),
+                DataType = MessageDataType.Json
             });
 
             await webpubsubEvent.AddAsync(new WebPubSubEvent
@@ -57,6 +59,7 @@ namespace SimpleChat
                 UserId = connectionContext.UserId,
                 Group = "group1",
                 Message = new WebPubSubMessage(new ClientContent($"{connectionContext.UserId} joined group: group1.").ToString()),
+                DataType = MessageDataType.Json
             });
         }
 
@@ -70,11 +73,13 @@ namespace SimpleChat
             {
                 Operation = WebPubSubOperation.SendToAll,
                 Message = message,
+                DataType = MessageDataType.Json
             });
 
             return new MessageResponse
             {
-                Message = new WebPubSubMessage("ack"),
+                Message = new WebPubSubMessage(new ClientContent("ack").ToString()),
+                DataType = MessageDataType.Json
             };
         }
 

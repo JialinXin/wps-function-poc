@@ -10,15 +10,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
 {
     public class WebPubSubOptions : IOptionsFormatter
     {
-        public string ConnectionString { get; set; }
-
         public string Hub { get; set; }
 
-        /// <summary>
-        /// Allowed Hosts for Abuse Protection <see cref="https://github.com/cloudevents/spec/blob/v1.0/http-webhook.md#4-abuse-protection"/>. 
-        /// All service connection strings will be added. User can add customized values from function settings using comma to separate multiple values.
-        /// </summary>
-        public HashSet<string> AllowedHosts { get; set; } = new HashSet<string>();
+        internal string ConnectionString { get; set; }
+
+        internal HashSet<string> AllowedHosts { get; set; } = new HashSet<string>();
 
         internal HashSet<string> AccessKeys { get; set; } = new HashSet<string>();
 
@@ -28,16 +24,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
         /// <returns>Options formatted as JSON.</returns>
         public string Format()
         {
-            JArray allowedHosts = null;
-            if (AllowedHosts.Count > 0)
-            {
-                allowedHosts = new JArray(AllowedHosts);
-            }
-
+            // Not expose ConnectionString in logging.
             JObject options = new JObject
             {
-                { nameof(Hub), Hub },
-                { nameof(AllowedHosts), allowedHosts }
+                { nameof(Hub), Hub }
             };
 
             return options.ToString(Formatting.Indented);

@@ -1,7 +1,9 @@
 ﻿using Microsoft.Azure.WebJobs.Host.Executors;
+using Microsoft.Extensions.Logging.Abstractions;
 using Moq;
 using System.Collections.Generic;
 using System.Net;
+using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
@@ -13,7 +15,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub.Tests
         private static (string ConnectionId, string AccessKey, string Signature) TestKey = 
             ("0f9c97a2f0bf4706afe87a14e0797b11", "7aab239577fd4f24bc919802fb629f5f", "sha256=7767effcb3946f3e1de039df4b986ef02c110b1469d02c0a06f41b3b727ab561");
         private const string TestHub = "testhub";
-        private const string TestType = Constants.EventTypes.System;
+        private const WebPubSubEventType TestType = WebPubSubEventType.System;
         private const string TestEvent = Constants.Events.ConnectedEvent;
 
         private static HashSet<string> EmptySetting = new HashSet<string>();
@@ -103,16 +105,25 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub.Tests
         [InlineData("application/xml", HttpStatusCode.BadRequest)]
         public async Task TestProcessRequest_MessageMediaTypes(string mediaType, HttpStatusCode expectedCode)
         {
-            var dispatcher = SetupDispatcher(TestHub, Constants.EventTypes.User, Constants.Events.MessageEvent);
-            var request = TestHelpers.CreateHttpRequestMessage(TestHub, Constants.EventTypes.User, Constants.Events.MessageEvent, TestKey.ConnectionId, ValidSignature, contentType: mediaType);
+            var dispatcher = SetupDispatcher(TestHub, WebPubSubEventType.User, Constants.Events.MessageEvent);
+            var request = TestHelpers.CreateHttpRequestMessage(TestHub, WebPubSubEventType.User, Constants.Events.MessageEvent, TestKey.ConnectionId, ValidSignature, contentType: mediaType, payload: Encoding.UTF8.GetBytes("Hello"));
             var response = await dispatcher.ExecuteAsync(request, EmptySetting, ValidAccessKeys).ConfigureAwait(false);
             Assert.Equal(expectedCode, response.StatusCode);
         }
 
-        private WebPubSubTriggerDispatcher SetupDispatcher(string hub = TestHub, string type = TestType, string eventName = TestEvent)
+        [Fact]
+        public async Task TestProcessRequest_ListenerKeyCaseInsensitive()
+        {
+            var dispatcher = SetupDispatcher("SImpLeHuB");
+            var request = TestHelpers.CreateHttpRequestMessage("SIMPLEhub", TestType, TestEvent, TestKey.ConnectionId, ValidSignature);
+            var response = await dispatcher.ExecuteAsync(request, EmptySetting, ValidAccessKeys);
+            Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        }
+
+        private WebPubSubTriggerDispatcher SetupDispatcher(string hub = TestHub, WebPubSubEventType type = TestType, string eventName = TestEvent)
         {
             var funcName = $"{hub}.{type}.{eventName}";
-            var dispatcher = new WebPubSubTriggerDispatcher();
+            var dispatcher = new WebPubSubTriggerDispatcher(NullLogger.Instance);
             var executor = new Mock<ITriggeredFunctionExecutor>();
             executor.Setup(f => f.TryExecuteAsync(It.IsAny<TriggeredFunctionData>(), It.IsAny<CancellationToken>()))
                 .Returns(Task.FromResult(new FunctionResult(true)));

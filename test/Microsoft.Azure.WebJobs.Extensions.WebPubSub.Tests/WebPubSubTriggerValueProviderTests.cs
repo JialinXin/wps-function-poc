@@ -17,7 +17,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub.Tests
         [InlineData("connectioncontext")]
         [InlineData("reason")]
         [InlineData("message")]
-        public void TestGetValueByName(string name)
+        public void TestGetValueByName_Valid(string name)
         {
             var triggerEvent = new WebPubSubTriggerEvent
             {
@@ -25,7 +25,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub.Tests
                 {
                     ConnectionId = "000000",
                     EventName = "message",
-                    EventType = "user",
+                    EventType = WebPubSubEventType.User,
                     Hub = "testhub",
                     UserId = "user1"
                 },
@@ -33,9 +33,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub.Tests
                 Message = new WebPubSubMessage("message"),
             };
 
-            //var value = triggerEvent.GetType().GetProperty(name, BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.IgnoreCase).GetValue(triggerEvent);
-            var ttt = typeof(WebPubSubTriggerEvent).GetProperty(name, BindingFlags.IgnoreCase | BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
-            var value = ttt.GetValue(triggerEvent);
+            var value = typeof(WebPubSubTriggerEvent)
+                .GetProperty(name, BindingFlags.IgnoreCase | BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance)
+                .GetValue(triggerEvent);
             Assert.NotNull(value);
         }
     }

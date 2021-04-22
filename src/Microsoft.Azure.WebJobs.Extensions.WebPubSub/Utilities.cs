@@ -3,27 +3,18 @@
 
 using System;
 using System.Collections.Generic;
-using System.IdentityModel.Tokens.Jwt;
 using System.Linq;
 using System.Net;
 using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Reflection;
-using System.Runtime.InteropServices;
-using System.Security.Claims;
-using System.Text;
-
-using Microsoft.IdentityModel.Tokens;
 using Newtonsoft.Json;
 
 namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
 {
     internal static class Utilities
     {
-        private const int MaxTokenLength = 4096;
         private static readonly char[] HeaderSeparator = { ',' };
-
-        private static readonly JwtSecurityTokenHandler JwtTokenHandler = new JwtSecurityTokenHandler();
 
         public static MediaTypeHeaderValue GetMediaType(MessageDataType dataType) => new MediaTypeHeaderValue(GetContentType(dataType));
 
@@ -46,16 +37,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
                 _ => throw new ArgumentException($"{Constants.ErrorMessages.NotSupportedDataType}{mediaType}")
             };
 
-        public static string GetEventType(string ceType)
+        public static WebPubSubEventType GetEventType(string ceType)
         {
-            return ceType.StartsWith(Constants.Headers.CloudEvents.TypeSystemPrefix) ?
-                Constants.EventTypes.System :
-                Constants.EventTypes.User;
+            return ceType.StartsWith(Constants.Headers.CloudEvents.TypeSystemPrefix, StringComparison.OrdinalIgnoreCase) ?
+                WebPubSubEventType.System :
+                WebPubSubEventType.User;
         }
-
-        public static bool IsSyncMethod(string eventType, string eventName)
-            => eventType.Equals(Constants.EventTypes.User) ||
-            (eventType.Equals(Constants.EventTypes.System) && eventName.Equals(Constants.Events.ConnectEvent));
 
         public static HttpResponseMessage BuildResponse(MessageResponse response)
         {
@@ -81,7 +68,16 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
                 Subprotocol = response.Subprotocol,
                 Roles = response.Roles
             };
-            result.Content = new StringContent(JsonConvert.SerializeObject(connectEvent));
+
+            return BuildResponse(JsonConvert.SerializeObject(connectEvent), MessageDataType.Json);
+        }
+
+        public static HttpResponseMessage BuildResponse(string response, MessageDataType dataType = MessageDataType.Text)
+        {
+            HttpResponseMessage result = new HttpResponseMessage();
+
+            result.Content = new StringContent(response);
+            result.Content.Headers.ContentType = GetMediaType(dataType);
 
             return result;
         }
@@ -104,68 +100,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
                 _ => HttpStatusCode.InternalServerError
             };
 
-        public static string GenerateJwtBearer(
-            string issuer = null,
-            string audience = null,
-            IEnumerable<Claim> claims = null,
-            DateTime? expires = null,
-            string signingKey = null,
-            DateTime? issuedAt = null,
-            DateTime? notBefore = null)
-        {
-            var subject = claims == null ? null : new ClaimsIdentity(claims);
-            return GenerateJwtBearer(issuer, audience, subject, expires, signingKey, issuedAt, notBefore);
-        }
-
-        public static string GenerateAccessToken(string signingKey, string audience, IEnumerable<Claim> claims, TimeSpan lifetime)
-        {
-            var expire = DateTime.UtcNow.Add(lifetime);
-
-            var jwtToken = GenerateJwtBearer(
-                audience: audience,
-                claims: claims,
-                expires: expire,
-                signingKey: signingKey
-            );
-
-            if (jwtToken.Length > MaxTokenLength)
-            {
-                throw new ArgumentException("AccessToken too long.");
-            }
-
-            return jwtToken;
-        }
-
-        private static string GenerateJwtBearer(
-            string issuer = null,
-            string audience = null,
-            ClaimsIdentity subject = null,
-            DateTime? expires = null,
-            string signingKey = null,
-            DateTime? issuedAt = null,
-            DateTime? notBefore = null)
-        {
-            SigningCredentials credentials = null;
-            if (!string.IsNullOrEmpty(signingKey))
-            {
-                // Refer: https://github.com/AzureAD/azure-activedirectory-identitymodel-extensions-for-dotnet/releases/tag/5.5.0
-                // From version 5.5.0, SignatureProvider caching is turned On by default, assign KeyId to enable correct cache for same SigningKey
-                var securityKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(signingKey));
-                securityKey.KeyId = signingKey.GetHashCode().ToString();
-                credentials = new SigningCredentials(securityKey, SecurityAlgorithms.HmacSha256);
-            }
-
-            var token = JwtTokenHandler.CreateJwtSecurityToken(
-                issuer: issuer,
-                audience: audience,
-                subject: subject,
-                notBefore: notBefore,
-                expires: expires,
-                issuedAt: issuedAt,
-                signingCredentials: credentials);
-            return JwtTokenHandler.WriteToken(token);
-        }
-
         public static IReadOnlyList<string> GetSignatureList(string signatures)
         {
             if (string.IsNullOrEmpty(signatures))
@@ -186,35 +120,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
             return type.GetProperty(name, BindingFlags.IgnoreCase | BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
         }
 
-        public static IReadOnlyList<string> GetTypeNames(Type type)
-        {
-            var properties = GetProperties(type);
-            var names = new List<string>();
-
-            Array.ForEach(properties, x => names.Add(x.Name));
-            return names;
-        }
-
         public static string FirstOrDefault(params string[] values)
         {
             return values.FirstOrDefault(v => !string.IsNullOrEmpty(v));
         }
 
-        public static string GetProductInfo()
+        public static RequestType GetRequestType(WebPubSubEventType eventType, string eventName)
         {
-            var assembly = typeof(WebPubSubService).GetTypeInfo().Assembly;
-            var packageId = assembly.GetName().Name;
-            var version = assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>().InformationalVersion;
-            var runtime = RuntimeInformation.FrameworkDescription?.Trim();
-            var operatingSystem = RuntimeInformation.OSDescription?.Trim();
-            var processorArchitecture = RuntimeInformation.ProcessArchitecture.ToString().Trim();
-
-            return $"{packageId}/{version} ({runtime}; {operatingSystem}; {processorArchitecture})";
-        }
-
-        public static RequestType GetRequestType(string eventType, string eventName)
-        {
-            if (eventType.Equals(Constants.EventTypes.User))
+            if (eventType == WebPubSubEventType.User)
             {
                 return RequestType.User;
             }
