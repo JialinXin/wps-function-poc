@@ -4,7 +4,7 @@
 module.exports = function (context, connectionContext) {
   context.bindings.webPubSubEvent = [];
   context.bindings.webPubSubEvent.push({
-    "operation": "sendToAll",
+    "operationKind": "sendToAll",
     "message": JSON.stringify({
         from: '[System]',
         content: `${context.bindingData.connectionContext.userId} connected.`
@@ -13,13 +13,13 @@ module.exports = function (context, connectionContext) {
   });
 
   context.bindings.webPubSubEvent.push({
-    "operation": "addUserToGroup",
+    "operationKind": "addUserToGroup",
     "userId": `${context.bindingData.connectionContext.userId}`,
     "group": "group1"
   });
 
   context.bindings.webPubSubEvent.push({
-    "operation": "sendToAll",
+    "operationKind": "sendToAll",
     "message": JSON.stringify({
           from: '[System]',
           content: `${context.bindingData.connectionContext.userId} joined group: group1.`

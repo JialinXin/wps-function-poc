@@ -7,11 +7,10 @@ using Newtonsoft.Json.Serialization;
 namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
 {
     [JsonObject(NamingStrategyType = typeof(CamelCaseNamingStrategy))]
-    public class MessageResponse : ServiceResponse
+    public class RemoveUserFromGroup : WebPubSubOperation
     {
-        [JsonProperty(Required = Required.Always)]
-        public WebPubSubMessage Message { get; set; }
+        public string UserId { get; set; }
 
-        public MessageDataType DataType { get; set; } = MessageDataType.Text;
+        public string Group { get; set; }
     }
 }

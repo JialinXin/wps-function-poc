@@ -2,6 +2,8 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
+using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Net.Http;
 using System.Threading;
@@ -14,6 +16,8 @@ using Microsoft.Azure.WebJobs.Logging;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Converters;
 using Newtonsoft.Json.Linq;
 
 namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
@@ -40,6 +44,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
             _dispatcher = new WebPubSubTriggerDispatcher(_logger);
         }
 
+        // For tests
+        internal WebPubSubConfigProvider()
+        { }
+
         public void Initialize(ExtensionConfigContext context)
         {
             if (context == null)
@@ -63,11 +71,19 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
 #pragma warning restore CS0618 // Type or member is obsolete
             _logger.LogInformation($"Registered Web PubSub negotiate Endpoint = {url?.GetLeftPart(UriPartial.Path)}");
 
+            // register JsonConverters
+            RegisterJsonConverter();
+
             // bindings
             context
                 .AddConverter<WebPubSubConnection, JObject>(JObject.FromObject)
-                .AddConverter<JObject, WebPubSubEvent>(ConvertFromJObject<WebPubSubEvent>)
-                .AddConverter<JObject, WebPubSubEvent[]>(ConvertFromJObject<WebPubSubEvent[]>);
+                .AddConverter<string, BinaryData>(input => BinaryData.FromString(input))
+                .AddConverter<byte[], BinaryData>(ConvertToBinaryData)
+                .AddConverter<Stream, BinaryData>(input => BinaryData.FromStream(input))
+                .AddConverter<JObject, BinaryData>(input => BinaryData.FromObjectAsJson(input))
+                .AddConverter<BinaryData, JObject>(JObject.FromObject)
+                .AddConverter<JObject, WebPubSubOperation>(ConvertToWebPubSubOperation)
+                .AddConverter<JArray, WebPubSubOperation[]>(ConvertToWebPubSubOperationArray);
 
             // Trigger binding
             context.AddBindingRule<WebPubSubTriggerAttribute>()
@@ -110,7 +126,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
             return new WebPubSubService(connectionString, hubName);
         }
 
-        private IAsyncCollector<WebPubSubEvent> CreateCollector(WebPubSubAttribute attribute)
+        private IAsyncCollector<WebPubSubOperation> CreateCollector(WebPubSubAttribute attribute)
         {
             return new WebPubSubAsyncCollector(GetService(attribute));
         }
@@ -143,9 +159,88 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
             }
         }
 
-        private static T ConvertFromJObject<T>(JObject input)
+        internal static void RegisterJsonConverter()
         {
-            return input.ToObject<T>();
+            JsonConvert.DefaultSettings = () => new JsonSerializerSettings
+            {
+                Converters = new List<JsonConverter>
+                {
+                    new StringEnumConverter(),
+                    new BinaryDataJsonConverter()
+                }
+            };
+        }
+
+        internal static WebPubSubOperation ConvertToWebPubSubOperation(JObject input)
+        {
+            if (input.TryGetValue("operationKind", StringComparison.OrdinalIgnoreCase, out var kind))
+            {
+                if (kind.ToString().Equals(nameof(SendToAll), StringComparison.OrdinalIgnoreCase))
+                {
+                    return input.ToObject<SendToAll>();
+                }
+                else if (kind.ToString().Equals(nameof(SendToConnection), StringComparison.OrdinalIgnoreCase))
+                {
+                    return input.ToObject<SendToConnection>();
+                }
+                else if (kind.ToString().Equals(nameof(SendToUser), StringComparison.OrdinalIgnoreCase))
+                {
+                    return input.ToObject<SendToUser>();
+                }
+                else if (kind.ToString().Equals(nameof(SendToGroup), StringComparison.OrdinalIgnoreCase))
+                {
+                    return input.ToObject<SendToGroup>();
+                }
+                else if (kind.ToString().Equals(nameof(AddUserToGroup), StringComparison.OrdinalIgnoreCase))
+                {
+                    return input.ToObject<AddUserToGroup>();
+                }
+                else if (kind.ToString().Equals(nameof(RemoveUserFromGroup), StringComparison.OrdinalIgnoreCase))
+                {
+                    return input.ToObject<RemoveUserFromGroup>();
+                }
+                else if (kind.ToString().Equals(nameof(RemoveUserFromAllGroups), StringComparison.OrdinalIgnoreCase))
+                {
+                    return input.ToObject<RemoveUserFromAllGroups>();
+                }
+                else if (kind.ToString().Equals(nameof(AddConnectionToGroup), StringComparison.OrdinalIgnoreCase))
+                {
+                    return input.ToObject<AddConnectionToGroup>();
+                }
+                else if (kind.ToString().Equals(nameof(RemoveConnectionFromGroup), StringComparison.OrdinalIgnoreCase))
+                {
+                    return input.ToObject<RemoveConnectionFromGroup>();
+                }
+                else if (kind.ToString().Equals(nameof(CloseClientConnection), StringComparison.OrdinalIgnoreCase))
+                {
+                    return input.ToObject<CloseClientConnection>();
+                }
+                else if (kind.ToString().Equals(nameof(GrantGroupPermission), StringComparison.OrdinalIgnoreCase))
+                {
+                    return input.ToObject<GrantGroupPermission>();
+                }
+                else if (kind.ToString().Equals(nameof(RevokeGroupPermission), StringComparison.OrdinalIgnoreCase))
+                {
+                    return input.ToObject<RevokeGroupPermission>();
+                }
+            }
+            return input.ToObject<WebPubSubOperation>();
+        }
+
+        internal static WebPubSubOperation[] ConvertToWebPubSubOperationArray(JArray input)
+        {
+            var result = new List<WebPubSubOperation>();
+            foreach (var item in input)
+            {
+                result.Add(ConvertToWebPubSubOperation((JObject)item));
+            }
+            return result.ToArray();
+        }
+
+        private static BinaryData ConvertToBinaryData(byte[] input)
+        {
+            Console.WriteLine("source is byte");
+            return BinaryData.FromBytes(input);
         }
     }
 }

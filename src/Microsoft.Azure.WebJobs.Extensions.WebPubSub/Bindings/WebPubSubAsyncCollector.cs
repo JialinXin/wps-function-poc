@@ -4,11 +4,11 @@
 using System;
 using System.Threading;
 using System.Threading.Tasks;
-using System.Reflection;
+using Azure.Core;
 
 namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
 {
-    internal class WebPubSubAsyncCollector: IAsyncCollector<WebPubSubEvent>
+    internal class WebPubSubAsyncCollector: IAsyncCollector<WebPubSubOperation>
     {
         private readonly IWebPubSubService _service;
 
@@ -17,25 +17,57 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
             _service = service;
         }
 
-        public async Task AddAsync(WebPubSubEvent item, CancellationToken cancellationToken = default)
+        public async Task AddAsync(WebPubSubOperation item, CancellationToken cancellationToken = default)
         {
             if (item == null)
             {
                 throw new ArgumentNullException(nameof(item));
             }
 
-            try
+            switch (item)
             {
-                var method = typeof(IWebPubSubService).GetMethod(item.Operation.ToString(),
-                    BindingFlags.IgnoreCase | BindingFlags.Public | BindingFlags.Instance);
-
-                var task = (Task)method.Invoke(_service, new object[] { item });
-
-                await task.ConfigureAwait(false);
-            }
-            catch (Exception ex)
-            {
-                throw new ArgumentException($"Not supported operation: {item.Operation}, exception: {ex}");
+                case SendToAll sendToAll:
+                    await _service.Client.SendToAllAsync(RequestContent.Create(sendToAll.Message),
+                        Utilities.GetContentType(sendToAll.DataType), sendToAll.Excluded).ConfigureAwait(false);
+                    break;
+                case SendToConnection sendToConnection:
+                    await _service.Client.SendToConnectionAsync(sendToConnection.ConnectionId, RequestContent.Create(sendToConnection.Message),
+                        Utilities.GetContentType(sendToConnection.DataType)).ConfigureAwait(false);
+                    break;
+                case SendToUser sendToUser:
+                    await _service.Client.SendToUserAsync(sendToUser.UserId, RequestContent.Create(sendToUser.Message),
+                        Utilities.GetContentType(sendToUser.DataType)).ConfigureAwait(false);
+                    break;
+                case SendToGroup sendToGroup:
+                    await _service.Client.SendToGroupAsync(sendToGroup.Group, RequestContent.Create(sendToGroup.Message),
+                        Utilities.GetContentType(sendToGroup.DataType), sendToGroup.Excluded).ConfigureAwait(false);
+                    break;
+                case AddUserToGroup addUserToGroup:
+                    await _service.Client.AddUserToGroupAsync(addUserToGroup.Group, addUserToGroup.UserId).ConfigureAwait(false);
+                    break;
+                case RemoveUserFromGroup removeUserFromGroup:
+                    await _service.Client.RemoveUserFromGroupAsync(removeUserFromGroup.Group, removeUserFromGroup.UserId).ConfigureAwait(false);
+                    break;
+                case RemoveUserFromAllGroups removeUserFromAllGroups:
+                    await _service.Client.RemoveUserFromAllGroupsAsync(removeUserFromAllGroups.UserId).ConfigureAwait(false);
+                    break;
+                case AddConnectionToGroup addConnectionToGroup:
+                    await _service.Client.AddConnectionToGroupAsync(addConnectionToGroup.Group, addConnectionToGroup.ConnectionId).ConfigureAwait(false);
+                    break;
+                case RemoveConnectionFromGroup removeConnectionFromGroup:
+                    await _service.Client.RemoveConnectionFromGroupAsync(removeConnectionFromGroup.Group, removeConnectionFromGroup.ConnectionId).ConfigureAwait(false);
+                    break;
+                case CloseClientConnection closeClientConnection:
+                    await _service.Client.CloseClientConnectionAsync(closeClientConnection.ConnectionId, closeClientConnection.Reason).ConfigureAwait(false);
+                    break;
+                case GrantGroupPermission grantGroupPermission:
+                    await _service.Client.GrantPermissionAsync(grantGroupPermission.Permission, grantGroupPermission.ConnectionId, grantGroupPermission.TargetName).ConfigureAwait(false);
+                    break;
+                case RevokeGroupPermission revokeGroupPermission:
+                    await _service.Client.RevokePermissionAsync(revokeGroupPermission.Permission, revokeGroupPermission.ConnectionId, revokeGroupPermission.TargetName).ConfigureAwait(false);
+                    break;
+                default:
+                    throw new ArgumentException("Not supported WebPubSubOperation");
             }
         }
 

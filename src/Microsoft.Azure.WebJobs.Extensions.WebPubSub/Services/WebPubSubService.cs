@@ -4,7 +4,6 @@
 using System;
 using System.Threading.Tasks;
 
-using Azure;
 using Azure.Core;
 using Azure.Messaging.WebPubSub;
 
@@ -15,15 +14,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
         private readonly WebPubSubServiceClient _client;
         private readonly ServiceConfigParser _serviceConfig;
 
-        public WebPubSubService(string connectionString, string hubName)
+        public WebPubSubService(string connectionString, string hub)
         {
             _serviceConfig = new ServiceConfigParser(connectionString);
-            UriBuilder endpoint = _serviceConfig.Port == 80 ?
-                new UriBuilder(_serviceConfig.Endpoint) :
-                new UriBuilder(_serviceConfig.Endpoint.Scheme, _serviceConfig.Endpoint.Host, _serviceConfig.Port);
-
-            _client = new WebPubSubServiceClient(endpoint.Uri, hubName, new AzureKeyCredential(_serviceConfig.AccessKey));
+            _client = new WebPubSubServiceClient(connectionString, hub);
         }
+
+        public WebPubSubServiceClient Client => _client;
 
         internal WebPubSubConnection GetClientConnection(string userId = null, string[] roles = null)
         {
@@ -38,74 +35,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
             #endregion
 
             return new WebPubSubConnection(url);
-        }
-
-        public async Task AddConnectionToGroup(WebPubSubEvent webPubSubEvent)
-        {
-            await _client.AddConnectionToGroupAsync(webPubSubEvent.Group, webPubSubEvent.ConnectionId).ConfigureAwait(false);
-        }
-
-        public async Task AddUserToGroup(WebPubSubEvent webPubSubEvent)
-        {
-            await _client.AddUserToGroupAsync(webPubSubEvent.Group, webPubSubEvent.UserId).ConfigureAwait(false);
-        }
-
-        public async Task CloseClientConnection(WebPubSubEvent webPubSubEvent)
-        {
-            await _client.CloseClientConnectionAsync(webPubSubEvent.ConnectionId, webPubSubEvent.Reason).ConfigureAwait(false);
-        }
-
-        public async Task GrantGroupPermission(WebPubSubEvent webPubSubEvent)
-        {
-            await _client.GrantPermissionAsync(webPubSubEvent.Permission, webPubSubEvent.ConnectionId).ConfigureAwait(false);
-        }
-
-        public async Task RemoveConnectionFromGroup(WebPubSubEvent webPubSubEvent)
-        {
-            await _client.RemoveConnectionFromGroupAsync(webPubSubEvent.Group, webPubSubEvent.ConnectionId).ConfigureAwait(false);
-        }
-
-        public async Task RemoveUserFromAllGroups(WebPubSubEvent webPubSubEvent)
-        {
-            await _client.RemoveUserFromAllGroupsAsync(webPubSubEvent.UserId).ConfigureAwait(false);
-        }
-
-        public async Task RemoveUserFromGroup(WebPubSubEvent webPubSubEvent)
-        {
-            await _client.RemoveUserFromGroupAsync(webPubSubEvent.Group, webPubSubEvent.UserId).ConfigureAwait(false);
-        }
-
-        public async Task RevokeGroupPermission(WebPubSubEvent webPubSubEvent)
-        {
-            await _client.RevokePermissionAsync(webPubSubEvent.Permission, webPubSubEvent.ConnectionId).ConfigureAwait(false);
-        }
-
-        public async Task SendToAll(WebPubSubEvent webPubSubEvent)
-        {
-            var content = RequestContent.Create(webPubSubEvent.Message.ToBinaryData());
-            var contentType = Utilities.GetContentType(webPubSubEvent.DataType);
-            await _client.SendToAllAsync(content, contentType, webPubSubEvent.Excluded).ConfigureAwait(false);
-        }
-
-        public async Task SendToConnection(WebPubSubEvent webPubSubEvent)
-        {
-            var content = RequestContent.Create(webPubSubEvent.Message.ToBinaryData());
-            var contentType = Utilities.GetContentType(webPubSubEvent.DataType);
-            await _client.SendToConnectionAsync(webPubSubEvent.ConnectionId, content, contentType).ConfigureAwait(false);
-        }
-
-        public async Task SendToGroup(WebPubSubEvent webPubSubEvent)
-        {
-            var content = RequestContent.Create(webPubSubEvent.Message.ToBinaryData());
-            var contentType = Utilities.GetContentType(webPubSubEvent.DataType);
-            await _client.SendToGroupAsync(webPubSubEvent.Group, content, contentType, webPubSubEvent.Excluded).ConfigureAwait(false);
-        }
-
-        public async Task SendToUser(WebPubSubEvent webPubSubEvent)
-        {
-            var content = RequestContent.Create(webPubSubEvent.Message.ToBinaryData());
-            var contentType = Utilities.GetContentType(webPubSubEvent.DataType);
-            await _client.SendToUserAsync(webPubSubEvent.UserId, content, contentType).ConfigureAwait(false);
         }
     }
 }

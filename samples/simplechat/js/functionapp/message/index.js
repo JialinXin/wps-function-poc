@@ -3,15 +3,12 @@
 
 module.exports = async function (context, message) {
   context.bindings.webPubSubEvent = {
-    "operation": "sendToAll",
+    "operationKind": "sendToAll",
     "message": message,
     "dataType": context.bindingData.dataType
   };
   var response = { 
-    "message": JSON.stringify({
-        from: '[System]',
-        content: 'ack.'
-      }),
+    "message": { from: '[System]', content: 'ack.'},
     "dataType" : "json"
   };
   return response;

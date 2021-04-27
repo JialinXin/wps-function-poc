@@ -1,80 +1,86 @@
 ﻿// Copyright (c) .NET Foundation. All rights reserved.
 // Licensed under the MIT License. See License.txt in the project root for license information.
 
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Net;
 using System.Net.Http;
 using System.Text;
 using System.Threading.Tasks;
+using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
-using Xunit;
+using NUnit.Framework;
+using static System.Net.Mime.MediaTypeNames;
 
 namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub.Tests
 {
     public class JObjectTests
     {
-        public static IEnumerable<object[]> MessageTestData =>
-            new List<object[]>
-            {
-                new object[] {new WebPubSubMessage("Hello"), MessageDataType.Binary, "Hello" },
-                new object[] {new WebPubSubMessage("Hello"), MessageDataType.Json, "Hello" },
-                new object[] {new WebPubSubMessage("Hello"), MessageDataType.Text, "Hello" },
-                new object[] {new WebPubSubMessage(Encoding.UTF8.GetBytes("Hello")) , MessageDataType.Binary, "Hello" },
-                new object[] {new WebPubSubMessage(Encoding.UTF8.GetBytes("Hello")), MessageDataType.Json, "Hello" },
-                new object[] {new WebPubSubMessage(Encoding.UTF8.GetBytes("Hello")), MessageDataType.Text, "Hello" },
-                new object[] {new WebPubSubMessage(new MemoryStream(Encoding.UTF8.GetBytes("Hello"))), MessageDataType.Binary, "Hello" },
-                new object[] {new WebPubSubMessage(new MemoryStream(Encoding.UTF8.GetBytes("Hello"))), MessageDataType.Json, "Hello" },
-                new object[] {new WebPubSubMessage(new MemoryStream(Encoding.UTF8.GetBytes("Hello"))), MessageDataType.Text, "Hello" }
-            };
-
-        [Fact]
-        public void TestConvertFromJObject()
+        [TestCase(nameof(SendToAll))]
+        [TestCase(nameof(SendToConnection))]
+        [TestCase(nameof(SendToGroup))]
+        [TestCase(nameof(SendToUser))]
+        [TestCase(nameof(AddConnectionToGroup))]
+        [TestCase(nameof(AddUserToGroup))]
+        [TestCase(nameof(RemoveConnectionFromGroup))]
+        [TestCase(nameof(RemoveUserFromAllGroups))]
+        [TestCase(nameof(RemoveUserFromGroup))]
+        [TestCase(nameof(CloseClientConnection))]
+        [TestCase(nameof(GrantGroupPermission))]
+        [TestCase(nameof(RevokeGroupPermission))]
+        public void TestOutputConvert(string operationKind)
         {
-            var wpsEvent = @"{
-                ""operation"":""sendToUser"",
-                ""userId"": ""abc"",
-                ""message"": ""test"",
-                ""dataType"": ""text""
-                }";
+            WebPubSubConfigProvider.RegisterJsonConverter();
 
-            var jsevent = JObject.Parse(wpsEvent);
+            var input = @"{ ""operationKind"":""{0}"",""userId"":""user"", ""group"":""group1"",""connectionId"":""connection"",""message"":""test"",""dataType"":""text"", ""reason"":""close""}";
 
-            var result = jsevent.ToObject<WebPubSubEvent>();
+            var replacedInput = input.Replace("{0}", operationKind);
 
-            Assert.Equal("test", result.Message.ToString());
-            Assert.Equal(MessageDataType.Text, result.DataType);
-            Assert.Equal(WebPubSubOperation.SendToUser, result.Operation);
-            Assert.Equal("abc", result.UserId);
+            var jObject = JObject.Parse(replacedInput);
+
+            var converted = WebPubSubConfigProvider.ConvertToWebPubSubOperation(jObject);
+
+            Assert.AreEqual(operationKind, converted.OperationKind.ToString());
         }
 
-        [Theory]
-        [MemberData(nameof(MessageTestData))]
-        public void TestConvertMessageToAndFromJObject(WebPubSubMessage message, MessageDataType dataType, string expected)
+        [TestCase]
+        public void TestBinaryDataConvert()
         {
-            var wpsEvent = new WebPubSubEvent
-            {
-                Operation = WebPubSubOperation.SendToConnection,
-                ConnectionId = "abc",
-                Message = message,
-                DataType = dataType
-            };
+            //var input = BinaryData.FromString("Test");
 
-            var jsObject = JObject.FromObject(wpsEvent);
+            var img = File.ReadAllBytes(@"D:\\test.jpg");
 
-            Assert.Equal("sendToConnection", jsObject["operation"].ToString());
-            Assert.Equal("abc", jsObject["connectionId"].ToString());
-            Assert.Equal(expected, jsObject["message"].ToString());
+            var input = BinaryData.FromBytes(img);
 
-            var result = jsObject.ToObject<WebPubSubEvent>();
+            var jObject = JsonConvert.SerializeObject(input.ToString());
 
-            Assert.Equal(expected, result.Message.ToString());
-            Assert.Equal(dataType, result.DataType);
-            Assert.Equal(WebPubSubOperation.SendToConnection, result.Operation);
-            Assert.Equal("abc", result.ConnectionId);
+            Assert.NotNull(jObject);
         }
 
-        [Fact]
+        [TestCase]
+        public void TestBinaryConvert()
+        {
+            var input = @"{""type"":""Buffer"", ""data"": [  123,  34,  102,  114,  111,  109,  34,  58,  34,  85,  115,  101,  114,  32,  98,  119,  99,  113,  107,  34,  44,  34,  99,  111,  110,  116,  101,  110,  116,  34,  58,  34,  102,  102,  102,  102,  102,  34,  125]}";
+
+            var jObject = JToken.Parse(input);
+            var content = new List<byte>();
+
+            if (jObject["type"].ToString() == "Buffer")
+            {
+                var values = jObject["data"];
+                if (values is JArray jArray)
+                {
+                    foreach (var item in values)
+                    {
+                        content.Add(byte.Parse(item.ToString()));
+                    }
+                }
+            }
+            Assert.NotNull(BinaryData.FromBytes(content.ToArray()));
+        }
+
+        [TestCase]
         public async Task ParseErrorResponse()
         {
             var test = @"{""code"":""unauthorized"",""errorMessage"":""not valid user.""}";
@@ -82,13 +88,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub.Tests
             var result = BuildResponse(test, RequestType.Connect);
 
             Assert.NotNull(result);
-            Assert.Equal(HttpStatusCode.Unauthorized, result.StatusCode);
+            Assert.AreEqual(HttpStatusCode.Unauthorized, result.StatusCode);
 
             var message = await result.Content.ReadAsStringAsync();
-            Assert.Equal("not valid user.", message);
+            Assert.AreEqual("not valid user.", message);
         }
 
-        [Fact]
+        [TestCase]
         public async Task ParseConnectResponse()
         {
             var test = @"{""userId"":""aaa""}";
@@ -96,14 +102,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub.Tests
             var result = BuildResponse(test, RequestType.Connect);
 
             Assert.NotNull(result);
-            Assert.Equal(HttpStatusCode.OK, result.StatusCode);
+            Assert.AreEqual(HttpStatusCode.OK, result.StatusCode);
 
             var response = await result.Content.ReadAsStringAsync();
             var message = (JObject.Parse(response)).ToObject<ConnectResponse>();
-            Assert.Equal("aaa", message.UserId);
+            Assert.AreEqual("aaa", message.UserId);
         }
 
-        [Fact]
+        [TestCase]
         public async Task ParseMessageResponse()
         {
             var test = @"{""message"":""test"", ""dataType"":""text""}";
@@ -111,14 +117,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub.Tests
             var result = BuildResponse(test, RequestType.User);
 
             Assert.NotNull(result);
-            Assert.Equal(HttpStatusCode.OK, result.StatusCode);
+            Assert.AreEqual(HttpStatusCode.OK, result.StatusCode);
 
             var message = await result.Content.ReadAsStringAsync();
-            Assert.Equal("test", message);
-            Assert.Equal(Constants.ContentTypes.PlainTextContentType, result.Content.Headers.ContentType.MediaType);
+            Assert.AreEqual("test", message);
+            Assert.AreEqual(Constants.ContentTypes.PlainTextContentType, result.Content.Headers.ContentType.MediaType);
         }
 
-        [Fact]
+        [TestCase]
         public void ParseMessageResponse_InvalidReturnNull()
         {
             var test = @"{""message"":""test"", ""dataType"":""hello""}";
@@ -128,7 +134,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub.Tests
             Assert.Null(result);
         }
 
-        [Fact]
+        [TestCase]
         public async Task ParseConnectResponse_ContentMatches()
         {
             var test = @"{""test"":""test"",""errorMessage"":""not valid user.""}";
@@ -139,7 +145,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub.Tests
             var actual = JObject.Parse(content);
 
             Assert.NotNull(result);
-            Assert.Equal(expected, actual);
+            Assert.AreEqual(expected, actual);
         }
 
         private static HttpResponseMessage BuildResponse(string input, RequestType requestType)

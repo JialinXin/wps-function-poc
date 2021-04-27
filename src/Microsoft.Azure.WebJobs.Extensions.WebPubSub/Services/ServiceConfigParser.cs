@@ -10,6 +10,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
 {
     internal class ServiceConfigParser
     {
+        private static char[] ValueSeparator = new char[] { '=' };
+
         public Uri Endpoint { get; }
 
         public string AccessKey { get; }
@@ -45,7 +47,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
 
             try
             {
-                setting = items.Where(x => x.Length > 0).ToDictionary(x => x.Split('=')[0], y => y.Split('=')[1], StringComparer.InvariantCultureIgnoreCase);
+                setting = items.Where(x => x.Length > 0).ToDictionary(x => x.Split(ValueSeparator, 2)[0], y => y.Split(ValueSeparator, 2)[1], StringComparer.InvariantCultureIgnoreCase);
             }
             catch (Exception)
             {

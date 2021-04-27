@@ -65,7 +65,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
 
             if (_listeners.TryGetValue(function, out var executor))
             {
-                WebPubSubMessage message = null;
+                BinaryData message = null;
                 MessageDataType dataType = MessageDataType.Text;
                 IDictionary<string, string[]> claims = null;
                 IDictionary<string, string[]> query = null;
@@ -104,7 +104,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
                             }
 
                             var payload = await req.Content.ReadAsByteArrayAsync().ConfigureAwait(false);
-                            message = new WebPubSubMessage(payload);
+                            message = BinaryData.FromBytes(payload);
                             break;
                         }
                     default:
@@ -176,17 +176,17 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
             context = new ConnectionContext();
             try
             {
-                context.ConnectionId = request.Headers.GetValues(Constants.Headers.CloudEvents.ConnectionId).FirstOrDefault();
-                context.Hub = request.Headers.GetValues(Constants.Headers.CloudEvents.Hub).FirstOrDefault();
-                context.EventType = Utilities.GetEventType(request.Headers.GetValues(Constants.Headers.CloudEvents.Type).FirstOrDefault());
-                context.EventName = request.Headers.GetValues(Constants.Headers.CloudEvents.EventName).FirstOrDefault();
-                context.Signature = request.Headers.GetValues(Constants.Headers.CloudEvents.Signature).FirstOrDefault();
+                context.ConnectionId = request.Headers.GetValues(Constants.Headers.CloudEvents.ConnectionId).SingleOrDefault();
+                context.Hub = request.Headers.GetValues(Constants.Headers.CloudEvents.Hub).SingleOrDefault();
+                context.EventType = Utilities.GetEventType(request.Headers.GetValues(Constants.Headers.CloudEvents.Type).SingleOrDefault());
+                context.EventName = request.Headers.GetValues(Constants.Headers.CloudEvents.EventName).SingleOrDefault();
+                context.Signature = request.Headers.GetValues(Constants.Headers.CloudEvents.Signature).SingleOrDefault();
                 context.Headers = request.Headers.ToDictionary(x => x.Key, v => new StringValues(v.Value.ToArray()), StringComparer.OrdinalIgnoreCase);
 
                 // UserId is optional, e.g. connect
                 if (request.Headers.TryGetValues(Constants.Headers.CloudEvents.UserId, out var values))
                 {
-                    context.UserId = values.FirstOrDefault();
+                    context.UserId = values.SingleOrDefault();
                 }
             }
             catch (Exception)

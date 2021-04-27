@@ -1,22 +1,14 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using NUnit.Framework;
+using System;
 using System.Reflection;
-using System.Text;
-using Xunit;
-using Newtonsoft.Json;
-using Newtonsoft.Json.Bson;
-using System.IO;
-using System.Runtime.Serialization.Formatters.Binary;
-using Newtonsoft.Json.Linq;
 
 namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub.Tests
 {
     public class WebPubSubTriggerValueProviderTests
     {
-        [Theory]
-        [InlineData("connectioncontext")]
-        [InlineData("reason")]
-        [InlineData("message")]
+        [TestCase("connectioncontext")]
+        [TestCase("reason")]
+        [TestCase("message")]
         public void TestGetValueByName_Valid(string name)
         {
             var triggerEvent = new WebPubSubTriggerEvent
@@ -30,7 +22,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub.Tests
                     UserId = "user1"
                 },
                 Reason = "reason",
-                Message = new WebPubSubMessage("message"),
+                Message = BinaryData.FromString("message"),
             };
 
             var value = typeof(WebPubSubTriggerEvent)
