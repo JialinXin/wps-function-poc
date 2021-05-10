@@ -3,12 +3,16 @@
   <PropertyGroup>
     <TargetFramework>netstandard2.0</TargetFramework>
     <PackageId>Microsoft.Azure.WebJobs.Extensions.WebPubSub</PackageId>
+    <Description>This extension adds bindings for Azure Web PubSub Service</Description>
     <LangVersion>8.0</LangVersion>
     <Version>1.0.0-beta.1</Version>
+    <IsExtensionClientLibrary>true</IsExtensionClientLibrary>
+    <AssemblyOriginatorKeyFile>D:\Code\GitHub_Jialin\wps-function-poc\AzureSDKClient.snk</AssemblyOriginatorKeyFile>
+    <SignAssembly>True</SignAssembly>
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Azure.Messaging.WebPubSub" Version="1.0.0-alpha.20210422.1" />
+    <PackageReference Include="Azure.Messaging.WebPubSub" Version="1.0.0-beta.1" />
     <PackageReference Include="Microsoft.Azure.Functions.Extensions" Version="1.1.0" />
     <PackageReference Include="System.IdentityModel.Tokens.Jwt" Version="5.5.0" />
     <PackageReference Include="System.Memory.Data" Version="1.0.1" />

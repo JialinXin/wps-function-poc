@@ -11,7 +11,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
     public class MessageResponse : ServiceResponse
     {
         [JsonProperty(Required = Required.Always)]
-        //[JsonConverter(typeof(BinaryDataJsonConverter))]
         public BinaryData Message { get; set; }
 
         public MessageDataType DataType { get; set; } = MessageDataType.Text;

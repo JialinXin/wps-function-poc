@@ -45,42 +45,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub.Tests
         }
 
         [TestCase]
-        public void TestBinaryDataConvert()
-        {
-            //var input = BinaryData.FromString("Test");
-
-            var img = File.ReadAllBytes(@"D:\\test.jpg");
-
-            var input = BinaryData.FromBytes(img);
-
-            var jObject = JsonConvert.SerializeObject(input.ToString());
-
-            Assert.NotNull(jObject);
-        }
-
-        [TestCase]
-        public void TestBinaryConvert()
-        {
-            var input = @"{""type"":""Buffer"", ""data"": [  123,  34,  102,  114,  111,  109,  34,  58,  34,  85,  115,  101,  114,  32,  98,  119,  99,  113,  107,  34,  44,  34,  99,  111,  110,  116,  101,  110,  116,  34,  58,  34,  102,  102,  102,  102,  102,  34,  125]}";
-
-            var jObject = JToken.Parse(input);
-            var content = new List<byte>();
-
-            if (jObject["type"].ToString() == "Buffer")
-            {
-                var values = jObject["data"];
-                if (values is JArray jArray)
-                {
-                    foreach (var item in values)
-                    {
-                        content.Add(byte.Parse(item.ToString()));
-                    }
-                }
-            }
-            Assert.NotNull(BinaryData.FromBytes(content.ToArray()));
-        }
-
-        [TestCase]
         public async Task ParseErrorResponse()
         {
             var test = @"{""code"":""unauthorized"",""errorMessage"":""not valid user.""}";

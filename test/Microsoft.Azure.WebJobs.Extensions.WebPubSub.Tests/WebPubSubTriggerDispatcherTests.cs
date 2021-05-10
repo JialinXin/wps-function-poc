@@ -18,9 +18,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub.Tests
         private const WebPubSubEventType TestType = WebPubSubEventType.System;
         private const string TestEvent = Constants.Events.ConnectedEvent;
 
-        private static HashSet<string> EmptySetting = new HashSet<string>();
-        private static HashSet<string> ValidAccessKeys = new HashSet<string>(new string[] { TestKey.AccessKey });
-        private static string[] ValidSignature = new string[] { TestKey.Signature };
+        private static readonly HashSet<string> EmptySetting = new HashSet<string>();
+        private static readonly HashSet<string> ValidAccessKeys = new HashSet<string>(new string[] { TestKey.AccessKey });
+        private static readonly string[] ValidSignature = new string[] { TestKey.Signature };
 
         [TestCase]
         public async Task TestProcessRequest_ValidRequest()

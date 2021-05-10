@@ -50,7 +50,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub.Tests
 
         private sealed class FakeTypeLocator : ITypeLocator
         {
-            private Type _type;
+            private readonly Type _type;
 
             public FakeTypeLocator(Type type)
             {

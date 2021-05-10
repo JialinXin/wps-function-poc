@@ -21,7 +21,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
 {
     internal class WebPubSubTriggerDispatcher : IWebPubSubTriggerDispatcher
     {
-        private Dictionary<string, WebPubSubListener> _listeners = new Dictionary<string, WebPubSubListener>(StringComparer.InvariantCultureIgnoreCase);
+        private readonly Dictionary<string, WebPubSubListener> _listeners = new Dictionary<string, WebPubSubListener>(StringComparer.InvariantCultureIgnoreCase);
         private readonly ILogger _logger;
 
         public WebPubSubTriggerDispatcher(ILogger logger)
@@ -277,7 +277,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
             {
                 // ignore invalid response
             }
-            response = default(T);
+            response = default;
             return false;
         }
 
@@ -301,9 +301,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
             {
                 return Utilities.BuildErrorResponse(error);
             }
-            else if (response is ErrorResponse)
+            else if (response is ErrorResponse errorResponse)
             {
-                return Utilities.BuildErrorResponse((ErrorResponse)response);
+                return Utilities.BuildErrorResponse(errorResponse);
             }
 
             if (requestType == RequestType.Connect)
@@ -312,9 +312,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
                 {
                     return Utilities.BuildResponse(converted.ToString());
                 }
-                else if (response is ConnectResponse)
+                else if (response is ConnectResponse connectResponse)
                 {
-                    return Utilities.BuildResponse((ConnectResponse)response);
+                    return Utilities.BuildResponse(connectResponse);
                 }
             }
 
@@ -324,9 +324,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
                 {
                     return Utilities.BuildResponse(msgResponse);
                 }
-                else if (response is MessageResponse)
+                else if (response is MessageResponse messageResponse)
                 {
-                    return Utilities.BuildResponse((MessageResponse)response);
+                    return Utilities.BuildResponse(messageResponse);
                 }
             }
 

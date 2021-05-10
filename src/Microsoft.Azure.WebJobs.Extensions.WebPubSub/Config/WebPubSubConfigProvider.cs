@@ -44,10 +44,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
             _dispatcher = new WebPubSubTriggerDispatcher(_logger);
         }
 
-        // For tests
-        internal WebPubSubConfigProvider()
-        { }
-
         public void Initialize(ExtensionConfigContext context)
         {
             if (context == null)
@@ -77,11 +73,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
             // bindings
             context
                 .AddConverter<WebPubSubConnection, JObject>(JObject.FromObject)
-                .AddConverter<string, BinaryData>(input => BinaryData.FromString(input))
-                .AddConverter<byte[], BinaryData>(ConvertToBinaryData)
-                .AddConverter<Stream, BinaryData>(input => BinaryData.FromStream(input))
-                .AddConverter<JObject, BinaryData>(input => BinaryData.FromObjectAsJson(input))
-                .AddConverter<BinaryData, JObject>(JObject.FromObject)
                 .AddConverter<JObject, WebPubSubOperation>(ConvertToWebPubSubOperation)
                 .AddConverter<JArray, WebPubSubOperation[]>(ConvertToWebPubSubOperationArray);
 
@@ -177,18 +168,22 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
             {
                 if (kind.ToString().Equals(nameof(SendToAll), StringComparison.OrdinalIgnoreCase))
                 {
+                    CheckDataType(input);
                     return input.ToObject<SendToAll>();
                 }
                 else if (kind.ToString().Equals(nameof(SendToConnection), StringComparison.OrdinalIgnoreCase))
                 {
+                    CheckDataType(input);
                     return input.ToObject<SendToConnection>();
                 }
                 else if (kind.ToString().Equals(nameof(SendToUser), StringComparison.OrdinalIgnoreCase))
                 {
+                    CheckDataType(input);
                     return input.ToObject<SendToUser>();
                 }
                 else if (kind.ToString().Equals(nameof(SendToGroup), StringComparison.OrdinalIgnoreCase))
                 {
+                    CheckDataType(input);
                     return input.ToObject<SendToGroup>();
                 }
                 else if (kind.ToString().Equals(nameof(AddUserToGroup), StringComparison.OrdinalIgnoreCase))
@@ -237,10 +232,21 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
             return result.ToArray();
         }
 
-        private static BinaryData ConvertToBinaryData(byte[] input)
+        // Binary data accepts ArrayBuffer only.
+        private static void CheckDataType(JObject input)
         {
-            Console.WriteLine("source is byte");
-            return BinaryData.FromBytes(input);
+            if (input.TryGetValue("dataType", StringComparison.OrdinalIgnoreCase, out var value))
+            {
+                var dataType = value.ToObject<MessageDataType>();
+
+                input.TryGetValue("message", StringComparison.OrdinalIgnoreCase, out var message);
+
+                if (dataType == MessageDataType.Binary && 
+                    !(message["type"] != null && message["type"].ToString().Equals("Buffer", StringComparison.OrdinalIgnoreCase)))
+                {
+                    throw new ArgumentException("MessageDataType is binary, please use ArrayBuffer as message type.");
+                }
+            }
         }
     }
 }

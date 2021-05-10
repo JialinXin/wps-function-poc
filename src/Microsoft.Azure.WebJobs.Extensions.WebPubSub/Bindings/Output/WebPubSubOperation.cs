@@ -10,8 +10,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
     [JsonObject(NamingStrategyType = typeof(CamelCaseNamingStrategy))]
     public abstract class WebPubSubOperation
     {
-        private string _operationKind;
-
         public string OperationKind
         {
             get
@@ -21,7 +19,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
             set
             {
                 // used in type-less for deserialize.
-                _operationKind = value;
+                _ = value;
             }
         }
     }

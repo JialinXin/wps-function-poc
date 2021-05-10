@@ -10,7 +10,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
 {
     internal class ServiceConfigParser
     {
-        private static char[] ValueSeparator = new char[] { '=' };
+        private static readonly char[] ValueSeparator = new char[] { '=' };
 
         public Uri Endpoint { get; }
 

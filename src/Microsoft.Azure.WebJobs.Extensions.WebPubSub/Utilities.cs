@@ -8,6 +8,7 @@ using System.Net;
 using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Reflection;
+using System.Text;
 using Newtonsoft.Json;
 
 namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
@@ -59,8 +60,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
 
         public static HttpResponseMessage BuildResponse(ConnectResponse response)
         {
-            HttpResponseMessage result = new HttpResponseMessage();
-
             var connectEvent = new ConnectEventResponse
             {
                 UserId = response.UserId,
@@ -74,21 +73,19 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
 
         public static HttpResponseMessage BuildResponse(string response, MessageDataType dataType = MessageDataType.Text)
         {
-            HttpResponseMessage result = new HttpResponseMessage();
-
-            result.Content = new StringContent(response);
-            result.Content.Headers.ContentType = GetMediaType(dataType);
-
-            return result;
+            return new HttpResponseMessage
+            {
+                Content = new StringContent(response, Encoding.UTF8, GetContentType(dataType)),
+            };
         }
 
         public static HttpResponseMessage BuildErrorResponse(ErrorResponse error)
         {
-            HttpResponseMessage result = new HttpResponseMessage();
-
-            result.StatusCode = GetStatusCode(error.Code);
-            result.Content = new StringContent(error.ErrorMessage);
-            return result;
+            return new HttpResponseMessage
+            {
+                StatusCode = GetStatusCode(error.Code),
+                Content = new StringContent(error.ErrorMessage)
+            };
         }
 
         public static HttpStatusCode GetStatusCode(WebPubSubErrorCode errorCode) =>
