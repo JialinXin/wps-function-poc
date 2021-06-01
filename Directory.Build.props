@@ -10,7 +10,7 @@
     <Product>Azure .NET SDK</Product>
     <PackageIcon>pkgicon.png</PackageIcon>
     <RepositoryUrl>https://azure.github.io/azure-webpubsub/references/functions-bindings</RepositoryUrl>
-    <PackageProjectUrl>$(RepositoryUrl)</PackageProjectUrl>
+    <PackageProjectUrl>https://github.com/Azure/azure-sdk-for-net/tree/master/sdk/webpubsub/Microsoft.Azure.WebJobs.Extensions.WebPubSub</PackageProjectUrl>
     <PackageRequireLicenseAcceptance>true</PackageRequireLicenseAcceptance>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <NeutralLanguage>en-US</NeutralLanguage>
