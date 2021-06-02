@@ -98,6 +98,15 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
             webPubSubAttributeRule.AddValidator(ValidateWebPubSubAttributeBinding);
             webPubSubAttributeRule.BindToCollector(CreateCollector);
 
+            var webPubSubRequestAttributeRule = context.AddBindingRule<WebPubSubRequestAttribute>();
+            webPubSubRequestAttributeRule.WhenIsNotNull(nameof(WebPubSubRequestAttribute.ConnectionId))
+                .BindToInput(GetConnectionContext);
+            webPubSubRequestAttributeRule.WhenIsNotNull(nameof(WebPubSubRequestAttribute.WebRequestOrigin))
+                .BindToInput(GetAbuseProtector);
+            //webPubSubRequestAttributeRule.AddValidator(ValidateWebPubSubRequestAttributeBinding);
+            //webPubSubRequestAttributeRule.BindToInput(GetConnectionContext);
+            //webPubSubRequestAttributeRule.Bind();
+
             _logger.LogInformation("Azure Web PubSub binding initialized");
         }
 
@@ -120,6 +129,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
                 $"{nameof(WebPubSubAttribute)}.{nameof(WebPubSubAttribute.ConnectionStringSetting)}");
         }
 
+        private void ValidateWebPubSubRequestAttributeBinding(WebPubSubRequestAttribute attribute, Type type)
+        {
+            if (!Utilities.ValidateSignature(attribute.ConnectionId, attribute.Signature, _options.AccessKeys))
+            {
+                throw new InvalidOperationException("Signature is invalid.");
+            }
+        }
+
         internal WebPubSubService GetService(WebPubSubAttribute attribute)
         {
             var connectionString = Utilities.FirstOrDefault(attribute.ConnectionStringSetting, _options.ConnectionString);
@@ -137,6 +154,24 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
             var hub = Utilities.FirstOrDefault(attribute.Hub, _options.Hub);
             var service = new WebPubSubService(attribute.ConnectionStringSetting, hub);
             return service.GetClientConnection(attribute.UserId);
+        }
+
+        private ConnectionContext GetConnectionContext(WebPubSubRequestAttribute attribute)
+        {
+            return new ConnectionContext
+            {
+                ConnectionId = attribute.ConnectionId,
+                UserId = attribute.UserId,
+                Hub = attribute.Hub,
+                EventType = Utilities.GetEventType(attribute.EventType),
+                EventName = attribute.EventName,
+                Signature = attribute.Signature
+            };
+        }
+
+        private AbuseProtector GetAbuseProtector(WebPubSubRequestAttribute attribute)
+        {
+            return new AbuseProtector(_options, attribute.WebRequestOrigin);
         }
 
         private void ValidateConnectionString(string attributeConnectionString, string attributeConnectionStringName)

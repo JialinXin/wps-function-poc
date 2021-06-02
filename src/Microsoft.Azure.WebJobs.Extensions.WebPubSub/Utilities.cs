@@ -8,6 +8,7 @@ using System.Net;
 using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Reflection;
+using System.Security.Cryptography;
 using System.Text;
 using Newtonsoft.Json;
 
@@ -137,6 +138,80 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
                 return RequestType.Disconnect;
             }
             return RequestType.Ignored;
+        }
+
+        public static bool ValidateSignature(string connectionId, string signature, HashSet<string> accessKeys)
+        {
+            foreach (var accessKey in accessKeys)
+            {
+                var signatures = Utilities.GetSignatureList(signature);
+                if (signatures == null)
+                {
+                    continue;
+                }
+                using (var hmac = new HMACSHA256(Encoding.UTF8.GetBytes(accessKey)))
+                {
+                    var hashBytes = hmac.ComputeHash(Encoding.UTF8.GetBytes(connectionId));
+                    var hash = "sha256=" + BitConverter.ToString(hashBytes).Replace("-", "");
+                    if (signatures.Contains(hash, StringComparer.OrdinalIgnoreCase))
+                    {
+                        return true;
+                    }
+                    else
+                    {
+                        continue;
+                    }
+                }
+            }
+            return false;
+        }
+
+        public static bool ValidateContentType(string mediaType, out MessageDataType dataType)
+        {
+            try
+            {
+                dataType = Utilities.GetDataType(mediaType);
+                return true;
+            }
+            catch (Exception)
+            {
+                dataType = MessageDataType.Binary;
+                return false;
+            }
+        }
+
+        public static bool RespondToServiceAbuseCheck(HttpRequestMessage req, HashSet<string> allowedHosts, out HttpResponseMessage response)
+        {
+            var hosts = req.Headers.GetValues(Constants.Headers.WebHookRequestOrigin);
+            return RespondToServiceAbuseCheck(req.Method.ToString(), hosts, allowedHosts, out response);
+        }
+
+        public static bool RespondToServiceAbuseCheck(string requestHost, HashSet<string> allowedHosts, out HttpResponseMessage response)
+        {
+            var requestHosts = new string[] { requestHost };
+            return RespondToServiceAbuseCheck("options", requestHosts, allowedHosts, out response);
+        }
+
+        public static bool RespondToServiceAbuseCheck(string method, IEnumerable<string> requestHosts, HashSet<string> allowedHosts, out HttpResponseMessage response)
+        {
+            response = new HttpResponseMessage();
+            if (method.Equals("options", StringComparison.OrdinalIgnoreCase) || method.Equals("get", StringComparison.OrdinalIgnoreCase))
+            {
+                if (requestHosts != null && requestHosts.Any())
+                {
+                    foreach (var item in allowedHosts)
+                    {
+                        if (requestHosts.Contains(item))
+                        {
+                            response.Headers.Add(Constants.Headers.WebHookAllowedOrigin, requestHosts);
+                            return true;
+                        }
+                    }
+                    response.StatusCode = HttpStatusCode.BadRequest;
+                }
+                return true;
+            }
+            return false;
         }
     }
 }

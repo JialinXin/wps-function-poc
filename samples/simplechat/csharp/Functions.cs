@@ -6,6 +6,7 @@ using Microsoft.Azure.WebJobs.Extensions.WebPubSub;
 using Newtonsoft.Json;
 using System;
 using System.IO;
+using System.Net.Http;
 using System.Threading.Tasks;
 
 namespace SimpleChat
@@ -31,20 +32,69 @@ namespace SimpleChat
             return connection;
         }
 
-        [FunctionName("connect")]
-        public static ServiceResponse Connect(
-            [WebPubSubTrigger("simplechat", WebPubSubEventType.System, "connect")] ConnectionContext connectionContext)
+        #region Work with HttpTrigger
+
+        [FunctionName("abuse-connect")]
+        public static HttpResponseMessage AbuseProtectionForConnect(
+            [HttpTrigger(AuthorizationLevel.Anonymous, "options", Route = "connect")] HttpRequest req,
+            [WebPubSubRequest] AbuseProtector protector)
         {
-            Console.WriteLine($"Received client connect with connectionId: {connectionContext.ConnectionId}");
-            if (connectionContext.UserId == "attacker")
-            {
-                return new ErrorResponse(WebPubSubErrorCode.Unauthorized);
-            }
-            return new ConnectResponse
-            {
-                UserId = connectionContext.UserId
-            };
+            return protector.Response;
         }
+
+        [FunctionName("connect")]
+        public static ConnectResponse ConnectV2(
+            [HttpTrigger(AuthorizationLevel.Anonymous, "post")] HttpRequest req,
+            [WebPubSubRequest] ConnectionContext context)
+        {
+            var response = new ConnectResponse
+            {
+                UserId = context.UserId
+            };
+            return response;
+        }
+
+        [FunctionName("abuse-broadcast")]
+        public static HttpResponseMessage AbuseProtectionForBroadcast(
+            [HttpTrigger(AuthorizationLevel.Anonymous, "options", Route = "broadcast")] HttpRequest req)
+        {
+            req.Headers.TryGetValue("WebHook-Request-Origin", out var hosts);
+            var response = new HttpResponseMessage();
+            response.Headers.Add("WebHook-Allowed-Origin", hosts.ToString());
+            return response;
+        }
+
+        // Http Trigger Message
+        [FunctionName("broadcast")]
+        public static async Task<ClientContent> Broadcast(
+            [HttpTrigger(AuthorizationLevel.Anonymous, "post")] HttpRequest req,
+            [WebPubSubRequest] ConnectionContext context,
+            [WebPubSub(Hub = "simplechat")] IAsyncCollector<WebPubSubOperation> operations)
+        {
+            await operations.AddAsync(new SendToAll
+            {
+                Message = BinaryData.FromStream(req.Body),
+                DataType = MessageDataType.Json
+            });
+
+            return new ClientContent("ack");
+        }
+        #endregion
+
+        #region Work with WebPubSubTrigger
+        //public static ServiceResponse Connect(
+        //    [WebPubSubTrigger("simplechat", WebPubSubEventType.System, "connect")] ConnectionContext connectionContext)
+        //{
+        //    Console.WriteLine($"Received client connect with connectionId: {connectionContext.ConnectionId}");
+        //    if (connectionContext.UserId == "attacker")
+        //    {
+        //        return new ErrorResponse(WebPubSubErrorCode.Unauthorized);
+        //    }
+        //    return new ConnectResponse
+        //    {
+        //        UserId = connectionContext.UserId
+        //    };
+        //}
 
         // multi tasks sample
         [FunctionName("connected")]
@@ -57,7 +107,7 @@ namespace SimpleChat
                 Message = BinaryData.FromString(new ClientContent($"{connectionContext.UserId} connected.").ToString()),
                 DataType = MessageDataType.Json
             });
-        
+
             await webpubsubOperation.AddAsync(new AddUserToGroup
             {
                 UserId = connectionContext.UserId,
@@ -70,27 +120,32 @@ namespace SimpleChat
                 DataType = MessageDataType.Json
             });
         }
+
+        #endregion
+
+
         
+
         // single message sample
-        [FunctionName("broadcast")]
-        public static async Task<MessageResponse> Broadcast(
-            [WebPubSubTrigger(WebPubSubEventType.User, "message")] ConnectionContext context,
-            BinaryData message,
-            MessageDataType dataType,
-            [WebPubSub(Hub = "simplechat")] IAsyncCollector<WebPubSubOperation> operations)
-        {
-            await operations.AddAsync(new SendToAll
-            {
-                Message = message,
-                DataType = dataType
-            });
-        
-            return new MessageResponse
-            {
-                Message = BinaryData.FromString(new ClientContent("ack").ToString()),
-                DataType = MessageDataType.Json
-            };
-        }
+        //[FunctionName("broadcast")]
+        //public static async Task<MessageResponse> Broadcast(
+        //    [WebPubSubTrigger(WebPubSubEventType.User, "message")] ConnectionContext context,
+        //    BinaryData message,
+        //    MessageDataType dataType,
+        //    [WebPubSub(Hub = "simplechat")] IAsyncCollector<WebPubSubOperation> operations)
+        //{
+        //    await operations.AddAsync(new SendToAll
+        //    {
+        //        Message = message,
+        //        DataType = dataType
+        //    });
+        //
+        //    return new MessageResponse
+        //    {
+        //        Message = BinaryData.FromString(new ClientContent("ack").ToString()),
+        //        DataType = MessageDataType.Json
+        //    };
+        //}
 
         [FunctionName("disconnect")]
         [return: WebPubSub]
