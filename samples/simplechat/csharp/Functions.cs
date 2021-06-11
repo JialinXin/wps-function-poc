@@ -33,51 +33,41 @@ namespace SimpleChat
         }
 
         #region Work with HttpTrigger
-
-        [FunctionName("abuse-connect")]
-        public static HttpResponseMessage AbuseProtectionForConnect(
-            [HttpTrigger(AuthorizationLevel.Anonymous, "options", Route = "connect")] HttpRequest req,
-            [WebPubSubRequest] AbuseProtector protector)
-        {
-            return protector.Response;
-        }
-
         [FunctionName("connect")]
-        public static ConnectResponse ConnectV2(
-            [HttpTrigger(AuthorizationLevel.Anonymous, "post")] HttpRequest req,
-            [WebPubSubRequest] ConnectionContext context)
+        public static object ConnectV2(
+            [HttpTrigger(AuthorizationLevel.Anonymous, "post", "options")] HttpRequest req,
+            [WebPubSubRequest] WebPubSubRequest wpsReq)
         {
+            if (wpsReq.IsAbuseRequest)
+            {
+                return wpsReq.Response;
+            }
             var response = new ConnectResponse
             {
-                UserId = context.UserId
+                UserId = wpsReq.ConnectionContext.UserId
             };
-            return response;
-        }
-
-        [FunctionName("abuse-broadcast")]
-        public static HttpResponseMessage AbuseProtectionForBroadcast(
-            [HttpTrigger(AuthorizationLevel.Anonymous, "options", Route = "broadcast")] HttpRequest req)
-        {
-            req.Headers.TryGetValue("WebHook-Request-Origin", out var hosts);
-            var response = new HttpResponseMessage();
-            response.Headers.Add("WebHook-Allowed-Origin", hosts.ToString());
             return response;
         }
 
         // Http Trigger Message
         [FunctionName("broadcast")]
-        public static async Task<ClientContent> Broadcast(
-            [HttpTrigger(AuthorizationLevel.Anonymous, "post")] HttpRequest req,
-            [WebPubSubRequest] ConnectionContext context,
+        public static async Task<object> Broadcast(
+            [HttpTrigger(AuthorizationLevel.Anonymous, "post", "options")] HttpRequest req,
+            [WebPubSubRequest] WebPubSubRequest wpsReq,
             [WebPubSub(Hub = "simplechat")] IAsyncCollector<WebPubSubOperation> operations)
         {
+            if (wpsReq.IsAbuseRequest)
+            {
+                return wpsReq.Response;
+            }
+            var messageRequest = wpsReq.Request as MessageEventRequest;
             await operations.AddAsync(new SendToAll
             {
-                Message = BinaryData.FromStream(req.Body),
-                DataType = MessageDataType.Json
+                Message = messageRequest.Message,
+                DataType = messageRequest.DataType
             });
 
-            return new ClientContent("ack");
+            return new ClientContent("ack").ToString();
         }
         #endregion
 

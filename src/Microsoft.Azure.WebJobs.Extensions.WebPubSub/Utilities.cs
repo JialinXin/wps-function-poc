@@ -170,7 +170,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
         {
             try
             {
-                dataType = Utilities.GetDataType(mediaType);
+                dataType = GetDataType(mediaType);
                 return true;
             }
             catch (Exception)

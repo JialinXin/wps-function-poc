@@ -90,6 +90,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
             context.AddBindingRule<WebPubSubTriggerAttribute>()
                 .BindToTrigger(new WebPubSubTriggerBindingProvider(_dispatcher, _options, webhookException));
 
+            // Input binding
             var webpubsubConnectionAttributeRule = context.AddBindingRule<WebPubSubConnectionAttribute>();
             webpubsubConnectionAttributeRule.AddValidator(ValidateWebPubSubConnectionAttributeBinding);
             webpubsubConnectionAttributeRule.BindToInput(GetClientConnection);
@@ -99,13 +100,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
             webPubSubAttributeRule.BindToCollector(CreateCollector);
 
             var webPubSubRequestAttributeRule = context.AddBindingRule<WebPubSubRequestAttribute>();
-            webPubSubRequestAttributeRule.WhenIsNotNull(nameof(WebPubSubRequestAttribute.ConnectionId))
-                .BindToInput(GetConnectionContext);
-            webPubSubRequestAttributeRule.WhenIsNotNull(nameof(WebPubSubRequestAttribute.WebRequestOrigin))
-                .BindToInput(GetAbuseProtector);
-            //webPubSubRequestAttributeRule.AddValidator(ValidateWebPubSubRequestAttributeBinding);
-            //webPubSubRequestAttributeRule.BindToInput(GetConnectionContext);
-            //webPubSubRequestAttributeRule.Bind();
+            webPubSubRequestAttributeRule.Bind(new WebPubSubRequestBindingProvider(_options, _nameResolver, _configuration));
 
             _logger.LogInformation("Azure Web PubSub binding initialized");
         }
@@ -129,14 +124,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
                 $"{nameof(WebPubSubAttribute)}.{nameof(WebPubSubAttribute.ConnectionStringSetting)}");
         }
 
-        private void ValidateWebPubSubRequestAttributeBinding(WebPubSubRequestAttribute attribute, Type type)
-        {
-            if (!Utilities.ValidateSignature(attribute.ConnectionId, attribute.Signature, _options.AccessKeys))
-            {
-                throw new InvalidOperationException("Signature is invalid.");
-            }
-        }
-
         internal WebPubSubService GetService(WebPubSubAttribute attribute)
         {
             var connectionString = Utilities.FirstOrDefault(attribute.ConnectionStringSetting, _options.ConnectionString);
@@ -156,23 +143,24 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
             return service.GetClientConnection(attribute.UserId);
         }
 
-        private ConnectionContext GetConnectionContext(WebPubSubRequestAttribute attribute)
-        {
-            return new ConnectionContext
-            {
-                ConnectionId = attribute.ConnectionId,
-                UserId = attribute.UserId,
-                Hub = attribute.Hub,
-                EventType = Utilities.GetEventType(attribute.EventType),
-                EventName = attribute.EventName,
-                Signature = attribute.Signature
-            };
-        }
+        //private WebPubSubRequest GetWebPubSubRequest(WebPubSubRequestAttribute attribute)
+        //{
+        //    var context = new ConnectionContext
+        //    {
+        //        ConnectionId = attribute.ConnectionId,
+        //        UserId = attribute.UserId,
+        //        Hub = attribute.Hub,
+        //        EventType = Utilities.GetEventType(attribute.EventType),
+        //        EventName = attribute.EventName,
+        //        Signature = attribute.Signature
+        //    };
+        //    return new WebPubSubRequest(context, _options.AccessKeys);
+        //}
 
-        private AbuseProtector GetAbuseProtector(WebPubSubRequestAttribute attribute)
-        {
-            return new AbuseProtector(_options, attribute.WebRequestOrigin);
-        }
+        //private AbuseProtector GetAbuseProtector(WebPubSubAbuseRequestAttribute attribute)
+        //{
+        //    return new AbuseProtector(_options, attribute.WebRequestOrigin);
+        //}
 
         private void ValidateConnectionString(string attributeConnectionString, string attributeConnectionStringName)
         {

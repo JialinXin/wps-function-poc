@@ -182,6 +182,8 @@
 
                         this.log("Connecting...");
                         // id in query map to the name in function, use like {query.userid}
+                        
+                        //axios.post(`${this.endpoint}/api/login`, null, null)
                         axios.post(`${this.endpoint}/api/login?userid=${this.username}`, null, null)
                         .then(resp => resp.data)
                         .then(info => {

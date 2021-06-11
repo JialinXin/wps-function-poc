@@ -6,7 +6,7 @@ using Newtonsoft.Json;
 
 namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
 {
-    internal sealed class ConnectEventRequest
+    public sealed class ConnectEventRequest : ServiceRequest
     {
         [JsonProperty("claims")]
         public IDictionary<string, string[]> Claims { get; set; }
