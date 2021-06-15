@@ -1,17 +1,18 @@
-﻿using Microsoft.AspNetCore.Http;
-using Microsoft.Azure.WebJobs.Host.Bindings;
-using Microsoft.Extensions.Configuration;
-using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
+﻿// Copyright (c) Microsoft. All rights reserved.
+// Licensed under the MIT license. See LICENSE file in the project root for full license information.
+
 using System;
-using System.Buffers;
 using System.Collections.Generic;
 using System.IO;
 using System.Net;
-using System.Net.Http;
 using System.Net.Http.Headers;
-using System.Text;
 using System.Threading.Tasks;
+
+using Microsoft.AspNetCore.Http;
+using Microsoft.Azure.WebJobs.Host.Bindings;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Primitives;
+using Newtonsoft.Json;
 
 namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
 {
@@ -45,38 +46,34 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
             var httpContext = request?.HttpContext;
 
             // Build abuse response
-            if (httpContext.Request.Method.Equals("options", StringComparison.OrdinalIgnoreCase) && 
-                httpContext.Request.Headers.TryGetValue(Constants.Headers.WebHookRequestOrigin, out var values))
+            if (httpContext.Request.Headers.TryGetValue(Constants.Headers.WebHookRequestOrigin, out var requestHosts) &&
+                Utilities.RespondToServiceAbuseCheck(httpContext.Request.Method, requestHosts, _options.AllowedHosts, out var abuseResponse))
             {
-                Utilities.RespondToServiceAbuseCheck(httpContext.Request.Method, values, _options.AllowedHosts, out var response);
-                return new WebPubSubRequestValueProvider(new WebPubSubRequest(true, true, response), _userType, string.Empty);
+                var abuseRequest = new WebPubSubRequest(WebPubSubRequestStatus.RequestValid, abuseResponse);
+                abuseRequest.IsAbuseRequest = true;
+                return new WebPubSubRequestValueProvider(abuseRequest, _userType, string.Empty);
             }
 
-            // Build service event context
+            // Build service reuest context
             if (!TryParseRequest(request, out var connectionContext))
             {
-                var response = new HttpResponseMessage(HttpStatusCode.BadRequest);
-                return new WebPubSubRequestValueProvider(new WebPubSubRequest(false, false, response), _userType, string.Empty);
+                return new WebPubSubRequestValueProvider(new WebPubSubRequest(WebPubSubRequestStatus.FormatInvalid, HttpStatusCode.BadRequest), _userType, string.Empty);
             }
 
-            var wpsRequest = new WebPubSubRequest(connectionContext, _options.AccessKeys);
-            if (!wpsRequest.IsValid)
+            // Signature check
+            if (!Utilities.ValidateSignature(connectionContext.ConnectionId, connectionContext.Signature, _options.AccessKeys))
             {
-                return new WebPubSubRequestValueProvider(wpsRequest, _userType, string.Empty);
+                return new WebPubSubRequestValueProvider(new WebPubSubRequest(WebPubSubRequestStatus.SignatureInvalid, HttpStatusCode.Unauthorized), _userType, string.Empty);
             }
 
+            var wpsRequest = new WebPubSubRequest(WebPubSubRequestStatus.RequestValid);
             var requestType = Utilities.GetRequestType(connectionContext.EventType, connectionContext.EventName);
-            //var length = (int)request.ContentLength;
-            //var payload = new MemoryStream();
-            //await request?.Body.CopyToAsync(payload, length);
-
-            //wpsRequest.Request = JObject.Parse(Encoding.UTF8.GetString(paylod, 0, length));
             switch (requestType)
             {
                 case RequestType.Connect:
                     using (var sr = new StreamReader(request.Body))
                     {
-                        var content = await sr.ReadToEndAsync();
+                        var content = await sr.ReadToEndAsync().ConfigureAwait(false);
                         wpsRequest.Request = JsonConvert.DeserializeObject<ConnectEventRequest>(content);
                         sr.Close();
                     }
@@ -84,7 +81,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
                 case RequestType.Disconnect:
                     using (var sr = new StreamReader(request.Body))
                     {
-                        var content = sr.ReadToEnd();
+                        var content = await sr.ReadToEndAsync().ConfigureAwait(false);
                         wpsRequest.Request = JsonConvert.DeserializeObject<DisconnectEventRequest>(content);
                     }
                     break;
@@ -92,8 +89,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
                     var contentType = MediaTypeHeaderValue.Parse(request.ContentType);
                     if (!Utilities.ValidateContentType(contentType.MediaType, out var dataType))
                     {
-                        var response = new HttpResponseMessage(HttpStatusCode.BadRequest);
-                        return new WebPubSubRequestValueProvider(new WebPubSubRequest(false, false, response), _userType, string.Empty);
+                        return new WebPubSubRequestValueProvider(new WebPubSubRequest(WebPubSubRequestStatus.ContentTypeInvalid, HttpStatusCode.BadRequest), _userType, string.Empty);
                     }
                     wpsRequest.Request = new MessageEventRequest
                     {
@@ -120,23 +116,21 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
             context = new ConnectionContext();
             try
             {
-                context.ConnectionId = GetValueOrDefault(request.Headers, Constants.Headers.CloudEvents.ConnectionId);
-                context.Hub = GetValueOrDefault(request.Headers, Constants.Headers.CloudEvents.Hub);
-                context.EventType = Utilities.GetEventType(GetValueOrDefault(request.Headers, Constants.Headers.CloudEvents.Type));
-                context.EventName = GetValueOrDefault(request.Headers, Constants.Headers.CloudEvents.EventName);
-                context.Signature = GetValueOrDefault(request.Headers, Constants.Headers.CloudEvents.Signature);
-                //context.Headers = request.Headers //request.Headers.ToDictionary(x => x.Key, v => new StringValues(v.Value.ToArray()), StringComparer.OrdinalIgnoreCase);
-                context.Headers = new Dictionary<string, Microsoft.Extensions.Primitives.StringValues>();
+                context.ConnectionId = GetHeaderValueOrDefault(request.Headers, Constants.Headers.CloudEvents.ConnectionId);
+                context.Hub = GetHeaderValueOrDefault(request.Headers, Constants.Headers.CloudEvents.Hub);
+                context.EventType = Utilities.GetEventType(GetHeaderValueOrDefault(request.Headers, Constants.Headers.CloudEvents.Type));
+                context.EventName = GetHeaderValueOrDefault(request.Headers, Constants.Headers.CloudEvents.EventName);
+                context.Signature = GetHeaderValueOrDefault(request.Headers, Constants.Headers.CloudEvents.Signature);
+                context.Headers = new Dictionary<string, StringValues>();
                 foreach (var item in request.Headers)
                 {
                     context.Headers.Add(item.Key, item.Value);
                 }
 
-
                 // UserId is optional, e.g. connect
                 if (request.Headers.ContainsKey(Constants.Headers.CloudEvents.UserId))
                 {
-                    context.UserId = GetValueOrDefault(request.Headers, Constants.Headers.CloudEvents.UserId);
+                    context.UserId = GetHeaderValueOrDefault(request.Headers, Constants.Headers.CloudEvents.UserId);
                 }
             }
             catch (Exception)
@@ -147,7 +141,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
             return true;
         }
 
-        private static string GetValueOrDefault(IHeaderDictionary header, string key)
+        private static string GetHeaderValueOrDefault(IHeaderDictionary header, string key)
         {
             header.TryGetValue(key, out var value);
             return value.Count > 0 ? value[0] : string.Empty;

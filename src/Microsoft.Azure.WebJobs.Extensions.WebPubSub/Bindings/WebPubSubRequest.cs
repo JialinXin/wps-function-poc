@@ -1,6 +1,8 @@
-﻿using Newtonsoft.Json.Linq;
-using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
+// Copyright (c) Microsoft. All rights reserved.
+// Licensed under the MIT license. See LICENSE file in the project root for full license information.
+
+using System.Net;
 using System.Net.Http;
 
 namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
@@ -9,26 +11,28 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
     {
         public ConnectionContext ConnectionContext { get; internal set; }
 
-        public SystemRequest Request { get; internal set; }
-
-        public bool IsValid { get; internal set; }
+        public ServiceRequest Request { get; internal set; }
 
         public bool IsAbuseRequest { get; internal set; } = false;
 
-        public HttpResponseMessage Response { get; set; }
+        public WebPubSubRequestStatus RequestStatus { get; }
 
-        internal WebPubSubRequest(ConnectionContext context, HashSet<string> accessKeys)
+        public HttpResponseMessage Response { get; }
+
+        internal WebPubSubRequest(WebPubSubRequestStatus status, HttpStatusCode httpStatus, string message = null)
         {
-            ConnectionContext = context;
-            IsValid = Utilities.ValidateSignature(context.ConnectionId, context.Signature, accessKeys);
-            Response = IsValid ? new HttpResponseMessage() : new HttpResponseMessage(System.Net.HttpStatusCode.Unauthorized);
+            RequestStatus = status;
+            Response = new HttpResponseMessage(httpStatus);
+            if (!string.IsNullOrEmpty(message))
+            {
+                Response.Content = new StringContent(message);
+            }
         }
 
-        internal WebPubSubRequest(bool isAbuse, bool isValid, HttpResponseMessage response)
+        internal WebPubSubRequest(WebPubSubRequestStatus status, HttpResponseMessage response = null)
         {
-            IsAbuseRequest = isAbuse;
-            IsValid = isValid;
-            Response = response;
+            RequestStatus = status;
+            Response = response ?? new HttpResponseMessage();
         }
     }
 }

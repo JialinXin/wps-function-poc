@@ -3,7 +3,12 @@
 
 namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
 {
-    public abstract class ServiceRequest
+    public enum WebPubSubRequestStatus
     {
+        RequestValid,
+        FormatInvalid,
+        SignatureInvalid,
+        ContentTypeInvalid,
+        Unknown
     }
 }

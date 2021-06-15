@@ -7,6 +7,9 @@ using System.Threading.Tasks;
 using Microsoft.Azure.WebJobs.Host.Protocols;
 using Microsoft.Extensions.Configuration;
 
+/// <summary>
+/// copy from https://github.com/Azure/azure-webjobs-sdk/blob/v3.0.29/src/Microsoft.Azure.WebJobs.Host/Bindings/BindingBase.cs
+/// </summary>
 namespace Microsoft.Azure.WebJobs.Host.Bindings
 {
     // Helper class for implementing IBinding with the attribute resolver pattern. 
@@ -48,20 +51,8 @@ namespace Microsoft.Azure.WebJobs.Host.Bindings
 
         public Task<IValueProvider> BindAsync(object value, ValueBindingContext context)
         {
+            // Passed a direct object, such as JobHost.Call 
             throw new NotImplementedException();
-            //var str = value as string;
-            //if (str != null)
-            //{
-            //    // Called when we invoke from dashboard. 
-            //    // str --> attribute --> obj 
-            //    var resolvedAttr = Cloner.ResolveFromInvokeString(str);
-            //    return await BuildAsync(resolvedAttr, context);
-            //}
-            //else
-            //{
-            //    // Passed a direct object, such as JobHost.Call 
-            //    throw new NotImplementedException();
-            //}
         }
 
         public ParameterDescriptor ToParameterDescriptor()
