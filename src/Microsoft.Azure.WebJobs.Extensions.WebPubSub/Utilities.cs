@@ -166,7 +166,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
             return false;
         }
 
-        public static bool ValidateContentType(string mediaType, out MessageDataType dataType)
+        public static bool ValidateMediaType(string mediaType, out MessageDataType dataType)
         {
             try
             {

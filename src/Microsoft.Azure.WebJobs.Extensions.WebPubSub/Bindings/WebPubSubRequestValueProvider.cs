@@ -1,23 +1,22 @@
-﻿using Microsoft.Azure.WebJobs.Host.Bindings;
-using Newtonsoft.Json.Linq;
+﻿// Copyright (c) Microsoft. All rights reserved.
+// Licensed under the MIT license. See LICENSE file in the project root for full license information.
+
 using System;
-using System.Collections.Generic;
-using System.Text;
 using System.Threading.Tasks;
+using Microsoft.Azure.WebJobs.Host.Bindings;
+using Newtonsoft.Json.Linq;
 
 namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
 {
     internal class WebPubSubRequestValueProvider : IValueProvider
     {
         private readonly WebPubSubRequest _request;
-        private readonly string _invokeString;
 
         public Type Type { get; }
 
-        public WebPubSubRequestValueProvider(WebPubSubRequest request, Type type, string invokeString)
+        public WebPubSubRequestValueProvider(WebPubSubRequest request, Type type)
         {
             _request = request;
-            _invokeString = invokeString;
             Type = type;
         }
 
@@ -28,7 +27,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
 
         public string ToInvokeString()
         {
-            return _invokeString;
+            return nameof(WebPubSubRequest);
         }
 
         private object GetRequest()

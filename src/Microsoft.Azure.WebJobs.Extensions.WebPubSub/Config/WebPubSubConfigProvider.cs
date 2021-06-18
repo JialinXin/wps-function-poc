@@ -30,6 +30,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
         private readonly ILogger _logger;
         private readonly WebPubSubOptions _options;
         private readonly IWebPubSubTriggerDispatcher _dispatcher;
+        private readonly WebPubSubRequestBindingProvider _wpsRequestBindingPrivider;
 
         public WebPubSubConfigProvider(
             IOptions<WebPubSubOptions> options,
@@ -42,6 +43,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
             _nameResolver = nameResolver;
             _configuration = configuration;
             _dispatcher = new WebPubSubTriggerDispatcher(_logger);
+            _wpsRequestBindingPrivider = new WebPubSubRequestBindingProvider(_options, _nameResolver, _configuration);
         }
 
         public void Initialize(ExtensionConfigContext context)
@@ -83,6 +85,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
             // bindings
             context
                 .AddConverter<WebPubSubConnection, JObject>(JObject.FromObject)
+                .AddConverter<WebPubSubRequest, JObject>(JObject.FromObject)
                 .AddConverter<JObject, WebPubSubOperation>(ConvertToWebPubSubOperation)
                 .AddConverter<JArray, WebPubSubOperation[]>(ConvertToWebPubSubOperationArray);
 
@@ -95,12 +98,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
             webpubsubConnectionAttributeRule.AddValidator(ValidateWebPubSubConnectionAttributeBinding);
             webpubsubConnectionAttributeRule.BindToInput(GetClientConnection);
 
+            var webPubSubRequestAttributeRule = context.AddBindingRule<WebPubSubRequestAttribute>();
+            webPubSubRequestAttributeRule.Bind(_wpsRequestBindingPrivider);
+
+            // Output binding
             var webPubSubAttributeRule = context.AddBindingRule<WebPubSubAttribute>();
             webPubSubAttributeRule.AddValidator(ValidateWebPubSubAttributeBinding);
             webPubSubAttributeRule.BindToCollector(CreateCollector);
-
-            var webPubSubRequestAttributeRule = context.AddBindingRule<WebPubSubRequestAttribute>();
-            webPubSubRequestAttributeRule.Bind(new WebPubSubRequestBindingProvider(_options, _nameResolver, _configuration));
 
             _logger.LogInformation("Azure Web PubSub binding initialized");
         }
@@ -142,25 +146,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
             var service = new WebPubSubService(attribute.ConnectionStringSetting, hub);
             return service.GetClientConnection(attribute.UserId);
         }
-
-        //private WebPubSubRequest GetWebPubSubRequest(WebPubSubRequestAttribute attribute)
-        //{
-        //    var context = new ConnectionContext
-        //    {
-        //        ConnectionId = attribute.ConnectionId,
-        //        UserId = attribute.UserId,
-        //        Hub = attribute.Hub,
-        //        EventType = Utilities.GetEventType(attribute.EventType),
-        //        EventName = attribute.EventName,
-        //        Signature = attribute.Signature
-        //    };
-        //    return new WebPubSubRequest(context, _options.AccessKeys);
-        //}
-
-        //private AbuseProtector GetAbuseProtector(WebPubSubAbuseRequestAttribute attribute)
-        //{
-        //    return new AbuseProtector(_options, attribute.WebRequestOrigin);
-        //}
 
         private void ValidateConnectionString(string attributeConnectionString, string attributeConnectionStringName)
         {

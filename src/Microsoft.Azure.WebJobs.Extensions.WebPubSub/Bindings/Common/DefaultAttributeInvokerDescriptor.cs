@@ -10,6 +10,9 @@ using Newtonsoft.Json;
 
 namespace Microsoft.Azure.WebJobs.Host.Bindings
 {
+    /// <summary>
+    /// Copy from: https://github.com/Azure/azure-webjobs-sdk/blob/v3.0.29/src/Microsoft.Azure.WebJobs.Host/Bindings/DefaultAttributeInvokerDescriptor.cs
+    /// </summary>
     // Helpers for providing default behavior for an IAttributeInvokeDescriptor that 
     // convert between a TAttribute and a string representation (invoke string). 
     // Properties with [AutoResolve] are the interesting ones to serialize and deserialize. 

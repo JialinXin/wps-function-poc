@@ -19,6 +19,9 @@ using Validator = System.Action<object>;
 
 namespace Microsoft.Azure.WebJobs.Host.Bindings
 {
+    /// <summary>
+    /// Copy from: https://github.com/Azure/azure-webjobs-sdk/blob/v3.0.29/src/Microsoft.Azure.WebJobs.Host/Bindings/AttributeCloner.cs
+    /// </summary>
     // Clone an attribute and resolve it.
     // This can be tricky since some read-only properties are set via the constructor.
     // This assumes that the property name matches the constructor argument name.
@@ -257,7 +260,7 @@ namespace Microsoft.Azure.WebJobs.Host.Bindings
                 validator(resolvedValue);
             }
 
-#pragma warning disable CS0618 // Type or member is obsolete
+#pragma warning disable CS0618 // IResolutionPolicy is obsolete
             IResolutionPolicy policy = GetPolicy(attr.ResolutionPolicyType, propInfo);
             template.ValidateContractCompatibility(contract);
             return (newAttr, bindingData) => TemplateBind(policy, propInfo, newAttr, template, bindingData, validator);
@@ -402,6 +405,7 @@ namespace Microsoft.Azure.WebJobs.Host.Bindings
             // return the default policy                        
             return new DefaultResolutionPolicy();
         }
+#pragma warning restore CS0618 // Type or member is obsolete
 
         // If no name resolver is specified, then any %% becomes an error.
         private class EmptyNameResolver : INameResolver
@@ -409,94 +413,4 @@ namespace Microsoft.Azure.WebJobs.Host.Bindings
             public string Resolve(string name) => null;
         }
     }
-
-    internal class DefaultResolutionPolicy : IResolutionPolicy
-    {
-        public string TemplateBind(PropertyInfo propInfo, Attribute attribute, BindingTemplate template, IReadOnlyDictionary<string, object> bindingData)
-        {
-            return template.Bind(bindingData);
-        }
-    }
-
-    internal class SystemBindingData
-    {
-        // The public name for this binding in the binding expressions. 
-        public const string Name = "sys";
-
-        // An internal name for this binding that uses characters that gaurantee it can't be overwritten by a user. 
-        // This is never seen by the user. 
-        // This ensures that we can always unambiguously retrieve this later. 
-        private const string InternalKeyName = "$sys";
-
-        private static readonly IReadOnlyDictionary<string, Type> DefaultSystemContract = new Dictionary<string, Type>(StringComparer.OrdinalIgnoreCase)
-        {
-            { Name, typeof(SystemBindingData) }
-        };
-
-        /// <summary>
-        /// The method name that the binding lives in. 
-        /// The method name can be override by the <see cref="FunctionNameAttribute"/> 
-        /// </summary>
-        public string MethodName { get; set; }
-
-        /// <summary>
-        /// Get the current UTC date. 
-        /// </summary>
-        public DateTime UtcNow => DateTime.UtcNow;
-
-        /// <summary>
-        /// Return a new random guid. This create a new guid each time it's called.
-        /// </summary>
-        public Guid RandGuid => Guid.NewGuid();
-
-        // Given a full bindingData, create a binding data with just the system object .
-        // This can be used when resolving default contracts that shouldn't be using an instance binding data. 
-        internal static IReadOnlyDictionary<string, object> GetSystemBindingData(IReadOnlyDictionary<string, object> bindingData)
-        {
-            var data = GetFromData(bindingData);
-            var systemBindingData = new Dictionary<string, object>
-            {
-                { Name, data }
-            };
-            return systemBindingData;
-        }
-
-        // Validate that a template only uses static (non-instance) binding variables. 
-        // Enforces we're not referring to other data from the trigger. 
-        internal static void ValidateStaticContract(BindingTemplate template)
-        {
-            try
-            {
-                template.ValidateContractCompatibility(SystemBindingData.DefaultSystemContract);
-            }
-            catch (InvalidOperationException e)
-            {
-                throw new InvalidOperationException($"Default contract can only refer to the '{SystemBindingData.Name}' binding data: " + e.Message);
-            }
-        }
-
-        internal void AddToBindingData(Dictionary<string, object> bindingData)
-        {
-            // User data takes precedence, so if 'sys' already exists, add via the internal name. 
-            string sysName = bindingData.ContainsKey(SystemBindingData.Name) ? SystemBindingData.InternalKeyName : SystemBindingData.Name;
-            bindingData[sysName] = this;
-        }
-
-        // Given per-instance binding data, extract just the system binding data object from it. 
-        private static SystemBindingData GetFromData(IReadOnlyDictionary<string, object> bindingData)
-        {
-            object val;
-            if (bindingData.TryGetValue(InternalKeyName, out val))
-            {
-                return val as SystemBindingData;
-            }
-            if (bindingData.TryGetValue(Name, out val))
-            {
-                return val as SystemBindingData;
-            }
-            return null;
-        }
-    }
 }
-
-#pragma warning restore CS0618 // Type or member is obsolete

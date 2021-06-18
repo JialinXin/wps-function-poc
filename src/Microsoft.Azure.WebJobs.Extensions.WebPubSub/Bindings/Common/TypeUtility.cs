@@ -11,6 +11,9 @@ using Newtonsoft.Json.Linq;
 
 namespace Microsoft.Azure.WebJobs.Host
 {
+    /// <summary>
+    /// Copy from: https://github.com/Azure/azure-webjobs-sdk/blob/v3.0.29/src/Microsoft.Azure.WebJobs.Host/TypeUtility.cs
+    /// </summary>
     internal static class TypeUtility
     {
         internal static string GetFriendlyName(Type type)

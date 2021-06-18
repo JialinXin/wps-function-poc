@@ -6,7 +6,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
     public enum WebPubSubRequestStatus
     {
         RequestValid,
-        FormatInvalid,
         SignatureInvalid,
         ContentTypeInvalid,
         Unknown

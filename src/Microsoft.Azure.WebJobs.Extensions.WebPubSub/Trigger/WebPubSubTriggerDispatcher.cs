@@ -93,7 +93,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
                         }
                     case RequestType.User:
                         {
-                            if (!Utilities.ValidateContentType(req.Content.Headers.ContentType.MediaType, out dataType))
+                            if (!Utilities.ValidateMediaType(req.Content.Headers.ContentType.MediaType, out dataType))
                             {
                                 return new HttpResponseMessage(HttpStatusCode.BadRequest)
                                 {

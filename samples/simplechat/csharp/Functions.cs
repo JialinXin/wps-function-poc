@@ -50,7 +50,7 @@ namespace SimpleChat
         }
 
         // Http Trigger Message
-        [FunctionName("broadcast")]
+        [FunctionName("message")]
         public static async Task<object> Broadcast(
             [HttpTrigger(AuthorizationLevel.Anonymous, "post", "options")] HttpRequest req,
             [WebPubSubRequest] WebPubSubRequest wpsReq,
