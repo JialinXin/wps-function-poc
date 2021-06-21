@@ -27,7 +27,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
         {
             if (context == null)
             {
-                throw new ArgumentNullException("context");
+                throw new ArgumentNullException(nameof(context));
             }
     
             ParameterInfo parameter = context.Parameter;

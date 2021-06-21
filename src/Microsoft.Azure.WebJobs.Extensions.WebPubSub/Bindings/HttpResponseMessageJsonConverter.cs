@@ -6,7 +6,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Net.Http;
-
+using System.Threading.Tasks;
 using Microsoft.Extensions.Primitives;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
@@ -23,7 +23,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
 
         public override void WriteJson(JsonWriter writer, HttpResponseMessage value, JsonSerializer serializer)
         {
-            var simpleRes = SimpleResponse.FromHttpResponse(value);
+            var simpleRes = SimpleResponse.FromHttpResponse(value).GetAwaiter().GetResult();
             serializer.Serialize(writer, JObject.FromObject(simpleRes));
         }
 
@@ -36,11 +36,16 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
 
             public Dictionary<string, StringValues> Headers { get; set; }
 
-            public static SimpleResponse FromHttpResponse(HttpResponseMessage response)
+            public static async Task<SimpleResponse> FromHttpResponse(HttpResponseMessage response)
             {
+                Stream body = null;
+                if (response.Content != null)
+                {
+                    body = await response.Content.ReadAsStreamAsync().ConfigureAwait(false);
+                }
                 return new SimpleResponse
                 {
-                    Body = response.Content?.ReadAsStreamAsync().Result,
+                    Body = body,
                     Status = (int)response.StatusCode,
                     Headers = response.Headers.ToDictionary(x => x.Key, v => new StringValues(v.Value.ToArray()), StringComparer.OrdinalIgnoreCase)
                 };

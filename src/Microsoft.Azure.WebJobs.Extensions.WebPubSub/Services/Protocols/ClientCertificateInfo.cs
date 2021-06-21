@@ -10,5 +10,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
     public sealed class ClientCertificateInfo
     {
         public string Thumbprint { get; }
+
+        public ClientCertificateInfo(string thumbprint)
+        {
+            Thumbprint = thumbprint;
+        }
     }
 }

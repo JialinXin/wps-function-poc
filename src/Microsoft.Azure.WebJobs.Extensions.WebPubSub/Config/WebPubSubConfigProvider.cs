@@ -30,7 +30,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
         private readonly ILogger _logger;
         private readonly WebPubSubOptions _options;
         private readonly IWebPubSubTriggerDispatcher _dispatcher;
-        private readonly WebPubSubRequestBindingProvider _wpsRequestBindingPrivider;
 
         public WebPubSubConfigProvider(
             IOptions<WebPubSubOptions> options,
@@ -43,7 +42,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
             _nameResolver = nameResolver;
             _configuration = configuration;
             _dispatcher = new WebPubSubTriggerDispatcher(_logger);
-            _wpsRequestBindingPrivider = new WebPubSubRequestBindingProvider(_options, _nameResolver, _configuration);
         }
 
         public void Initialize(ExtensionConfigContext context)
@@ -99,7 +97,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
             webpubsubConnectionAttributeRule.BindToInput(GetClientConnection);
 
             var webPubSubRequestAttributeRule = context.AddBindingRule<WebPubSubRequestAttribute>();
-            webPubSubRequestAttributeRule.Bind(_wpsRequestBindingPrivider);
+            webPubSubRequestAttributeRule.Bind(new WebPubSubRequestBindingProvider(_options, _nameResolver, _configuration));
 
             // Output binding
             var webPubSubAttributeRule = context.AddBindingRule<WebPubSubAttribute>();

@@ -10,7 +10,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
     [JsonObject(NamingStrategyType = typeof(CamelCaseNamingStrategy))]
     public sealed class MessageEventRequest : ServiceRequest
     {
-        public BinaryData Message { get; set; }
-        public MessageDataType DataType { get; set; }
+        public BinaryData Message { get; }
+        public MessageDataType DataType { get; }
+
+        public MessageEventRequest(BinaryData message, MessageDataType dataType)
+        {
+            Message = message;
+            DataType = dataType;
+        }
     }
 }

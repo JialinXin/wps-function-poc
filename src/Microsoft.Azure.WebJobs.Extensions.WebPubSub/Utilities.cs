@@ -61,15 +61,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
 
         public static HttpResponseMessage BuildResponse(ConnectResponse response)
         {
-            var connectEvent = new ConnectEventResponse
-            {
-                UserId = response.UserId,
-                Groups = response.Groups,
-                Subprotocol = response.Subprotocol,
-                Roles = response.Roles
-            };
-
-            return BuildResponse(JsonConvert.SerializeObject(connectEvent), MessageDataType.Json);
+            return BuildResponse(JsonConvert.SerializeObject(response), MessageDataType.Json);
         }
 
         public static HttpResponseMessage BuildResponse(string response, MessageDataType dataType = MessageDataType.Text)
@@ -182,14 +174,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
 
         public static bool RespondToServiceAbuseCheck(HttpRequestMessage req, HashSet<string> allowedHosts, out HttpResponseMessage response)
         {
-            var hosts = req.Headers.GetValues(Constants.Headers.WebHookRequestOrigin);
-            return RespondToServiceAbuseCheck(req.Method.ToString(), hosts, allowedHosts, out response);
-        }
-
-        public static bool RespondToServiceAbuseCheck(string requestHost, HashSet<string> allowedHosts, out HttpResponseMessage response)
-        {
-            var requestHosts = new string[] { requestHost };
-            return RespondToServiceAbuseCheck("options", requestHosts, allowedHosts, out response);
+            var requestHosts = req.Headers.GetValues(Constants.Headers.WebHookRequestOrigin);
+            return RespondToServiceAbuseCheck(req.Method.ToString(), requestHosts, allowedHosts, out response);
         }
 
         public static bool RespondToServiceAbuseCheck(string method, IEnumerable<string> requestHosts, HashSet<string> allowedHosts, out HttpResponseMessage response)

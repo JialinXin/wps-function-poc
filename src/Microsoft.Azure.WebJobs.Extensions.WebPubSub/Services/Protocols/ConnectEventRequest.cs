@@ -10,12 +10,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
     [JsonObject(NamingStrategyType = typeof(CamelCaseNamingStrategy))]
     public sealed class ConnectEventRequest : ServiceRequest
     {
-        public IDictionary<string, string[]> Claims { get; set; }
+        public IDictionary<string, string[]> Claims { get; }
 
-        public IDictionary<string, string[]> Query { get; set; }
+        public IDictionary<string, string[]> Query { get; }
 
-        public string[] Subprotocols { get; set; }
+        public string[] Subprotocols { get; }
 
-        public ClientCertificateInfo[] ClientCertificates { get; set; }
+        public ClientCertificateInfo[] ClientCertificates { get; }
     }
 }

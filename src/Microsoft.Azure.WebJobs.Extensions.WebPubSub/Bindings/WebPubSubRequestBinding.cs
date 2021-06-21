@@ -58,7 +58,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
                 return new WebPubSubRequestValueProvider(abuseRequest, _userType);
             }
 
-            // Build service reuest context
+            // Build service request context
             if (!TryParseRequest(request, out var connectionContext))
             {
                 // Not valid WebPubSubRequest
@@ -73,8 +73,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
 
             var wpsRequest = new WebPubSubRequest(connectionContext, WebPubSubRequestStatus.RequestValid);
             var requestType = Utilities.GetRequestType(connectionContext.EventType, connectionContext.EventName);
+
+            // Build request body and reset head to avoid break normal HttpRequest.
             var streamContent = new MemoryStream();
             await request.Body.CopyToAsync(streamContent).ConfigureAwait(false);
+            request.Body.Position = 0;
 
             switch (requestType)
             {
@@ -98,11 +101,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
                     {
                         return new WebPubSubRequestValueProvider(new WebPubSubRequest(connectionContext, WebPubSubRequestStatus.ContentTypeInvalid, HttpStatusCode.BadRequest), _userType);
                     }
-                    wpsRequest.Request = new MessageEventRequest
-                    {
-                        Message = BinaryData.FromBytes(streamContent.ToArray()),
-                        DataType = dataType
-                    };
+                    wpsRequest.Request = new MessageEventRequest(BinaryData.FromBytes(streamContent.ToArray()), dataType);
                     break;
                 default:
                     break;
@@ -146,9 +145,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
 
         private static string GetHeaderValueOrDefault(IHeaderDictionary header, string key)
         {
-            header.TryGetValue(key, out var value);
-            return value.Count > 0 ? value[0] : string.Empty;
+            return header.TryGetValue(key, out var value) ? value[0] : string.Empty;
         }
     }
-
 }
