@@ -6,13 +6,18 @@
       "type": "httpTrigger",
       "direction": "in",
       "name": "req",
-      "route": "connect",
+      "route": "validate",
       "methods": ["options", "get"]
     },
     {
       "type": "http",
       "direction": "out",
-      "name": "res"
+      "name": "$return"
+    },
+    {
+      "type": "webPubSubRequest",
+      "name": "wpsReq",
+      "direction": "in"
     }
   ]
 }

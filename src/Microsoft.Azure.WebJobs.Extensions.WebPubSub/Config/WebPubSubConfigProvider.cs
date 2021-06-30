@@ -3,14 +3,11 @@
 
 using System;
 using System.Collections.Generic;
-using System.IO;
-using System.Linq;
 using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
 
 using Microsoft.Azure.WebJobs.Description;
-using Microsoft.Azure.WebJobs.Host.Bindings;
 using Microsoft.Azure.WebJobs.Host.Config;
 using Microsoft.Azure.WebJobs.Logging;
 using Microsoft.Extensions.Configuration;
@@ -69,11 +66,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
                 var url = context.GetWebhookHandler();
 #pragma warning restore CS0618 // Type or member is obsolete
                 _logger.LogInformation($"Registered Web PubSub negotiate Endpoint = {url?.GetLeftPart(UriPartial.Path)}");
-
             }
             catch (Exception ex)
             {
-                // trigger will be disabled.
+                // disable trigger.
                 webhookException = ex;
             }
 
@@ -89,7 +85,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
 
             // Trigger binding
             context.AddBindingRule<WebPubSubTriggerAttribute>()
-                .BindToTrigger(new WebPubSubTriggerBindingProvider(_dispatcher, _options, webhookException));
+                .BindToTrigger(new WebPubSubTriggerBindingProvider(_dispatcher, _options, _nameResolver, webhookException));
 
             // Input binding
             var webpubsubConnectionAttributeRule = context.AddBindingRule<WebPubSubConnectionAttribute>();
@@ -257,7 +253,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
 
                 input.TryGetValue("message", StringComparison.OrdinalIgnoreCase, out var message);
 
-                if (dataType == MessageDataType.Binary && 
+                if (dataType == MessageDataType.Binary &&
                     !(message["type"] != null && message["type"].ToString().Equals("Buffer", StringComparison.OrdinalIgnoreCase)))
                 {
                     throw new ArgumentException("MessageDataType is binary, please use ArrayBuffer as message type.");

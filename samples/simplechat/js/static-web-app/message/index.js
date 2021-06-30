@@ -2,10 +2,7 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 module.exports = async function (context, req, wpsReq) {
-  console.log("received message");
-  console.log(`is abuse: ${wpsReq.isAbuseRequest}`);
-  console.log(`response: ${wpsReq.response}`);
-  if (wpsReq.isAbuseRequest)
+  if (!wpsReq.request.valid)
   {
     return wpsReq.response;
   }
@@ -17,6 +14,4 @@ module.exports = async function (context, req, wpsReq) {
     };
     return { body: { from: '[System]', content: 'ack.'} };
   }
-
-  context.done();
 };

@@ -8,7 +8,7 @@ using System.Reflection;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
-
+using Microsoft.Azure.WebJobs.Host;
 using Microsoft.Azure.WebJobs.Host.Bindings;
 using Microsoft.Azure.WebJobs.Host.Listeners;
 using Microsoft.Azure.WebJobs.Host.Protocols;
@@ -22,14 +22,21 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
         private readonly ParameterInfo _parameterInfo;
         private readonly WebPubSubTriggerAttribute _attribute;
         private readonly IWebPubSubTriggerDispatcher _dispatcher;
+        private readonly INameResolver _nameResolver;
         private readonly WebPubSubOptions _options;
 
-        public WebPubSubTriggerBinding(ParameterInfo parameterInfo, WebPubSubTriggerAttribute attribute, WebPubSubOptions options, IWebPubSubTriggerDispatcher dispatcher)
+        public WebPubSubTriggerBinding(
+            ParameterInfo parameterInfo, 
+            WebPubSubTriggerAttribute attribute, 
+            WebPubSubOptions options, 
+            IWebPubSubTriggerDispatcher dispatcher,
+            INameResolver nameResolver)
         {
             _parameterInfo = parameterInfo ?? throw new ArgumentNullException(nameof(parameterInfo));
             _attribute = attribute ?? throw new ArgumentNullException(nameof(attribute));
             _dispatcher = dispatcher ?? throw new ArgumentNullException(nameof(dispatcher));
             _options = options ?? throw new ArgumentNullException(nameof(options));
+            _nameResolver = nameResolver ?? throw new ArgumentNullException(nameof(nameResolver));
 
             BindingDataContract = CreateBindingContract(parameterInfo);
         }
@@ -63,12 +70,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
             }
 
             // Get listener key from attributes.
-            var hub = Utilities.FirstOrDefault(_attribute.Hub, _options.Hub);
+            var hub = Utilities.FirstOrDefault(_nameResolver.ResolveWholeString(_attribute.Hub), _options.Hub);
             if (string.IsNullOrEmpty(hub))
             {
                 throw new ArgumentException("Hub name should be configured in either attribute or appsettings.");
             }
-            var attributeName = $"{hub}.{_attribute.EventType}.{_attribute.EventName}";
+            var attributeName = $"{hub}.{_attribute.EventType}.{_nameResolver.ResolveWholeString(_attribute.EventName)}";
             var listernerKey = attributeName;
 
             return Task.FromResult<IListener>(new WebPubSubListener(context.Executor, listernerKey, _dispatcher));

@@ -7,6 +7,7 @@ using System.IO;
 using System.Linq;
 using System.Net.Http;
 using System.Threading.Tasks;
+
 using Microsoft.Extensions.Primitives;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
@@ -23,10 +24,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
 
         public override void WriteJson(JsonWriter writer, HttpResponseMessage value, JsonSerializer serializer)
         {
+#pragma warning disable AZC0102 // Do not use GetAwaiter().GetResult().
             var simpleRes = SimpleResponse.FromHttpResponse(value).GetAwaiter().GetResult();
+#pragma warning restore AZC0102 // Do not use GetAwaiter().GetResult().
             serializer.Serialize(writer, JObject.FromObject(simpleRes));
         }
 
+        // js accecpts simple HttpResponse object.
         [JsonObject(NamingStrategyType = typeof(CamelCaseNamingStrategy))]
         private sealed class SimpleResponse
         {

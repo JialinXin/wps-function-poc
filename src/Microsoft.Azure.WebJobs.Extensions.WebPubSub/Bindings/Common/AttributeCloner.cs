@@ -20,7 +20,7 @@ using Validator = System.Action<object>;
 namespace Microsoft.Azure.WebJobs.Host.Bindings
 {
     /// <summary>
-    /// Copy from: https://github.com/Azure/azure-webjobs-sdk/blob/v3.0.29/src/Microsoft.Azure.WebJobs.Host/Bindings/AttributeCloner.cs
+    /// Copy from: https://github.com/Azure/azure-webjobs-sdk/blob/v3.0.29/src/Microsoft.Azure.WebJobs.Host/Bindings/AttributeCloner.cs.
     /// </summary>
     // Clone an attribute and resolve it.
     // This can be tricky since some read-only properties are set via the constructor.
@@ -42,7 +42,7 @@ namespace Microsoft.Azure.WebJobs.Host.Bindings
 
         private readonly Dictionary<PropertyInfo, AutoResolveAttribute> _autoResolves = new Dictionary<PropertyInfo, AutoResolveAttribute>();
 
-        private static readonly BindingFlags Flags = BindingFlags.Instance | BindingFlags.Public;
+        private const BindingFlags Flags = BindingFlags.Instance | BindingFlags.Public;
         private readonly IConfiguration _configuration;
 
         internal AttributeCloner(
@@ -53,7 +53,7 @@ namespace Microsoft.Azure.WebJobs.Host.Bindings
         {
             _configuration = configuration;
 
-            nameResolver = nameResolver ?? new EmptyNameResolver();
+            nameResolver ??= new EmptyNameResolver();
             _source = source;
 
             Type attributeType = typeof(TAttribute);
@@ -67,7 +67,7 @@ namespace Microsoft.Azure.WebJobs.Host.Bindings
 
             // Pick the ctor with the longest parameter list where all are matched to non-null props.
             var ctorAndParams = attributeType.GetConstructors(Flags)
-                .Select(ctor => new { ctor = ctor, parameters = ctor.GetParameters() })
+                .Select(ctor => new { ctor, parameters = ctor.GetParameters() })
                 .OrderByDescending(tuple => tuple.parameters.Length)
                 .FirstOrDefault(tuple => tuple.parameters.All(param => nonNullProps.ContainsKey(param.Name)));
 
@@ -97,7 +97,7 @@ namespace Microsoft.Azure.WebJobs.Host.Bindings
         // transforms binding data to appropriate resolver (appsetting, autoresolve, or originalValue)
         private BindingDataResolver GetResolver(PropertyInfo propInfo, INameResolver nameResolver, BindingDataContract contract)
         {
-            // Do the attribute lookups once upfront, and then cache them (via func closures) for subsequent runtime usage. 
+            // Do the attribute lookups once upfront, and then cache them (via func closures) for subsequent runtime usage.
             object originalValue = propInfo.GetValue(_source);
             ConnectionStringAttribute connStrAttr = propInfo.GetCustomAttribute<ConnectionStringAttribute>();
             AppSettingAttribute appSettingAttr = propInfo.GetCustomAttribute<AppSettingAttribute>();
@@ -108,7 +108,7 @@ namespace Microsoft.Azure.WebJobs.Host.Bindings
             {
                 validator(originalValue);
 
-                // No special attributes, treat as literal. 
+                // No special attributes, treat as literal.
                 return (newAttr, bindingData) => originalValue;
             }
 
@@ -118,7 +118,7 @@ namespace Microsoft.Azure.WebJobs.Host.Bindings
                 throw new InvalidOperationException($"Property '{propInfo.Name}' can only be annotated with one of the types {nameof(AppSettingAttribute)}, {nameof(AutoResolveAttribute)}, and {nameof(ConnectionStringAttribute)}.");
             }
 
-            // attributes only work on string properties. 
+            // attributes only work on string properties.
             if (propInfo.PropertyType != typeof(string))
             {
                 throw new InvalidOperationException($"{nameof(ConnectionStringAttribute)}, {nameof(AutoResolveAttribute)}, or {nameof(AppSettingAttribute)} property '{propInfo.Name}' must be of type string.");
@@ -143,7 +143,7 @@ namespace Microsoft.Azure.WebJobs.Host.Bindings
             return GetAutoResolveResolver(str, autoResolveAttr, nameResolver, propInfo, contract, validator);
         }
 
-        // Apply AutoResolve attribute 
+        // Apply AutoResolve attribute
         internal BindingDataResolver GetAutoResolveResolver(string originalValue, AutoResolveAttribute autoResolveAttr, INameResolver nameResolver, PropertyInfo propInfo, BindingDataContract contract, Validator validator)
         {
             if (string.IsNullOrWhiteSpace(originalValue))
@@ -186,19 +186,19 @@ namespace Microsoft.Azure.WebJobs.Host.Bindings
                 throw new InvalidOperationException($"Unable to resolve the value for property '{propInfo.DeclaringType.Name}.{propInfo.Name}'. Make sure the setting exists and has a valid value.");
             }
 
-            // validate after the %% is substituted. 
+            // validate after the %% is substituted.
             validator(resolvedValue);
 
             return (newAttr, bindingData) => resolvedValue;
         }
 
-        // Run validition. This needs to be run at different stages. 
+        // Run validition. This needs to be run at different stages.
         // In general, run as early as possible. If there are { } tokens, then we can't run until runtime.
-        // But if there are no { }, we can run statically. 
+        // But if there are no { }, we can run statically.
         // If there's no [AutoResolve], [AppSettings], then we can run immediately.
         private static Validator GetValidatorFunc(PropertyInfo propInfo, bool dontLogValues)
         {
-            // This implicitly caches the attribute lookup once and then shares for each runtime invocation. 
+            // This implicitly caches the attribute lookup once and then shares for each runtime invocation.
             var attrs = propInfo.GetCustomAttributes<ValidationAttribute>();
 
             return (value) =>
@@ -224,8 +224,8 @@ namespace Microsoft.Azure.WebJobs.Host.Bindings
             };
         }
 
-        // Resolve for AutoResolve.Default templates. 
-        // These only have access to the {sys} builtin variable and don't get access to trigger binding data. 
+        // Resolve for AutoResolve.Default templates.
+        // These only have access to the {sys} builtin variable and don't get access to trigger binding data.
         internal static BindingDataResolver GetBuiltinTemplateResolver(string originalValue, INameResolver nameResolver, Validator validator)
         {
             string resolvedValue = nameResolver.ResolveWholeString(originalValue);
@@ -233,13 +233,13 @@ namespace Microsoft.Azure.WebJobs.Host.Bindings
             var template = BindingTemplate.FromString(resolvedValue);
             if (!template.HasParameters)
             {
-                // No { } tokens, bind eagerly up front. 
+                // No { } tokens, bind eagerly up front.
                 validator(originalValue);
             }
 
             SystemBindingData.ValidateStaticContract(template);
 
-            // For static default contracts, we only have access to the built in binding data. 
+            // For static default contracts, we only have access to the built in binding data.
             return (newAttr, bindingData) =>
             {
                 var newValue = template.Bind(SystemBindingData.GetSystemBindingData(bindingData));
@@ -256,7 +256,7 @@ namespace Microsoft.Azure.WebJobs.Host.Bindings
 
             if (!template.HasParameters)
             {
-                // No { } tokens, bind eagerly up front. 
+                // No { } tokens, bind eagerly up front.
                 validator(resolvedValue);
             }
 
@@ -273,13 +273,11 @@ namespace Microsoft.Azure.WebJobs.Host.Bindings
             return attr;
         }
 
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Performance", "CA1822:MarkMembersAsStatic")]
         public string GetInvokeString(TAttribute attributeResolved)
         {
             string invokeString;
 
-            var resolver = _source as IAttributeInvokeDescriptor<TAttribute>;
-            if (resolver == null)
+            if (_source is not IAttributeInvokeDescriptor<TAttribute> resolver)
             {
                 invokeString = DefaultAttributeInvokerDescriptor<TAttribute>.ToInvokeString(_autoResolves, attributeResolved);
             }
@@ -293,8 +291,7 @@ namespace Microsoft.Azure.WebJobs.Host.Bindings
         public TAttribute ResolveFromInvokeString(string invokeString)
         {
             TAttribute attr;
-            var resolver = _source as IAttributeInvokeDescriptor<TAttribute>;
-            if (resolver == null)
+            if (_source is not IAttributeInvokeDescriptor<TAttribute> resolver)
             {
                 attr = DefaultAttributeInvokerDescriptor<TAttribute>.FromInvokeString(this, invokeString);
             }
@@ -314,7 +311,7 @@ namespace Microsoft.Azure.WebJobs.Host.Bindings
         // When there's only 1 resolvable property
         internal TAttribute New(string invokeString)
         {
-            if (_autoResolves.Count() != 1)
+            if (_autoResolves.Count != 1)
             {
                 throw new InvalidOperationException("Invalid invoke string format for attribute.");
             }
@@ -373,7 +370,7 @@ namespace Microsoft.Azure.WebJobs.Host.Bindings
         {
             if (bindingData == null)
             {
-                // Skip validation if no binding data provided. We can't do the { } substitutions. 
+                // Skip validation if no binding data provided. We can't do the { } substitutions.
                 return template?.Pattern;
             }
 
@@ -402,7 +399,7 @@ namespace Microsoft.Azure.WebJobs.Host.Bindings
                 }
             }
 
-            // return the default policy                        
+            // return the default policy
             return new DefaultResolutionPolicy();
         }
 #pragma warning restore CS0618 // Type or member is obsolete

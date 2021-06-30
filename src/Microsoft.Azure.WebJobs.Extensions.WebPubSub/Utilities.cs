@@ -10,6 +10,7 @@ using System.Net.Http.Headers;
 using System.Reflection;
 using System.Security.Cryptography;
 using System.Text;
+using Microsoft.AspNetCore.Http;
 using Newtonsoft.Json;
 
 namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
@@ -18,7 +19,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
     {
         private static readonly char[] HeaderSeparator = { ',' };
 
-        public static MediaTypeHeaderValue GetMediaType(MessageDataType dataType) => new MediaTypeHeaderValue(GetContentType(dataType));
+        public static MediaTypeHeaderValue GetMediaType(MessageDataType dataType) => new(GetContentType(dataType));
 
         public static string GetContentType(MessageDataType dataType) =>
             dataType switch
@@ -48,7 +49,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
 
         public static HttpResponseMessage BuildResponse(MessageResponse response)
         {
-            HttpResponseMessage result = new HttpResponseMessage();
+            HttpResponseMessage result = new();
 
             if (response.Message != null)
             {
@@ -66,19 +67,21 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
 
         public static HttpResponseMessage BuildResponse(string response, MessageDataType dataType = MessageDataType.Text)
         {
-            return new HttpResponseMessage
-            {
-                Content = new StringContent(response, Encoding.UTF8, GetContentType(dataType)),
-            };
+            HttpResponseMessage result = new();
+
+            result.Content = new StringContent(response);
+            result.Content.Headers.ContentType = GetMediaType(dataType);
+
+            return result;
         }
 
         public static HttpResponseMessage BuildErrorResponse(ErrorResponse error)
         {
-            return new HttpResponseMessage
-            {
-                StatusCode = GetStatusCode(error.Code),
-                Content = new StringContent(error.ErrorMessage)
-            };
+            HttpResponseMessage result = new();
+
+            result.StatusCode = GetStatusCode(error.Code);
+            result.Content = new StringContent(error.ErrorMessage);
+            return result;
         }
 
         public static HttpStatusCode GetStatusCode(WebPubSubErrorCode errorCode) =>
@@ -141,18 +144,16 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
                 {
                     continue;
                 }
-                using (var hmac = new HMACSHA256(Encoding.UTF8.GetBytes(accessKey)))
+                using var hmac = new HMACSHA256(Encoding.UTF8.GetBytes(accessKey));
+                var hashBytes = hmac.ComputeHash(Encoding.UTF8.GetBytes(connectionId));
+                var hash = "sha256=" + BitConverter.ToString(hashBytes).Replace("-", "");
+                if (signatures.Contains(hash, StringComparer.OrdinalIgnoreCase))
                 {
-                    var hashBytes = hmac.ComputeHash(Encoding.UTF8.GetBytes(connectionId));
-                    var hash = "sha256=" + BitConverter.ToString(hashBytes).Replace("-", "");
-                    if (signatures.Contains(hash, StringComparer.OrdinalIgnoreCase))
-                    {
-                        return true;
-                    }
-                    else
-                    {
-                        continue;
-                    }
+                    return true;
+                }
+                else
+                {
+                    continue;
                 }
             }
             return false;
@@ -174,30 +175,42 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
 
         public static bool RespondToServiceAbuseCheck(HttpRequestMessage req, HashSet<string> allowedHosts, out HttpResponseMessage response)
         {
-            var requestHosts = req.Headers.GetValues(Constants.Headers.WebHookRequestOrigin);
-            return RespondToServiceAbuseCheck(req.Method.ToString(), requestHosts, allowedHosts, out response);
-        }
-
-        public static bool RespondToServiceAbuseCheck(string method, IEnumerable<string> requestHosts, HashSet<string> allowedHosts, out HttpResponseMessage response)
-        {
             response = new HttpResponseMessage();
-            if (method.Equals("options", StringComparison.OrdinalIgnoreCase) || method.Equals("get", StringComparison.OrdinalIgnoreCase))
+            if (req.Method == HttpMethod.Options || req.Method == HttpMethod.Get)
             {
-                if (requestHosts != null && requestHosts.Any())
-                {
-                    foreach (var item in allowedHosts)
-                    {
-                        if (requestHosts.Contains(item))
-                        {
-                            response.Headers.Add(Constants.Headers.WebHookAllowedOrigin, requestHosts);
-                            return true;
-                        }
-                    }
-                    response.StatusCode = HttpStatusCode.BadRequest;
-                }
-                return true;
+                var requestHosts = req.Headers.GetValues(Constants.Headers.WebHookRequestOrigin);
+                return RespondToServiceAbuseCheck(requestHosts, allowedHosts, out response);
             }
             return false;
+        }
+
+        public static bool RespondToServiceAbuseCheck(HttpRequest req, HashSet<string> allowedHosts, out HttpResponseMessage response)
+        {
+            response = new HttpResponseMessage();
+            if (req.Method.Equals("options", StringComparison.OrdinalIgnoreCase) || req.Method.Equals("get", StringComparison.OrdinalIgnoreCase))
+            {
+                req.Headers.TryGetValue(Constants.Headers.WebHookRequestOrigin, out var requestHosts);
+                return RespondToServiceAbuseCheck(requestHosts, allowedHosts, out response);
+            }
+            return false;
+        }
+
+        private static bool RespondToServiceAbuseCheck(IEnumerable<string> requestHosts, HashSet<string> allowedHosts, out HttpResponseMessage response)
+        {
+            response = new HttpResponseMessage();
+            if (requestHosts != null && requestHosts.Any())
+            {
+                foreach (var item in allowedHosts)
+                {
+                    if (requestHosts.Contains(item))
+                    {
+                        response.Headers.Add(Constants.Headers.WebHookAllowedOrigin, requestHosts);
+                        return true;
+                    }
+                }
+                response.StatusCode = HttpStatusCode.BadRequest;
+            }
+            return true;
         }
     }
 }

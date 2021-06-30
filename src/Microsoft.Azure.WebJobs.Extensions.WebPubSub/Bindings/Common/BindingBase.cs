@@ -10,9 +10,9 @@ using Microsoft.Extensions.Configuration;
 namespace Microsoft.Azure.WebJobs.Host.Bindings
 {
     /// <summary>
-    /// copy from https://github.com/Azure/azure-webjobs-sdk/blob/v3.0.29/src/Microsoft.Azure.WebJobs.Host/Bindings/BindingBase.cs
+    /// copy from https://github.com/Azure/azure-webjobs-sdk/blob/v3.0.29/src/Microsoft.Azure.WebJobs.Host/Bindings/BindingBase.cs.
     /// </summary>
-    // Helper class for implementing IBinding with the attribute resolver pattern. 
+    // Helper class for implementing IBinding with the attribute resolver pattern.
     internal abstract class BindingBase<TAttribute> : IBinding
         where TAttribute : Attribute
     {
@@ -46,14 +46,14 @@ namespace Microsoft.Azure.WebJobs.Host.Bindings
         public async Task<IValueProvider> BindAsync(BindingContext context)
         {
             var attrResolved = Cloner.ResolveFromBindingData(context);
-            return await BuildAsync(attrResolved, context.BindingData);
+            return await BuildAsync(attrResolved, context.BindingData).ConfigureAwait(false);
         }
 
         public Task<IValueProvider> BindAsync(object value, ValueBindingContext context)
         {
-            // TODO: Called when we invoke from dashboard. 
-            // str --> attribute --> obj 
-            // Passed a direct object, such as JobHost.Call 
+            // TODO: Called when we invoke from dashboard.
+            // str --> attribute --> obj
+            // Passed a direct object, such as JobHost.Call
             throw new NotImplementedException();
         }
 

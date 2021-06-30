@@ -26,7 +26,7 @@ namespace SimpleChat
         [FunctionName("login")]
         public static WebPubSubConnection GetClientConnection(
             [HttpTrigger(AuthorizationLevel.Anonymous, "get", "post")] HttpRequest req,
-            [WebPubSubConnection(UserId = "{query.userid}")] WebPubSubConnection connection)
+            [WebPubSubConnection(UserId = "{query.userid}", Hub = "%abc%")] WebPubSubConnection connection)
         {
             Console.WriteLine("login");
             return connection;
@@ -35,13 +35,14 @@ namespace SimpleChat
         #region Work with HttpTrigger
         [FunctionName("connect")]
         public static object ConnectV2(
-            [HttpTrigger(AuthorizationLevel.Anonymous, "post", "options")] HttpRequest req,
+            [HttpTrigger(AuthorizationLevel.Anonymous, "post")] HttpRequest req,
             [WebPubSubRequest] WebPubSubRequest wpsReq)
         {
-            if (wpsReq.IsAbuseRequest)
+            if (wpsReq.Request.IsPreflight || !wpsReq.Request.Valid)
             {
                 return wpsReq.Response;
             }
+            var request = wpsReq.Request as ConnectEventRequest;
             var response = new ConnectResponse
             {
                 UserId = wpsReq.ConnectionContext.UserId
@@ -49,23 +50,33 @@ namespace SimpleChat
             return response;
         }
 
+        [FunctionName("validate")]
+        public static HttpResponseMessage Validate(
+            [HttpTrigger(AuthorizationLevel.Anonymous, "options")] HttpRequest req,
+            [WebPubSubRequest] WebPubSubRequest wpsReq)
+        {
+            return wpsReq.Response;
+        }
+
         // Http Trigger Message
         [FunctionName("message")]
         public static async Task<object> Broadcast(
-            [HttpTrigger(AuthorizationLevel.Anonymous, "post", "options")] HttpRequest req,
+            [HttpTrigger(AuthorizationLevel.Anonymous, "post")] HttpRequest req,
             [WebPubSubRequest] WebPubSubRequest wpsReq,
-            [WebPubSub(Hub = "simplechat")] IAsyncCollector<WebPubSubOperation> operations)
+            [WebPubSub(Hub = "%abc%")] IAsyncCollector<WebPubSubOperation> operations)
         {
-            if (wpsReq.IsAbuseRequest)
+            if (wpsReq.Request is PreflightRequest || wpsReq.Request is InvalidRequest)
             {
                 return wpsReq.Response;
             }
-            var messageRequest = wpsReq.Request as MessageEventRequest;
-            await operations.AddAsync(new SendToAll
+            if (wpsReq.Request is MessageEventRequest request)
             {
-                Message = messageRequest.Message,
-                DataType = messageRequest.DataType
-            });
+                await operations.AddAsync(new SendToAll
+                {
+                    Message = request.Message,
+                    DataType = request.DataType
+                });
+            }
 
             return new ClientContent("ack").ToString();
         }
@@ -89,8 +100,8 @@ namespace SimpleChat
         // multi tasks sample
         [FunctionName("connected")]
         public static async Task Connected(
-            [WebPubSubTrigger(WebPubSubEventType.System, "connected")] ConnectionContext connectionContext,
-            [WebPubSub] IAsyncCollector<WebPubSubOperation> webpubsubOperation)
+            [WebPubSubTrigger("%abc%",WebPubSubEventType.System, "connected")] ConnectionContext connectionContext,
+            [WebPubSub(Hub = "%abc%")] IAsyncCollector<WebPubSubOperation> webpubsubOperation)
         {
             await webpubsubOperation.AddAsync(new SendToAll
             {
@@ -140,7 +151,7 @@ namespace SimpleChat
         [FunctionName("disconnect")]
         [return: WebPubSub]
         public static WebPubSubOperation Disconnect(
-            [WebPubSubTrigger(WebPubSubEventType.System, "disconnected")] ConnectionContext connectionContext)
+            [WebPubSubTrigger("%abc%", WebPubSubEventType.System, "disconnected")] ConnectionContext connectionContext)
         {
             Console.WriteLine("Disconnect.");
             return new SendToAll

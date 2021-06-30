@@ -10,7 +10,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
 {
     internal class ServiceConfigParser
     {
-        private static readonly char[] ValueSeparator = new char[] { '=' };
+        private static readonly char[] _valueSeparator = new char[] { '=' };
+        private const char _partSeparator = ';';
 
         public Uri Endpoint { get; }
 
@@ -43,11 +44,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
             }
 
             var setting = new Dictionary<string, string>();
-            var items = connectionString.Split(';');
+            var items = connectionString.Split(_partSeparator);
 
             try
             {
-                setting = items.Where(x => x.Length > 0).ToDictionary(x => x.Split(ValueSeparator, 2)[0], y => y.Split(ValueSeparator, 2)[1], StringComparer.InvariantCultureIgnoreCase);
+                setting = items.Where(x => x.Length > 0).ToDictionary(x => x.Split(_valueSeparator, 2)[0], y => y.Split(_valueSeparator, 2)[1], StringComparer.InvariantCultureIgnoreCase);
             }
             catch (Exception)
             {

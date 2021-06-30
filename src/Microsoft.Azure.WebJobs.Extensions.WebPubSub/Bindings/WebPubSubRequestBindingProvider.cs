@@ -22,14 +22,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
             _nameResolver = nameResolver;
             _configuration = configuration;
         }
-    
+
         public Task<IBinding> TryCreateAsync(BindingProviderContext context)
         {
             if (context == null)
             {
                 throw new ArgumentNullException(nameof(context));
             }
-    
+
             ParameterInfo parameter = context.Parameter;
             WebPubSubRequestAttribute attribute = parameter.GetCustomAttribute<WebPubSubRequestAttribute>(inherit: false);
             if (attribute == null)

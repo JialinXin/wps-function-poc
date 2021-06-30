@@ -3,16 +3,12 @@
 
 using System;
 using System.IO;
-using System.Runtime.InteropServices;
-using System.Text;
 using Newtonsoft.Json.Linq;
 
 namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
 {
     internal static class BinaryDataExtensions
     {
-        private static readonly UTF8Encoding encoding = new UTF8Encoding(false, true);
-
         public static object Convert(this BinaryData message, Type targetType)
         {
             if (targetType == typeof(JObject))
@@ -41,15 +37,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
             }
 
             return null;
-        }
-
-        public static string ToValidUTF8String(this BinaryData binaryData)
-        {
-            if (MemoryMarshal.TryGetArray(binaryData.ToMemory(), out ArraySegment<byte> data))
-            {
-                return encoding.GetString(data.Array, data.Offset, data.Count);
-            }
-            return encoding.GetString(binaryData.ToArray());
         }
     }
 }

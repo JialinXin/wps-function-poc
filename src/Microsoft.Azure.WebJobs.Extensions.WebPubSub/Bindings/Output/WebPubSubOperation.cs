@@ -3,7 +3,6 @@
 
 using Newtonsoft.Json;
 using Newtonsoft.Json.Serialization;
-using System;
 
 namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
 {

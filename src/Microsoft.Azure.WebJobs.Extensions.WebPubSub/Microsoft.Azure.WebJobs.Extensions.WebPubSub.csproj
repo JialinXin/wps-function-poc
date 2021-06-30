@@ -4,8 +4,8 @@
     <TargetFramework>netstandard2.0</TargetFramework>
     <PackageId>Microsoft.Azure.WebJobs.Extensions.WebPubSub</PackageId>
     <Description>This extension adds bindings for Azure Web PubSub Service</Description>
-    <LangVersion>8.0</LangVersion>
-    <Version>1.0.1-alpha.1</Version>
+    <LangVersion>9.0</LangVersion>
+    <Version>1.0.0-beta.2</Version>
     <IsExtensionClientLibrary>true</IsExtensionClientLibrary>
     <AssemblyOriginatorKeyFile>D:\Code\GitHub_Jialin\wps-function-poc\AzureSDKClient.snk</AssemblyOriginatorKeyFile>
     <SignAssembly>True</SignAssembly>
