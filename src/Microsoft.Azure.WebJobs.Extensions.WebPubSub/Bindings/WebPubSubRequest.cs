@@ -3,6 +3,7 @@
 
 using System.Net;
 using System.Net.Http;
+using Azure.Messaging.WebPubSub;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Serialization;
 
@@ -38,7 +39,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
             }
         }
 
-        //
         internal WebPubSubRequest(ConnectionContext context, ServiceRequest request, HttpResponseMessage response = null)
         {
             ConnectionContext = context;

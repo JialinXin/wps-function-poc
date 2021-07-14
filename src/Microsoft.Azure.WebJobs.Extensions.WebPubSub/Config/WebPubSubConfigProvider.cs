@@ -6,7 +6,7 @@ using System.Collections.Generic;
 using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
-
+using Azure.Messaging.WebPubSub;
 using Microsoft.Azure.WebJobs.Description;
 using Microsoft.Azure.WebJobs.Host.Config;
 using Microsoft.Azure.WebJobs.Logging;
@@ -85,7 +85,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
 
             // Trigger binding
             context.AddBindingRule<WebPubSubTriggerAttribute>()
-                .BindToTrigger(new WebPubSubTriggerBindingProvider(_dispatcher, _options, _nameResolver, webhookException));
+                .BindToTrigger(new WebPubSubTriggerBindingProvider(_dispatcher, _nameResolver, _options, webhookException));
 
             // Input binding
             var webpubsubConnectionAttributeRule = context.AddBindingRule<WebPubSubConnectionAttribute>();

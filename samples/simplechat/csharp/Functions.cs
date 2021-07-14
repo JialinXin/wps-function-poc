@@ -1,3 +1,4 @@
+using Azure.Messaging.WebPubSub;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Azure.WebJobs;
@@ -38,7 +39,7 @@ namespace SimpleChat
             [HttpTrigger(AuthorizationLevel.Anonymous, "post")] HttpRequest req,
             [WebPubSubRequest] WebPubSubRequest wpsReq)
         {
-            if (wpsReq.Request.IsPreflight || !wpsReq.Request.Valid)
+            if (wpsReq.Request.IsValidationRequest || !wpsReq.Request.Valid)
             {
                 return wpsReq.Response;
             }
@@ -65,7 +66,7 @@ namespace SimpleChat
             [WebPubSubRequest] WebPubSubRequest wpsReq,
             [WebPubSub(Hub = "%abc%")] IAsyncCollector<WebPubSubOperation> operations)
         {
-            if (wpsReq.Request is PreflightRequest || wpsReq.Request is InvalidRequest)
+            if (wpsReq.Request is ValidationRequest || wpsReq.Request is InvalidRequest)
             {
                 return wpsReq.Response;
             }
@@ -123,9 +124,6 @@ namespace SimpleChat
         }
 
         #endregion
-
-
-        
 
         // single message sample
         //[FunctionName("broadcast")]

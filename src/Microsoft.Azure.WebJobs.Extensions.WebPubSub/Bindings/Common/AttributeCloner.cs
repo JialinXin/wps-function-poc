@@ -40,7 +40,7 @@ namespace Microsoft.Azure.WebJobs.Host.Bindings
         // Compute the values to apply to Settable properties on newly created attribute.
         private readonly Action<TAttribute, BindingData>[] _propertySetters;
 
-        private readonly Dictionary<PropertyInfo, AutoResolveAttribute> _autoResolves = new Dictionary<PropertyInfo, AutoResolveAttribute>();
+        private readonly Dictionary<PropertyInfo, AutoResolveAttribute> _autoResolves = new();
 
         private const BindingFlags Flags = BindingFlags.Instance | BindingFlags.Public;
         private readonly IConfiguration _configuration;

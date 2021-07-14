@@ -10,6 +10,7 @@ using System.Net.Http.Headers;
 using System.Reflection;
 using System.Security.Cryptography;
 using System.Text;
+using Azure.Messaging.WebPubSub;
 using Microsoft.AspNetCore.Http;
 using Newtonsoft.Json;
 
@@ -32,7 +33,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
             };
 
         public static MessageDataType GetDataType(string mediaType) =>
-            mediaType switch
+            mediaType.ToLowerInvariant() switch
             {
                 Constants.ContentTypes.BinaryContentType => MessageDataType.Binary,
                 Constants.ContentTypes.JsonContentType => MessageDataType.Json,
@@ -124,13 +125,17 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
             {
                 return RequestType.User;
             }
-            if (eventName.Equals(Constants.Events.ConnectEvent))
+            if (eventName.Equals(Constants.Events.ConnectEvent, StringComparison.OrdinalIgnoreCase))
             {
                 return RequestType.Connect;
             }
-            if (eventName.Equals(Constants.Events.DisconnectedEvent))
+            if (eventName.Equals(Constants.Events.DisconnectedEvent, StringComparison.OrdinalIgnoreCase))
             {
-                return RequestType.Disconnect;
+                return RequestType.Disconnected;
+            }
+            if (eventName.Equals(Constants.Events.ConnectedEvent, StringComparison.OrdinalIgnoreCase))
+            {
+                return RequestType.Connected;
             }
             return RequestType.Ignored;
         }
@@ -139,10 +144,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
         {
             foreach (var accessKey in accessKeys)
             {
-                var signatures = Utilities.GetSignatureList(signature);
+                var signatures = GetSignatureList(signature);
                 if (signatures == null)
                 {
-                    continue;
+                    break;
                 }
                 using var hmac = new HMACSHA256(Encoding.UTF8.GetBytes(accessKey));
                 var hashBytes = hmac.ComputeHash(Encoding.UTF8.GetBytes(connectionId));
@@ -178,7 +183,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
             response = new HttpResponseMessage();
             if (req.Method == HttpMethod.Options || req.Method == HttpMethod.Get)
             {
-                var requestHosts = req.Headers.GetValues(Constants.Headers.WebHookRequestOrigin);
+                var requestHosts = req.Headers.GetValues(Constants.Headers.WebHookRequestOrigin).ToList();
                 return RespondToServiceAbuseCheck(requestHosts, allowedHosts, out response);
             }
             return false;
@@ -195,14 +200,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
             return false;
         }
 
-        private static bool RespondToServiceAbuseCheck(IEnumerable<string> requestHosts, HashSet<string> allowedHosts, out HttpResponseMessage response)
+        private static bool RespondToServiceAbuseCheck(IList<string> requestHosts, HashSet<string> allowedHosts, out HttpResponseMessage response)
         {
             response = new HttpResponseMessage();
             if (requestHosts != null && requestHosts.Any())
             {
-                foreach (var item in allowedHosts)
+                foreach (var item in requestHosts)
                 {
-                    if (requestHosts.Contains(item))
+                    if (allowedHosts.Contains(item, StringComparer.OrdinalIgnoreCase))
                     {
                         response.Headers.Add(Constants.Headers.WebHookAllowedOrigin, requestHosts);
                         return true;

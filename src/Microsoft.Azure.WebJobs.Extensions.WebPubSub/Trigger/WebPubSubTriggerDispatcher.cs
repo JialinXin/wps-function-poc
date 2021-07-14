@@ -10,7 +10,7 @@ using System.Security.Cryptography;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
-
+using Azure.Messaging.WebPubSub;
 using Microsoft.Azure.WebJobs.Host.Executors;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Primitives;
@@ -86,10 +86,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
                             certificates = request.ClientCertificates;
                             break;
                         }
-                    case RequestType.Disconnect:
+                    case RequestType.Disconnected:
                         {
                             var content = await req.Content.ReadAsStringAsync().ConfigureAwait(false);
-                            var request = JsonConvert.DeserializeObject<DisconnectEventRequest>(content);
+                            var request = JsonConvert.DeserializeObject<DisconnectedEventRequest>(content);
                             reason = request.Reason;
                             break;
                         }

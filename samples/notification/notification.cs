@@ -1,10 +1,10 @@
 using System;
 using System.Threading.Tasks;
+using Azure.Messaging.WebPubSub;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Azure.WebJobs;
 using Microsoft.Azure.WebJobs.Extensions.Http;
 using Microsoft.Azure.WebJobs.Extensions.WebPubSub;
-using Microsoft.Azure.WebJobs.Host;
 using Microsoft.Extensions.Logging;
 
 namespace notifications
@@ -25,7 +25,7 @@ namespace notifications
         private static double GetStockPrice()
         {
             var rng = new Random();
-            return 260 + 1.0 / 100 * rng.Next(-500, 500);
+            return 270 + 1.0 / 100 * rng.Next(-500, 500);
         }
     }
 }

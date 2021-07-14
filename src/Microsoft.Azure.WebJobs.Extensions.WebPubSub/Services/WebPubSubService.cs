@@ -17,6 +17,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
             _client = new WebPubSubServiceClient(connectionString, hub);
         }
 
+        // For tests.
+        public WebPubSubService(WebPubSubServiceClient client)
+        {
+            _client = client;
+        }
+
         public WebPubSubServiceClient Client => _client;
 
         internal WebPubSubConnection GetClientConnection(string userId = null, string[] roles = null)

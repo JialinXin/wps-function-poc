@@ -5,7 +5,7 @@ using System.Net;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Serialization;
 
-namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
+namespace Azure.Messaging.WebPubSub
 {
     [JsonObject(NamingStrategyType = typeof(CamelCaseNamingStrategy))]
     public abstract class ServiceRequest
@@ -13,7 +13,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
         /// <summary>
         /// Flag to indicate whether it's an <see href="https://github.com/cloudevents/spec/blob/v1.0/http-webhook.md#4-abuse-protection">Abuse Protection</see> request.
         /// </summary>
-        public bool IsPreflight { get; }
+        public bool IsValidationRequest { get; }
 
         public bool Valid { get; }
 
@@ -21,30 +21,30 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
 
         public bool BadRequest { get; }
 
-        public string ErrorMessage { get;}
+        public string ErrorMessage { get; }
 
         public abstract string Name { get; }
 
-        public ServiceRequest(bool isPreflight, bool valid, bool unauthorized, bool badRequest, string error = null)
+        public ServiceRequest(bool isValidationRequest, bool valid, bool unauthorized, bool badRequest, string error = null)
         {
-            IsPreflight = isPreflight;
+            IsValidationRequest = isValidationRequest;
             Valid = valid;
             Unauthorized = unauthorized;
             BadRequest = badRequest;
             ErrorMessage = error;
         }
 
-        internal ServiceRequest(bool isPreflight, bool valid)
+        internal ServiceRequest(bool isValidationRequest, bool valid)
         {
-            IsPreflight = isPreflight;
+            IsValidationRequest = isValidationRequest;
             Valid = valid;
         }
 
         internal ServiceRequest(HttpStatusCode status, string error = null)
         {
-            switch(status)
+            switch (status)
             {
-                case HttpStatusCode.OK: 
+                case HttpStatusCode.OK:
                     Valid = true;
                     break;
                 case HttpStatusCode.Unauthorized:

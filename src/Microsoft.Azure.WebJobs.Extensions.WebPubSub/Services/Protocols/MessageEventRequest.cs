@@ -5,7 +5,7 @@ using System;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Serialization;
 
-namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
+namespace Azure.Messaging.WebPubSub
 {
     [JsonObject(NamingStrategyType = typeof(CamelCaseNamingStrategy))]
     public sealed class MessageEventRequest : ServiceRequest
