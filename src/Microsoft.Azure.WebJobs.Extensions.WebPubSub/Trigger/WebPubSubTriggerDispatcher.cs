@@ -188,6 +188,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
                 {
                     context.UserId = values.SingleOrDefault();
                 }
+
+                if (request.Headers.TryGetValues(Constants.Headers.CloudEvents.UserId, out var connectionStates))
+                {
+                    context.States = Utilities.DecodeConnectionState(connectionStates.SingleOrDefault());
+                }
             }
             catch (Exception)
             {

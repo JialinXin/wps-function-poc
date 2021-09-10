@@ -39,6 +39,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
                 public const string Source = Prefix + "source";
                 public const string EventName = Prefix + "eventName";
                 public const string UserId = Prefix + "userId";
+                public const string State = Prefix + "connectionState";
 
                 public const string TypeSystemPrefix = "azure.webpubsub.sys.";
                 public const string TypeUserPrefix = "azure.webpubsub.user.";

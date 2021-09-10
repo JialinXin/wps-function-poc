@@ -43,6 +43,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
         public string Signature { get; internal set; }
 
         /// <summary>
+        /// The connection state.
+        /// </summary>
+        public Dictionary<string, object> States { get; internal set; }
+
+        /// <summary>
         /// The headers of request.
         /// </summary>
         public Dictionary<string, StringValues> Headers { get; internal set; }

@@ -1,25 +1,27 @@
-﻿using Microsoft.Azure.WebJobs.Host.Executors;
-using Microsoft.Extensions.Logging.Abstractions;
-using Moq;
-using NUnit.Framework;
+﻿// Copyright (c) .NET Foundation. All rights reserved.
+// Licensed under the MIT License. See License.txt in the project root for license information.
+
 using System.Collections.Generic;
 using System.Net;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.Azure.WebJobs.Host.Executors;
+using Microsoft.Extensions.Logging.Abstractions;
+using Moq;
+using NUnit.Framework;
 
 namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub.Tests
 {
     public class WebPubSubTriggerDispatcherTests
     {
-        private static (string ConnectionId, string AccessKey, string Signature) TestKey = 
-            ("0f9c97a2f0bf4706afe87a14e0797b11", "7aab239577fd4f24bc919802fb629f5f", "sha256=7767effcb3946f3e1de039df4b986ef02c110b1469d02c0a06f41b3b727ab561");
+        private static (string ConnectionId, string AccessKey, string Signature) TestKey = ("0f9c97a2f0bf4706afe87a14e0797b11", "7aab239577fd4f24bc919802fb629f5f", "sha256=7767effcb3946f3e1de039df4b986ef02c110b1469d02c0a06f41b3b727ab561");
         private const string TestHub = "testhub";
         private const WebPubSubEventType TestType = WebPubSubEventType.System;
         private const string TestEvent = Constants.Events.ConnectedEvent;
 
-        private static readonly HashSet<string> EmptySetting = new HashSet<string>();
-        private static readonly HashSet<string> ValidAccessKeys = new HashSet<string>(new string[] { TestKey.AccessKey });
+        private static readonly HashSet<string> EmptySetting = new();
+        private static readonly HashSet<string> ValidAccessKeys = new(new string[] { TestKey.AccessKey });
         private static readonly string[] ValidSignature = new string[] { TestKey.Signature };
 
         [TestCase]
@@ -108,18 +110,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub.Tests
             Assert.AreEqual(expectedCode, response.StatusCode);
         }
 
-        [TestCase]
-        public async Task TestProcessRequest_ListenerKeyCaseInsensitive()
+        private static WebPubSubTriggerDispatcher SetupDispatcher(string hub = TestHub, WebPubSubEventType type = TestType, string eventName = TestEvent)
         {
-            var dispatcher = SetupDispatcher("SImpLeHuB");
-            var request = TestHelpers.CreateHttpRequestMessage("SIMPLEhub", TestType, TestEvent, TestKey.ConnectionId, ValidSignature);
-            var response = await dispatcher.ExecuteAsync(request, EmptySetting, ValidAccessKeys);
-            Assert.AreEqual(HttpStatusCode.OK, response.StatusCode);
-        }
-
-        private WebPubSubTriggerDispatcher SetupDispatcher(string hub = TestHub, WebPubSubEventType type = TestType, string eventName = TestEvent)
-        {
-            var funcName = $"{hub}.{type}.{eventName}";
+            var funcName = $"{hub}.{type}.{eventName}".ToLower();
             var dispatcher = new WebPubSubTriggerDispatcher(NullLogger.Instance);
             var executor = new Mock<ITriggeredFunctionExecutor>();
             executor.Setup(f => f.TryExecuteAsync(It.IsAny<TriggeredFunctionData>(), It.IsAny<CancellationToken>()))

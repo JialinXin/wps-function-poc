@@ -185,10 +185,13 @@
                         
                         //axios.post(`${this.endpoint}/api/login`, null, null)
                         axios.post(`${this.endpoint}/api/login?userid=${this.username}`, null, null)
-                        .then(resp => resp.data)
-                        .then(info => {
-                            return info.url;
-                        }).catch(alert)
+                        .then(resp => {
+                            return resp.data.url;
+                        })
+                        //.then(resp => resp.data)
+                        //.then(info => {
+                        //    return info.url;
+                        //}).catch(alert)
                         .then(url => {
                             var websocket = this.websocket = new WebSocket(url);
                             websocket.onopen = e => {

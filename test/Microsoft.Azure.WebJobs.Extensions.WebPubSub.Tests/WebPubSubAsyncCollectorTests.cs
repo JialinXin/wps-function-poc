@@ -1,10 +1,14 @@
+// Copyright (c) .NET Foundation. All rights reserved.
+// Licensed under the MIT License. See License.txt in the project root for license information.
+
+using System;
+using System.Threading;
+using System.Threading.Tasks;
+using Azure;
 using Azure.Core;
+using Azure.Messaging.WebPubSub;
 using Moq;
 using NUnit.Framework;
-using System;
-using System.IO;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub.Tests
 {
@@ -13,22 +17,21 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub.Tests
         [TestCase]
         public async Task AddAsync_WebPubSubEvent_SendAll()
         {
-            var serviceMock = new Mock<IWebPubSubService>();
-            var collector = new WebPubSubAsyncCollector(serviceMock.Object);
-        
+            var mockClient = new Mock<WebPubSubServiceClient>();
+            var service = new WebPubSubService(mockClient.Object);
+            var collector = new WebPubSubAsyncCollector(service);
+
             var message = "new message";
             await collector.AddAsync(new SendToAll
             {
                 Message = BinaryData.FromString(message),
                 DataType = MessageDataType.Text
             });
-        
-            //serviceMock.Verify(c => c.Client.SendToAllAsync(It.IsAny<RequestContent>()), Times.Once);
-            serviceMock.VerifyNoOtherCalls();
-        
-            var actualData = (SendToAll)serviceMock.Invocations[0].Arguments[0];
-            Assert.AreEqual(MessageDataType.Text, actualData.DataType);
-            Assert.AreEqual(message, actualData.Message.ToString());
+
+            mockClient.Verify(c => c.SendToAllAsync(It.IsAny<RequestContent>(), It.IsAny<ContentType>(), null, null), Times.Once);
+            mockClient.VerifyNoOtherCalls();
+
+            mockClient.VerifyAll();
         }
     }
 }

@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio Version 16
-VisualStudioVersion = 16.0.30803.129
+# Visual Studio Version 17
+VisualStudioVersion = 17.0.31410.414
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Microsoft.Azure.WebJobs.Extensions.WebPubSub", "src\Microsoft.Azure.WebJobs.Extensions.WebPubSub\Microsoft.Azure.WebJobs.Extensions.WebPubSub.csproj", "{D3F6A924-23C1-4983-9CF8-D505072554B5}"
 EndProject
@@ -19,6 +19,8 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution 
 	EndProjectSection
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "notifications", "samples\notification\notifications.csproj", "{B134D06E-B162-4518-BF3D-3EB10FD43672}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Microsoft.Azure.WebJobs.Extensions.WebPubSub.Tests", "test\Microsoft.Azure.WebJobs.Extensions.WebPubSub.Tests\Microsoft.Azure.WebJobs.Extensions.WebPubSub.Tests.csproj", "{0C0511C8-B16E-42A5-9982-08EBC16CFD0E}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -38,6 +40,10 @@ Global
 		{B134D06E-B162-4518-BF3D-3EB10FD43672}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{B134D06E-B162-4518-BF3D-3EB10FD43672}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{B134D06E-B162-4518-BF3D-3EB10FD43672}.Release|Any CPU.Build.0 = Release|Any CPU
+		{0C0511C8-B16E-42A5-9982-08EBC16CFD0E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{0C0511C8-B16E-42A5-9982-08EBC16CFD0E}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{0C0511C8-B16E-42A5-9982-08EBC16CFD0E}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{0C0511C8-B16E-42A5-9982-08EBC16CFD0E}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -46,6 +52,7 @@ Global
 		{D3F6A924-23C1-4983-9CF8-D505072554B5} = {1AAC386C-108E-4F95-8BB3-2A183A024BF9}
 		{FBA48C13-D9A2-444E-91C9-C390D83800B1} = {9F6B40A4-C90B-4F9F-A626-052EF2D8D5DA}
 		{B134D06E-B162-4518-BF3D-3EB10FD43672} = {9F6B40A4-C90B-4F9F-A626-052EF2D8D5DA}
+		{0C0511C8-B16E-42A5-9982-08EBC16CFD0E} = {C8F3737F-072B-4620-A7A2-A9EB3B51B6A1}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {19CE8259-F856-463A-9D49-40FB11B6C68C}

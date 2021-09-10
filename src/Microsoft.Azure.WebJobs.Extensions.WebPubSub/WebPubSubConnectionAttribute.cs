@@ -21,5 +21,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
 
         [AutoResolve]
         public string UserId { get; set; }
+
+        [AutoResolve]
+        public string[] Roles { get; set; }
     }
 }

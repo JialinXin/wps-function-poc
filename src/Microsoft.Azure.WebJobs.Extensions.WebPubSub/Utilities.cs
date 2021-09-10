@@ -13,6 +13,7 @@ using System.Text;
 using Azure.Messaging.WebPubSub;
 using Microsoft.AspNetCore.Http;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 
 namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
 {
@@ -176,6 +177,27 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
                 dataType = MessageDataType.Binary;
                 return false;
             }
+        }
+
+        public static Dictionary<string, object> DecodeConnectionState(string connectionStates)
+        {
+            if (!string.IsNullOrEmpty(connectionStates))
+            {
+                var states = new Dictionary<string, object>();
+                var parsedStates = Encoding.UTF8.GetString(Convert.FromBase64String(connectionStates));
+                var statesObj = JObject.Parse(parsedStates);
+                foreach (var item in statesObj)
+                {
+                    states.Add(item.Key, item.Value);
+                }
+                return states;
+            }
+            return null;
+        }
+
+        public static string EncodeConnectionState(Dictionary<string, object> connectionStates)
+        {
+            return Convert.ToBase64String(Encoding.UTF8.GetBytes(JObject.FromObject(connectionStates).ToString()));
         }
 
         public static bool RespondToServiceAbuseCheck(HttpRequestMessage req, HashSet<string> allowedHosts, out HttpResponseMessage response)

@@ -1,4 +1,8 @@
-﻿//using Microsoft.AspNetCore.Http;
+﻿// Copyright (c) .NET Foundation. All rights reserved.
+// Licensed under the MIT License. See License.txt in the project root for license information.
+
+using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Http.Features;
 using Microsoft.Azure.WebJobs.Host.Config;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -9,12 +13,13 @@ using System.Collections.Generic;
 using System.IO;
 using System.Net.Http;
 using System.Net.Http.Headers;
+using System.Text;
 
 namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub.Tests
 {
     internal static class TestHelpers
     {
-        public static IHost NewHost(Type type, WebPubSubConfigProvider ext = null, Dictionary<string, string> configuration = null, ILoggerProvider loggerProvider = null)
+        public static IHost NewHost(Type type, WebPubSubConfigProvider ext = null, Dictionary<string, string> configuration = null)
         {
             var builder = new HostBuilder()
                 .ConfigureServices(services =>
@@ -30,11 +35,21 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub.Tests
                 {
                     webJobsBuilder.AddWebPubSub();
                     webJobsBuilder.UseHostId(Guid.NewGuid().ToString("n"));
+                    webJobsBuilder.AddHttp();
+                    //webJobsBuilder.AddHttp(o =>
+                    //{
+                    //    o.SetResponse = (request, result) =>
+                    //    {
+                    //        request.Headers.Add("test", "test");
+                    //        request.HttpContext.Items["$ret"] = result;
+                    //        request.HttpContext.Response.Headers.Add("test", "aaa");
+                    //    };
+                    //});
                 })
                 .ConfigureLogging(logging =>
                 {
                     logging.ClearProviders();
-                    logging.AddProvider(loggerProvider);
+                    logging.AddProvider(new TestLoggerProvider());
                 });
 
             if (configuration != null)
@@ -44,7 +59,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub.Tests
                     b.AddInMemoryCollection(configuration);
                 });
             }
-
             return builder.Build();
         }
 
@@ -87,8 +101,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub.Tests
             string userId = "testuser",
             byte[] payload = null)
         {
-            var context = new HttpRequestMessage();
-            context.Method = new HttpMethod(httpMethod);
+            var context = new HttpRequestMessage()
+            {
+                Method = new HttpMethod(httpMethod)
+            };
             context.Headers.Add(Constants.Headers.CloudEvents.Hub, hub);
             context.Headers.Add(Constants.Headers.CloudEvents.Type, GetFormedType(type, eventName));
             context.Headers.Add(Constants.Headers.CloudEvents.EventName, eventName);
@@ -108,7 +124,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub.Tests
                 context.Content = new StreamContent(new MemoryStream(payload));
                 context.Content.Headers.ContentType = new MediaTypeHeaderValue(contentType);
             }
-            
 
             foreach (var header in context.Headers)
             {
@@ -116,6 +131,42 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub.Tests
             }
 
             return context;
+        }
+
+        public static HttpRequest CreateHttpRequest(string method, string uriString, IHeaderDictionary headers = null, string body = null)
+        {
+            var context = new DefaultHttpContext();
+            var services = new ServiceCollection();
+            var sp = services.BuildServiceProvider();
+            context.RequestServices = sp;
+
+            var uri = new Uri(uriString);
+            var request = context.Request;
+            var requestFeature = request.HttpContext.Features.Get<IHttpRequestFeature>();
+            requestFeature.Method = method;
+            requestFeature.Scheme = uri.Scheme;
+            requestFeature.PathBase = uri.Host;
+            requestFeature.Path = uri.GetComponents(UriComponents.KeepDelimiter | UriComponents.Path, UriFormat.Unescaped);
+            requestFeature.PathBase = "/";
+            requestFeature.QueryString = uri.GetComponents(UriComponents.KeepDelimiter | UriComponents.Query, UriFormat.Unescaped);
+
+            headers = headers ?? new HeaderDictionary();
+
+            if (!string.IsNullOrEmpty(uri.Host))
+            {
+                headers.Add("Host", uri.Host);
+            }
+
+            if (body != null)
+            {
+                requestFeature.Body = new MemoryStream(Encoding.UTF8.GetBytes(body));
+                request.ContentLength = request.Body.Length;
+                headers.Add("Content-Length", request.Body.Length.ToString());
+            }
+
+            requestFeature.Headers = headers;
+
+            return request;
         }
     }
 }
