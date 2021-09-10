@@ -13,6 +13,7 @@ using Microsoft.Azure.WebJobs.Host.Bindings;
 using Microsoft.Azure.WebJobs.Host.Listeners;
 using Microsoft.Azure.WebJobs.Host.Protocols;
 using Microsoft.Azure.WebJobs.Host.Triggers;
+using Microsoft.Azure.WebPubSub.AspNetCore;
 using Newtonsoft.Json.Linq;
 
 namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
@@ -71,7 +72,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
             var attributeName = $"{hub}.{_attribute.EventType}.{_attribute.EventName}";
             var listernerKey = attributeName;
 
-            return Task.FromResult<IListener>(new WebPubSubListener(context.Executor, listernerKey, _dispatcher));
+            return Task.FromResult<IListener>(new WebPubSubListener(context.Executor, listernerKey, _dispatcher, _attribute.ValidationOptions));
         }
 
         public ParameterDescriptor ToParameterDescriptor()

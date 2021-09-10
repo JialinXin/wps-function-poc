@@ -7,6 +7,7 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Azure.WebJobs.Host.Executors;
+using Microsoft.Azure.WebPubSub.AspNetCore;
 using Microsoft.Extensions.Logging.Abstractions;
 using Moq;
 using NUnit.Framework;
@@ -20,72 +21,72 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub.Tests
         private const WebPubSubEventType TestType = WebPubSubEventType.System;
         private const string TestEvent = Constants.Events.ConnectedEvent;
 
-        private static readonly HashSet<string> EmptySetting = new();
-        private static readonly HashSet<string> ValidAccessKeys = new(new string[] { TestKey.AccessKey });
+        //private static readonly HashSet<string> EmptySetting = new();
+        //private static readonly HashSet<string> ValidAccessKeys = new(new string[] { TestKey.AccessKey });
+        private static readonly WebPubSubValidationOptions TestValidationOption = new WebPubSubValidationOptions("Endpoint=http://localhost;Port=8080;AccessKey=7aab239577fd4f24bc919802fb629f5f;Version=1.0;");
         private static readonly string[] ValidSignature = new string[] { TestKey.Signature };
 
         [TestCase]
         public async Task TestProcessRequest_ValidRequest()
         {
-            var dispatcher = SetupDispatcher();
+            var dispatcher = SetupDispatcher(options: TestValidationOption);
             var request = TestHelpers.CreateHttpRequestMessage(TestHub, TestType, TestEvent, TestKey.ConnectionId, ValidSignature);
-            var response = await dispatcher.ExecuteAsync(request, EmptySetting, ValidAccessKeys);
+            var response = await dispatcher.ExecuteAsync(request);
             Assert.AreEqual(HttpStatusCode.OK, response.StatusCode);
         }
 
         [TestCase]
         public async Task TestProcessRequest_AllowNullUserId()
         {
-            var dispatcher = SetupDispatcher();
+            var dispatcher = SetupDispatcher(options: TestValidationOption);
             var request = TestHelpers.CreateHttpRequestMessage(TestHub, TestType, TestEvent, TestKey.ConnectionId, ValidSignature, userId: null);
-            var response = await dispatcher.ExecuteAsync(request, EmptySetting, ValidAccessKeys);
+            var response = await dispatcher.ExecuteAsync(request);
             Assert.AreEqual(HttpStatusCode.OK, response.StatusCode);
         }
 
         [TestCase]
         public async Task TestProcessRequest_RouteNotFound()
         {
-            var dispatcher = SetupDispatcher();
+            var dispatcher = SetupDispatcher(options: TestValidationOption);
             var request = TestHelpers.CreateHttpRequestMessage("hub1", TestType, TestEvent, TestKey.ConnectionId, ValidSignature);
-            var response = await dispatcher.ExecuteAsync(request, EmptySetting, ValidAccessKeys);
+            var response = await dispatcher.ExecuteAsync(request);
             Assert.AreEqual(HttpStatusCode.NotFound, response.StatusCode);
         }
 
         [TestCase]
         public async Task TestProcessRequest_SignatureInvalid()
         {
-            var dispatcher = SetupDispatcher();
+            var dispatcher = SetupDispatcher(options: TestValidationOption);
             var request = TestHelpers.CreateHttpRequestMessage(TestHub, TestType, TestEvent, TestKey.ConnectionId, new string[] { "abc" });
-            var response = await dispatcher.ExecuteAsync(request, EmptySetting, ValidAccessKeys);
+            var response = await dispatcher.ExecuteAsync(request);
             Assert.AreEqual(HttpStatusCode.Unauthorized, response.StatusCode);
         }
 
         [TestCase]
         public async Task TestProcessRequest_ConnectionIdNullBadRequest()
         {
-            var dispatcher = SetupDispatcher();
+            var dispatcher = SetupDispatcher(options: TestValidationOption);
             var request = TestHelpers.CreateHttpRequestMessage(TestHub, TestType, TestEvent, null, ValidSignature, httpMethod: "Delete");
-            var response = await dispatcher.ExecuteAsync(request, EmptySetting, ValidAccessKeys);
+            var response = await dispatcher.ExecuteAsync(request);
             Assert.AreEqual(HttpStatusCode.BadRequest, response.StatusCode);
         }
 
         [TestCase]
         public async Task TestProcessRequest_DeleteMethodBadRequest()
         {
-            var dispatcher = SetupDispatcher();
+            var dispatcher = SetupDispatcher(options: TestValidationOption);
             var request = TestHelpers.CreateHttpRequestMessage(TestHub, TestType, TestEvent, TestKey.ConnectionId, ValidSignature, httpMethod: "Delete");
-            var response = await dispatcher.ExecuteAsync(request, EmptySetting, ValidAccessKeys);
+            var response = await dispatcher.ExecuteAsync(request);
             Assert.AreEqual(HttpStatusCode.BadRequest, response.StatusCode);
         }
 
         [TestCase("OPTIONS", "abc.com")]
         [TestCase("GET", "abc.com")]
         public async Task TestProcessRequest_AbuseProtectionValidOK(string method, string host)
-        {
-            var allowedHost = new HashSet<string>(new string[] { host });
-            var dispatcher = SetupDispatcher();
+        {;
+            var dispatcher = SetupDispatcher(options: new WebPubSubValidationOptions($"Endpoint=http://{host};Port=8080;AccessKey=7aab239577fd4f24bc919802fb629f5f;Version=1.0;"));
             var request = TestHelpers.CreateHttpRequestMessage(TestHub, TestType, TestEvent, TestKey.ConnectionId, new string[] { TestKey.Signature }, httpMethod: method, host: host);
-            var response = await dispatcher.ExecuteAsync(request, allowedHost, ValidAccessKeys);
+            var response = await dispatcher.ExecuteAsync(request);
             Assert.AreEqual(HttpStatusCode.OK, response.StatusCode);
         }
 
@@ -93,31 +94,30 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub.Tests
         [TestCase("GET", "abc.com")]
         public async Task TestProcessRequest_AbuseProtectionInvalidBadRequest(string method, string allowedHost)
         {
-            var allowedHosts = new HashSet<string>(new string[] { allowedHost });
             var testhost = "def.com";
-            var dispatcher = SetupDispatcher();
+            var dispatcher = SetupDispatcher(options: new WebPubSubValidationOptions($"Endpoint=http://{allowedHost};Port=8080;AccessKey=7aab239577fd4f24bc919802fb629f5f;Version=1.0;"));
             var request = TestHelpers.CreateHttpRequestMessage(TestHub, TestType, TestEvent, TestKey.ConnectionId, new string[] { TestKey.Signature }, httpMethod: method, host: testhost);
-            var response = await dispatcher.ExecuteAsync(request, allowedHosts, ValidAccessKeys);
+            var response = await dispatcher.ExecuteAsync(request);
             Assert.AreEqual(HttpStatusCode.BadRequest, response.StatusCode);
         }
 
         [TestCase("application/xml", HttpStatusCode.BadRequest)]
         public async Task TestProcessRequest_MessageMediaTypes(string mediaType, HttpStatusCode expectedCode)
         {
-            var dispatcher = SetupDispatcher(TestHub, WebPubSubEventType.User, Constants.Events.MessageEvent);
+            var dispatcher = SetupDispatcher(TestHub, WebPubSubEventType.User, Constants.Events.MessageEvent, options: TestValidationOption);
             var request = TestHelpers.CreateHttpRequestMessage(TestHub, WebPubSubEventType.User, Constants.Events.MessageEvent, TestKey.ConnectionId, ValidSignature, contentType: mediaType, payload: Encoding.UTF8.GetBytes("Hello"));
-            var response = await dispatcher.ExecuteAsync(request, EmptySetting, ValidAccessKeys).ConfigureAwait(false);
+            var response = await dispatcher.ExecuteAsync(request).ConfigureAwait(false);
             Assert.AreEqual(expectedCode, response.StatusCode);
         }
 
-        private static WebPubSubTriggerDispatcher SetupDispatcher(string hub = TestHub, WebPubSubEventType type = TestType, string eventName = TestEvent)
+        private static WebPubSubTriggerDispatcher SetupDispatcher(string hub = TestHub, WebPubSubEventType type = TestType, string eventName = TestEvent, WebPubSubValidationOptions options = null)
         {
             var funcName = $"{hub}.{type}.{eventName}".ToLower();
             var dispatcher = new WebPubSubTriggerDispatcher(NullLogger.Instance);
             var executor = new Mock<ITriggeredFunctionExecutor>();
             executor.Setup(f => f.TryExecuteAsync(It.IsAny<TriggeredFunctionData>(), It.IsAny<CancellationToken>()))
                 .Returns(Task.FromResult(new FunctionResult(true)));
-            var listener = new WebPubSubListener(executor.Object, funcName, dispatcher);
+            var listener = new WebPubSubListener(executor.Object, funcName, dispatcher, options);
 
             dispatcher.AddListener(funcName, listener);
 

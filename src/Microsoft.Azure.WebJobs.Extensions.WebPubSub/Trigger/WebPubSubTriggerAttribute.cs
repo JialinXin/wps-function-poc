@@ -5,6 +5,7 @@ using System;
 using System.ComponentModel.DataAnnotations;
 
 using Microsoft.Azure.WebJobs.Description;
+using Microsoft.Azure.WebPubSub.AspNetCore;
 
 namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
 {
@@ -50,5 +51,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
         /// </summary>
         [AutoResolve]
         public WebPubSubEventType EventType { get; }
+
+        /// <summary>
+        /// Validation options
+        /// </summary>
+        [AutoResolve]
+        public WebPubSubValidationOptions ValidationOptions { get; set; }
     }
 }

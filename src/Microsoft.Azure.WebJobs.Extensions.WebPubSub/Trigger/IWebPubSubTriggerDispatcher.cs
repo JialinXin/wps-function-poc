@@ -1,10 +1,10 @@
 ﻿// Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using System.Collections.Generic;
 using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.Azure.WebPubSub.AspNetCore;
 
 namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
 {
@@ -12,6 +12,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
     {
         void AddListener(string key, WebPubSubListener listener);
 
-        Task<HttpResponseMessage> ExecuteAsync(HttpRequestMessage req, HashSet<string> allowedHosts, HashSet<string> AccessTokens, CancellationToken token = default);
+        Task<HttpResponseMessage> ExecuteAsync(HttpRequestMessage req, CancellationToken token = default);
     }
 }

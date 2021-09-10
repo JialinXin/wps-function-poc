@@ -11,6 +11,7 @@ using System.Threading.Tasks;
 using Azure.Messaging.WebPubSub;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Azure.WebJobs.Host.Bindings;
+using Microsoft.Azure.WebPubSub.AspNetCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Primitives;
 using Newtonsoft.Json;
@@ -46,28 +47,28 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
 
             if (httpContext == null)
             {
-                return new WebPubSubRequestValueProvider(new WebPubSubRequest(null, new InvalidRequest(HttpStatusCode.BadRequest), HttpStatusCode.BadRequest), _userType);
+                return new WebPubSubRequestValueProvider(new WebPubSubRequest(new InvalidRequest($"HttpContext is null."), HttpStatusCode.BadRequest), _userType);
             }
 
             // Build abuse response
-            if (Utilities.RespondToServiceAbuseCheck(httpContext.Request, _options.AllowedHosts, out var abuseResponse))
+            if (httpContext.Request.IsValidationRequest(out var requestHosts)
+              && Utilities.RespondToServiceAbuseCheck(requestHosts, attrResolved.ValidationOptions, out var abuseResponse))
             {
-                var abuseRequest = new WebPubSubRequest(null, new ValidationRequest(abuseResponse.StatusCode == HttpStatusCode.OK), abuseResponse);
+                var abuseRequest = new WebPubSubRequest(new ValidationRequest(abuseResponse.StatusCode == HttpStatusCode.OK, requestHosts), abuseResponse);
                 return new WebPubSubRequestValueProvider(abuseRequest, _userType);
             }
 
             // Build service request context
-            if (!TryParseRequest(request, out var connectionContext))
+            if (!request.TryParseCloudEvents(out var connectionContext))
             {
                 // Not valid WebPubSubRequest
-                return new WebPubSubRequestValueProvider(new WebPubSubRequest(connectionContext, new InvalidRequest(HttpStatusCode.BadRequest, Constants.ErrorMessages.NotValidWebPubSubRequest), HttpStatusCode.BadRequest), _userType);
+                return new WebPubSubRequestValueProvider(new WebPubSubRequest(new InvalidRequest(Constants.ErrorMessages.NotValidWebPubSubRequest), HttpStatusCode.BadRequest), _userType);
             }
 
             // Signature check
-            // TODO: make the check more accurate for current function instead from global settings.
-            if (!Utilities.ValidateSignature(connectionContext.ConnectionId, connectionContext.Signature, _options.AccessKeys))
+            if (!connectionContext.IsValidSignature(attrResolved.ValidationOptions))
             {
-                return new WebPubSubRequestValueProvider(new WebPubSubRequest(connectionContext, new InvalidRequest(HttpStatusCode.Unauthorized, Constants.ErrorMessages.SignatureValidationFailed), HttpStatusCode.Unauthorized), _userType);
+                return new WebPubSubRequestValueProvider(new WebPubSubRequest(new InvalidRequest(Constants.ErrorMessages.SignatureValidationFailed), HttpStatusCode.Unauthorized), _userType);
             }
 
             WebPubSubRequest wpsRequest;
@@ -79,19 +80,21 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
                     {
                         var content = await ReadString(request.Body).ConfigureAwait(false);
                         var eventRequest = JsonConvert.DeserializeObject<ConnectEventRequest>(content);
-                        wpsRequest = new WebPubSubRequest(connectionContext, eventRequest);
+                        eventRequest.ConnectionContext = connectionContext;
+                        wpsRequest = new WebPubSubRequest(eventRequest);
                     }
                     break;
                 case RequestType.Connected:
                     {
-                        wpsRequest = new WebPubSubRequest(connectionContext, new ConnectedEventRequest());
+                        wpsRequest = new WebPubSubRequest(new ConnectedEventRequest(connectionContext));
                     }
                     break;
                 case RequestType.Disconnected:
                     {
                         var content = await ReadString(request.Body).ConfigureAwait(false);
                         var eventRequest = JsonConvert.DeserializeObject<DisconnectedEventRequest>(content);
-                        wpsRequest = new WebPubSubRequest(connectionContext, eventRequest);
+                        eventRequest.ConnectionContext = connectionContext;
+                        wpsRequest = new WebPubSubRequest(eventRequest);
                     }
                     break;
                 case RequestType.User:
@@ -99,54 +102,20 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
                         var contentType = MediaTypeHeaderValue.Parse(request.ContentType);
                         if (!Utilities.ValidateMediaType(contentType.MediaType, out var dataType))
                         {
-                            var invalidRequest = new InvalidRequest(HttpStatusCode.BadRequest, $"{Constants.ErrorMessages.NotSupportedDataType}{request.ContentType}");
-                            return new WebPubSubRequestValueProvider(new WebPubSubRequest(connectionContext, invalidRequest, HttpStatusCode.BadRequest), _userType);
+                            var invalidRequest = new InvalidRequest($"{Constants.ErrorMessages.NotSupportedDataType}{request.ContentType}");
+                            return new WebPubSubRequestValueProvider(new WebPubSubRequest(invalidRequest, HttpStatusCode.BadRequest), _userType);
                         }
                         var payload = ReadBytes(request.Body);
-                        var eventRequest = new MessageEventRequest(BinaryData.FromBytes(payload), dataType);
-                        wpsRequest = new WebPubSubRequest(connectionContext, eventRequest);
+                        var eventRequest = new MessageEventRequest(connectionContext, BinaryData.FromBytes(payload), dataType);
+                        wpsRequest = new WebPubSubRequest(eventRequest);
                     }
                     break;
                 default:
-                    wpsRequest = new WebPubSubRequest(connectionContext, new InvalidRequest(HttpStatusCode.NotFound, "Unknown request"));
+                    wpsRequest = new WebPubSubRequest(new InvalidRequest("Unknown request."));
                     break;
             }
 
             return new WebPubSubRequestValueProvider(wpsRequest, _userType);
-        }
-
-        private static bool TryParseRequest(HttpRequest request, out ConnectionContext context)
-        {
-            // ConnectionId is required in upstream request, and method is POST.
-            if (!request.Headers.ContainsKey(Constants.Headers.CloudEvents.ConnectionId)
-                || !request.Method.Equals("post", StringComparison.OrdinalIgnoreCase))
-            {
-                context = null;
-                return false;
-            }
-
-            context = new ConnectionContext();
-            try
-            {
-                context.ConnectionId = GetHeaderValueOrDefault(request.Headers, Constants.Headers.CloudEvents.ConnectionId);
-                context.Hub = GetHeaderValueOrDefault(request.Headers, Constants.Headers.CloudEvents.Hub);
-                context.EventType = Utilities.GetEventType(GetHeaderValueOrDefault(request.Headers, Constants.Headers.CloudEvents.Type));
-                context.EventName = GetHeaderValueOrDefault(request.Headers, Constants.Headers.CloudEvents.EventName);
-                context.Signature = GetHeaderValueOrDefault(request.Headers, Constants.Headers.CloudEvents.Signature);
-                context.Headers = request.Headers.ToDictionary(x => x.Key, v => new StringValues(v.Value.ToArray()), StringComparer.OrdinalIgnoreCase);
-
-                // UserId is optional, e.g. connect
-                if (request.Headers.ContainsKey(Constants.Headers.CloudEvents.UserId))
-                {
-                    context.UserId = GetHeaderValueOrDefault(request.Headers, Constants.Headers.CloudEvents.UserId);
-                }
-            }
-            catch (Exception)
-            {
-                return false;
-            }
-
-            return true;
         }
 
         private static async Task<string> ReadString(Stream body)

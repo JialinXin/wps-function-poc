@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using Microsoft.Azure.WebJobs.Hosting;
 using Newtonsoft.Json.Linq;
 using Newtonsoft.Json;
+using Microsoft.Azure.WebPubSub.AspNetCore;
 
 namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
 {
@@ -14,9 +15,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
 
         internal string ConnectionString { get; set; }
 
-        internal HashSet<string> AllowedHosts { get; set; } = new HashSet<string>();
-
-        internal HashSet<string> AccessKeys { get; set; } = new HashSet<string>();
+        internal WebPubSubValidationOptions ValidationOptions { get; set;}
 
         /// <summary>
         /// Formats the options as JSON objects for display.

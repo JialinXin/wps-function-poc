@@ -7,6 +7,7 @@ using System.Threading.Tasks;
 
 using Microsoft.Azure.WebJobs.Host.Executors;
 using Microsoft.Azure.WebJobs.Host.Listeners;
+using Microsoft.Azure.WebPubSub.AspNetCore;
 
 namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
 {
@@ -14,14 +15,17 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
     {
         public ITriggeredFunctionExecutor Executor { get; private set; }
 
+        public WebPubSubValidationOptions ValidationOptions { get; }
+
         private readonly string _listenerKey;
         private readonly IWebPubSubTriggerDispatcher _dispatcher;
 
-        public WebPubSubListener(ITriggeredFunctionExecutor executor, string listenerKey, IWebPubSubTriggerDispatcher dispatcher)
+        public WebPubSubListener(ITriggeredFunctionExecutor executor, string listenerKey, IWebPubSubTriggerDispatcher dispatcher, WebPubSubValidationOptions options)
         {
             _dispatcher = dispatcher ?? throw new ArgumentNullException(nameof(dispatcher));
             _listenerKey = listenerKey ?? throw new ArgumentNullException(nameof(listenerKey));
             Executor = executor ?? throw new ArgumentNullException(nameof(executor));
+            ValidationOptions = options;
         }
 
         public void Cancel()

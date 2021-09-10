@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.Azure.WebJobs;
 using Microsoft.Azure.WebJobs.Extensions.Http;
 using Microsoft.Azure.WebJobs.Extensions.WebPubSub;
+using Microsoft.Azure.WebPubSub.AspNetCore;
 using Newtonsoft.Json;
 using System;
 using System.IO;
@@ -39,14 +40,14 @@ namespace SimpleChat
             [HttpTrigger(AuthorizationLevel.Anonymous, "post")] HttpRequest req,
             [WebPubSubRequest] WebPubSubRequest wpsReq)
         {
-            if (wpsReq.Request.IsValidationRequest || !wpsReq.Request.Valid)
+            if (wpsReq.Request is ValidationRequest || wpsReq.Request is InvalidRequest)
             {
                 return wpsReq.Response;
             }
             var request = wpsReq.Request as ConnectEventRequest;
             var response = new ConnectResponse
             {
-                UserId = wpsReq.ConnectionContext.UserId
+                UserId = request.ConnectionContext.UserId
             };
             return response;
         }

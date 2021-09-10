@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace Microsoft.Azure.WebPubSub.AspNetCore
 {
@@ -44,6 +45,11 @@ namespace Microsoft.Azure.WebPubSub.AspNetCore
         internal bool TryGetKey(string host, out string accessKey)
         {
             return _hostKeyMappings.TryGetValue(host, out accessKey);
+        }
+
+        internal List<string> GetAllowedHosts()
+        {
+            return _hostKeyMappings.Select(x => x.Key).ToList();
         }
 
         /// <summary>

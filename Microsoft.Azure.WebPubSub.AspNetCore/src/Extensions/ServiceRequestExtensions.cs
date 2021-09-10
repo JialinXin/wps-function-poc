@@ -73,18 +73,18 @@ namespace Microsoft.Azure.WebPubSub.AspNetCore
         /// <param name="request"></param>
         /// <param name="validationRequest"></param>
         /// <returns></returns>
-        public static bool IsValidationRequest(this HttpRequest request, out ValidationRequest validationRequest)
+        public static bool IsValidationRequest(this HttpRequest request, out List<string> requestHosts)
         {
             if (HttpMethods.IsOptions(request.Method))
             {
-                request.Headers.TryGetValue(Constants.Headers.WebHookRequestOrigin, out StringValues requestHosts);
-                if (requestHosts.Any())
+                request.Headers.TryGetValue(Constants.Headers.WebHookRequestOrigin, out StringValues requestOrigin);
+                if (requestOrigin.Any())
                 {
-                    validationRequest = new ValidationRequest(true, requestHosts.ToList());
+                    requestHosts = requestOrigin.ToList();
                     return true;
                 }
             }
-            validationRequest = null;
+            requestHosts = null;
             return false;
         }
 

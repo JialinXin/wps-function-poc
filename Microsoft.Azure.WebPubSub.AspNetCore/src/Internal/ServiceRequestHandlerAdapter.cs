@@ -10,10 +10,12 @@ namespace Microsoft.Azure.WebPubSub.AspNetCore
     internal class ServiceRequestHandlerAdapter : ServiceRequestHandler
     {
         private readonly WebPubSubValidationOptions _options;
+        private readonly bool _skipValidation;
 
         public ServiceRequestHandlerAdapter(WebPubSubValidationOptions options)
         {
             _options = options;
+            _skipValidation = _options == null || !_options.ContainsHost();
         }
 
         public override async Task HandleRequest<THub>(HttpContext context, THub serviceHub)
@@ -26,15 +28,21 @@ namespace Microsoft.Azure.WebPubSub.AspNetCore
             }
 
             // abuse protection validation.
-            if (request.IsValidationRequest(out ValidationRequest validationRequest))
+            if (request.IsValidationRequest(out var requestHosts))
             {
-                if (_options != null)
+                // no validation option set then allow all.
+                if (_skipValidation)
                 {
-                    foreach (var item in validationRequest.RequestHosts)
+                    context.Response.Headers.Add(Constants.Headers.WebHookAllowedOrigin, "*");
+                    return;
+                }
+                else
+                {
+                    foreach (var item in requestHosts)
                     {
                         if (_options.ContainsHost(item))
                         {
-                            // return self as AllowedHost.
+                            // return self as allowed when matches.
                             context.Response.Headers.Add(Constants.Headers.WebHookAllowedOrigin, item);
                             return;
                         }

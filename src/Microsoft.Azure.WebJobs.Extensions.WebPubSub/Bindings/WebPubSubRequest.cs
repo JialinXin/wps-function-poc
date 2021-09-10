@@ -4,6 +4,7 @@
 using System.Net;
 using System.Net.Http;
 using Azure.Messaging.WebPubSub;
+using Microsoft.Azure.WebPubSub.AspNetCore;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Serialization;
 
@@ -12,10 +13,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
     [JsonObject(NamingStrategyType = typeof(CamelCaseNamingStrategy))]
     public class WebPubSubRequest
     {
-        /// <summary>
-        /// Common request information from headers.
-        /// </summary>
-        public ConnectionContext ConnectionContext { get; }
+        ///// <summary>
+        ///// Common request information from headers.
+        ///// </summary>
+        //public ConnectionContext ConnectionContext { get; }
 
         /// <summary>
         /// Request body.
@@ -28,9 +29,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
         [JsonConverter(typeof(HttpResponseMessageJsonConverter))]
         public HttpResponseMessage Response { get; }
 
-        internal WebPubSubRequest(ConnectionContext context, ServiceRequest request, HttpStatusCode httpStatus, string message = null)
+        internal WebPubSubRequest(ServiceRequest request, HttpStatusCode httpStatus, string message = null)
         {
-            ConnectionContext = context;
             Request = request;
             Response = new HttpResponseMessage(httpStatus);
             if (!string.IsNullOrEmpty(message))
@@ -39,9 +39,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
             }
         }
 
-        internal WebPubSubRequest(ConnectionContext context, ServiceRequest request, HttpResponseMessage response = null)
+        internal WebPubSubRequest(ServiceRequest request, HttpResponseMessage response = null)
         {
-            ConnectionContext = context;
             Request = request;
             Response = response ?? new HttpResponseMessage();
         }

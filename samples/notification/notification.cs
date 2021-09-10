@@ -1,10 +1,10 @@
 using System;
 using System.Threading.Tasks;
-using Azure.Messaging.WebPubSub;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Azure.WebJobs;
 using Microsoft.Azure.WebJobs.Extensions.Http;
 using Microsoft.Azure.WebJobs.Extensions.WebPubSub;
+using Microsoft.Azure.WebPubSub.AspNetCore;
 using Microsoft.Extensions.Logging;
 
 namespace notifications

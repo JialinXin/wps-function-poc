@@ -5,6 +5,7 @@ using Azure.Messaging.WebPubSub;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Azure.WebJobs.Host;
 using Microsoft.Azure.WebJobs.Host.Indexers;
+using Microsoft.Azure.WebPubSub.AspNetCore;
 using Moq;
 using NUnit.Framework;
 using System;

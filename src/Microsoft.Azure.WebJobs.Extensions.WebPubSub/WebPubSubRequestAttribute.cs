@@ -3,6 +3,7 @@
 
 using System;
 using Microsoft.Azure.WebJobs.Description;
+using Microsoft.Azure.WebPubSub.AspNetCore;
 
 namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
 {
@@ -10,5 +11,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
     [Binding]
     public class WebPubSubRequestAttribute : Attribute
     {
+        public WebPubSubValidationOptions ValidationOptions { get; set; }
     }
 }

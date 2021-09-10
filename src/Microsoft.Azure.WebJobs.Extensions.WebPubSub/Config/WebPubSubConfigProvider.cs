@@ -10,6 +10,7 @@ using Azure.Messaging.WebPubSub;
 using Microsoft.Azure.WebJobs.Description;
 using Microsoft.Azure.WebJobs.Host.Config;
 using Microsoft.Azure.WebJobs.Logging;
+using Microsoft.Azure.WebPubSub.AspNetCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -51,7 +52,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
             if (string.IsNullOrEmpty(_options.ConnectionString))
             {
                 _options.ConnectionString = _nameResolver.Resolve(Constants.WebPubSubConnectionStringName);
-                AddSettings(_options.ConnectionString);
             }
 
             if (string.IsNullOrEmpty(_options.Hub))
@@ -105,7 +105,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
 
         public Task<HttpResponseMessage> ConvertAsync(HttpRequestMessage input, CancellationToken cancellationToken)
         {
-            return _dispatcher.ExecuteAsync(input, _options.AllowedHosts, _options.AccessKeys, cancellationToken);
+            return _dispatcher.ExecuteAsync(input, cancellationToken);
         }
 
         private void ValidateWebPubSubConnectionAttributeBinding(WebPubSubConnectionAttribute attribute, Type type)
@@ -143,22 +143,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
 
         private void ValidateConnectionString(string attributeConnectionString, string attributeConnectionStringName)
         {
-            AddSettings(attributeConnectionString);
             var connectionString = Utilities.FirstOrDefault(attributeConnectionString, _options.ConnectionString);
 
             if (string.IsNullOrEmpty(connectionString))
             {
                 throw new InvalidOperationException($"The Service connection string must be set either via an '{Constants.WebPubSubConnectionStringName}' app setting, via an '{Constants.WebPubSubConnectionStringName}' environment variable, or directly in code via {nameof(WebPubSubOptions)}.{nameof(WebPubSubOptions.ConnectionString)} or {attributeConnectionStringName}.");
-            }
-        }
-
-        private void AddSettings(string connectionString)
-        {
-            if (!string.IsNullOrEmpty(connectionString))
-            {
-                var item = new ServiceConfigParser(connectionString);
-                _options.AllowedHosts.Add(item.Endpoint.Host);
-                _options.AccessKeys.Add(item.AccessKey);
             }
         }
 

@@ -12,6 +12,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Azure.Messaging.WebPubSub;
 using Microsoft.Azure.WebJobs.Host.Executors;
+using Microsoft.Azure.WebPubSub.AspNetCore;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Primitives;
 using Newtonsoft.Json;
@@ -39,24 +40,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
         }
 
         public async Task<HttpResponseMessage> ExecuteAsync(HttpRequestMessage req,
-            HashSet<string> allowedHosts,
-            HashSet<string> accessKeys,
             CancellationToken token = default)
         {
-            // Handle service abuse check.
-            if (Utilities.RespondToServiceAbuseCheck(req, allowedHosts, out var abuseResponse))
-            {
-                return abuseResponse;
-            }
-
             if (!TryParseRequest(req, out var context))
             {
                 return new HttpResponseMessage(HttpStatusCode.BadRequest);
-            }
-
-            if (!Utilities.ValidateSignature(context.ConnectionId, context.Signature, accessKeys))
-            {
-                return new HttpResponseMessage(HttpStatusCode.Unauthorized);
             }
 
             var tcs = new TaskCompletionSource<object>(TaskCreationOptions.RunContinuationsAsynchronously);
@@ -65,6 +53,17 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
 
             if (_listeners.TryGetValue(function, out var executor))
             {
+                // Handle service abuse check.
+                if (Utilities.RespondToServiceAbuseCheck(req, executor.ValidationOptions, out var abuseResponse))
+                {
+                    return abuseResponse;
+                }
+
+                if (context.IsValidSignature(executor.ValidationOptions))
+                {
+                    return new HttpResponseMessage(HttpStatusCode.Unauthorized);
+                }
+
                 BinaryData message = null;
                 MessageDataType dataType = MessageDataType.Text;
                 IDictionary<string, string[]> claims = null;

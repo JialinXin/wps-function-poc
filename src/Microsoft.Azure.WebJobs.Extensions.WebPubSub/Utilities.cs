@@ -12,6 +12,7 @@ using System.Security.Cryptography;
 using System.Text;
 using Azure.Messaging.WebPubSub;
 using Microsoft.AspNetCore.Http;
+using Microsoft.Azure.WebPubSub.AspNetCore;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 
@@ -141,30 +142,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
             return RequestType.Ignored;
         }
 
-        public static bool ValidateSignature(string connectionId, string signature, HashSet<string> accessKeys)
-        {
-            foreach (var accessKey in accessKeys)
-            {
-                var signatures = GetSignatureList(signature);
-                if (signatures == null)
-                {
-                    break;
-                }
-                using var hmac = new HMACSHA256(Encoding.UTF8.GetBytes(accessKey));
-                var hashBytes = hmac.ComputeHash(Encoding.UTF8.GetBytes(connectionId));
-                var hash = "sha256=" + BitConverter.ToString(hashBytes).Replace("-", "");
-                if (signatures.Contains(hash, StringComparer.OrdinalIgnoreCase))
-                {
-                    return true;
-                }
-                else
-                {
-                    continue;
-                }
-            }
-            return false;
-        }
-
         public static bool ValidateMediaType(string mediaType, out MessageDataType dataType)
         {
             try
@@ -200,43 +177,38 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
             return Convert.ToBase64String(Encoding.UTF8.GetBytes(JObject.FromObject(connectionStates).ToString()));
         }
 
-        public static bool RespondToServiceAbuseCheck(HttpRequestMessage req, HashSet<string> allowedHosts, out HttpResponseMessage response)
+        public static bool RespondToServiceAbuseCheck(HttpRequestMessage req, WebPubSubValidationOptions options, out HttpResponseMessage response)
         {
             response = new HttpResponseMessage();
             if (req.Method == HttpMethod.Options || req.Method == HttpMethod.Get)
             {
                 var requestHosts = req.Headers.GetValues(Constants.Headers.WebHookRequestOrigin).ToList();
-                return RespondToServiceAbuseCheck(requestHosts, allowedHosts, out response);
+                return RespondToServiceAbuseCheck(requestHosts, options, out response);
             }
             return false;
         }
 
-        public static bool RespondToServiceAbuseCheck(HttpRequest req, HashSet<string> allowedHosts, out HttpResponseMessage response)
+        public static bool RespondToServiceAbuseCheck(IList<string> requestHosts, WebPubSubValidationOptions options, out HttpResponseMessage response)
         {
             response = new HttpResponseMessage();
-            if (req.Method.Equals("options", StringComparison.OrdinalIgnoreCase) || req.Method.Equals("get", StringComparison.OrdinalIgnoreCase))
+            // skip validation and allow all.
+            if (options == null || !options.ContainsHost())
             {
-                req.Headers.TryGetValue(Constants.Headers.WebHookRequestOrigin, out var requestHosts);
-                return RespondToServiceAbuseCheck(requestHosts, allowedHosts, out response);
+                response.Headers.Add(Constants.Headers.WebHookAllowedOrigin, "*");
+                return true;
             }
-            return false;
-        }
-
-        private static bool RespondToServiceAbuseCheck(IList<string> requestHosts, HashSet<string> allowedHosts, out HttpResponseMessage response)
-        {
-            response = new HttpResponseMessage();
-            if (requestHosts != null && requestHosts.Any())
+            else
             {
                 foreach (var item in requestHosts)
                 {
-                    if (allowedHosts.Contains(item, StringComparer.OrdinalIgnoreCase))
+                    if (options.ContainsHost(item))
                     {
-                        response.Headers.Add(Constants.Headers.WebHookAllowedOrigin, requestHosts);
+                        response.Headers.Add(Constants.Headers.WebHookAllowedOrigin, item);
                         return true;
                     }
                 }
-                response.StatusCode = HttpStatusCode.BadRequest;
             }
+            response.StatusCode = HttpStatusCode.BadRequest;
             return true;
         }
     }

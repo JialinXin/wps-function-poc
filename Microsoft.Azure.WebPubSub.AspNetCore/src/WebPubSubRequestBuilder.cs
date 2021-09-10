@@ -32,9 +32,9 @@ namespace Microsoft.Azure.WebPubSub.AspNetCore
         /// Build IServiceHub instance.
         /// </summary>
         /// <returns></returns>
-        public IServiceRequestHandler Build()
+        public ServiceRequestHandler Build()
         {
-            return new ServiceRequestHandler(_options);
+            return new ServiceRequestHandlerAdapter(_options);
         }
     }
 }
