@@ -6,17 +6,15 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Net;
 using System.Net.Http;
-using System.Security.Cryptography;
-using System.Text;
+using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
-using Azure.Messaging.WebPubSub;
 using Microsoft.Azure.WebJobs.Host.Executors;
 using Microsoft.Azure.WebPubSub.AspNetCore;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Primitives;
-using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
+//using Newtonsoft.Json;
+//using Newtonsoft.Json.Linq;
 
 namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
 {
@@ -42,7 +40,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
         public async Task<HttpResponseMessage> ExecuteAsync(HttpRequestMessage req,
             CancellationToken token = default)
         {
-            if (!TryParseRequest(req, out var context))
+            var abuseCheck = Utilities.IsValidationRequest(req, out var requestHosts);
+            if (!TryParseRequest(req, out var context) && !abuseCheck)
             {
                 return new HttpResponseMessage(HttpStatusCode.BadRequest);
             }
@@ -54,14 +53,20 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
             if (_listeners.TryGetValue(function, out var executor))
             {
                 // Handle service abuse check.
-                if (Utilities.RespondToServiceAbuseCheck(req, executor.ValidationOptions, out var abuseResponse))
+                if (abuseCheck)
                 {
-                    return abuseResponse;
+                    return Utilities.RespondToServiceAbuseCheck(requestHosts, executor.ValidationOptions);
                 }
 
-                if (context.IsValidSignature(executor.ValidationOptions))
+                if (!context.IsValidSignature(executor.ValidationOptions))
                 {
                     return new HttpResponseMessage(HttpStatusCode.Unauthorized);
+                }
+
+                // Upstream messaging is POST method
+                if (req.Method != HttpMethod.Post)
+                {
+                    return new HttpResponseMessage(HttpStatusCode.BadRequest);
                 }
 
                 BinaryData message = null;
@@ -78,7 +83,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
                     case RequestType.Connect:
                         {
                             var content = await req.Content.ReadAsStringAsync().ConfigureAwait(false);
-                            var request = JsonConvert.DeserializeObject<ConnectEventRequest>(content);
+                            var request = JsonSerializer.Deserialize<ConnectEventRequest>(content);
                             claims = request.Claims;
                             subprotocols = request.Subprotocols;
                             query = request.Query;
@@ -88,7 +93,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
                     case RequestType.Disconnected:
                         {
                             var content = await req.Content.ReadAsStringAsync().ConfigureAwait(false);
-                            var request = JsonConvert.DeserializeObject<DisconnectedEventRequest>(content);
+                            var request = JsonSerializer.Deserialize<DisconnectedEventRequest>(content);
                             reason = request.Reason;
                             break;
                         }
@@ -164,9 +169,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
 
         private static bool TryParseRequest(HttpRequestMessage request, out ConnectionContext context)
         {
-            // ConnectionId is required in upstream request, and method is POST.
-            if (!request.Headers.Contains(Constants.Headers.CloudEvents.ConnectionId)
-                || request.Method != HttpMethod.Post)
+            // ConnectionId is required in upstream request.
+            if (!request.Headers.TryGetValues(Constants.Headers.CloudEvents.ConnectionId, out var cid) 
+                || string.IsNullOrEmpty(cid.SingleOrDefault()))
             {
                 context = null;
                 return false;
@@ -180,6 +185,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
                 context.EventType = Utilities.GetEventType(request.Headers.GetValues(Constants.Headers.CloudEvents.Type).SingleOrDefault());
                 context.EventName = request.Headers.GetValues(Constants.Headers.CloudEvents.EventName).SingleOrDefault();
                 context.Signature = request.Headers.GetValues(Constants.Headers.CloudEvents.Signature).SingleOrDefault();
+                context.Origin = request.Headers.GetValues(Constants.Headers.WebHookRequestOrigin).SingleOrDefault();
                 context.Headers = request.Headers.ToDictionary(x => x.Key, v => new StringValues(v.Value.ToArray()), StringComparer.OrdinalIgnoreCase);
 
                 // UserId is optional, e.g. connect
@@ -188,7 +194,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
                     context.UserId = values.SingleOrDefault();
                 }
 
-                if (request.Headers.TryGetValues(Constants.Headers.CloudEvents.UserId, out var connectionStates))
+                if (request.Headers.TryGetValues(Constants.Headers.CloudEvents.State, out var connectionStates))
                 {
                     context.States = Utilities.DecodeConnectionState(connectionStates.SingleOrDefault());
                 }
@@ -206,68 +212,59 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
             return $"{context.Hub}.{context.EventType}.{context.EventName}";
         }
 
-        private static bool TryConvertResponse<T>(JObject item, out T response)
-        {
-            try
-            {
-                response = item.ToObject<T>();
-                return true;
-            }
-            catch (JsonSerializationException)
-            {
-                // ignore invalid response
-            }
-            response = default;
-            return false;
-        }
-
         internal static HttpResponseMessage BuildValidResponse(object response, RequestType requestType)
         {
-            JObject converted = null;
-            bool needConvert = false;
-            if (response is JObject jObject)
+            JsonDocument converted = null;
+            bool needConvert = true;
+            if (response is ServiceResponse)
             {
-                converted = jObject;
-                needConvert = true;
+                needConvert = false;
             }
-            else if (response is string str)
+            else
             {
-                converted = JObject.Parse(str);
-                needConvert = true;
+                converted = JsonDocument.Parse(response.ToString());
             }
 
-            // Check error
-            if (needConvert && TryConvertResponse(converted, out ErrorResponse error))
+            try
             {
-                return Utilities.BuildErrorResponse(error);
-            }
-            else if (response is ErrorResponse errorResponse)
-            {
-                return Utilities.BuildErrorResponse(errorResponse);
-            }
+                // Check error, errorCode is required.
+                if (needConvert && converted.RootElement.TryGetProperty("code", out var code))
+                {
+                    var error = JsonSerializer.Deserialize<ErrorResponse>(response.ToString());
+                    return Utilities.BuildErrorResponse(error);
+                }
+                else if (response is ErrorResponse errorResponse)
+                {
+                    return Utilities.BuildErrorResponse(errorResponse);
+                }
 
-            if (requestType == RequestType.Connect)
-            {
-                if (needConvert)
+                if (requestType == RequestType.Connect)
                 {
-                    return Utilities.BuildResponse(converted.ToString());
+                    if (needConvert)
+                    {
+                        return Utilities.BuildResponse(response.ToString());
+                    }
+                    else if (response is ConnectResponse connectResponse)
+                    {
+                        return Utilities.BuildResponse(connectResponse);
+                    }
                 }
-                else if (response is ConnectResponse connectResponse)
+
+                if (requestType == RequestType.User)
                 {
-                    return Utilities.BuildResponse(connectResponse);
+                    if (needConvert)
+                    {
+                        return Utilities.BuildResponse(JsonSerializer.Deserialize<MessageResponse>(response.ToString()));
+                    }
+                    else if (response is MessageResponse messageResponse)
+                    {
+                        return Utilities.BuildResponse(messageResponse);
+                    }
                 }
             }
-
-            if (requestType == RequestType.User)
+            catch (Exception)
             {
-                if (needConvert && TryConvertResponse(converted, out MessageResponse msgResponse))
-                {
-                    return Utilities.BuildResponse(msgResponse);
-                }
-                else if (response is MessageResponse messageResponse)
-                {
-                    return Utilities.BuildResponse(messageResponse);
-                }
+                // Ignore invalid response.
             }
 
             return null;

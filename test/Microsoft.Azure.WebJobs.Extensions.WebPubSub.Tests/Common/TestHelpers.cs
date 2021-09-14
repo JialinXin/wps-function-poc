@@ -98,7 +98,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub.Tests
             string[] signatures,
             string contentType = Constants.ContentTypes.PlainTextContentType,
             string httpMethod = "Post",
-            string host = null,
+            string origin = null,
             string userId = "testuser",
             byte[] payload = null)
         {
@@ -111,9 +111,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub.Tests
             context.Headers.Add(Constants.Headers.CloudEvents.EventName, eventName);
             context.Headers.Add(Constants.Headers.CloudEvents.ConnectionId, connectionId);
             context.Headers.Add(Constants.Headers.CloudEvents.Signature, string.Join(",", signatures));
-            if (host != null)
+            if (origin != null)
             {
-                context.Headers.Add(Constants.Headers.WebHookRequestOrigin, host);
+                context.Headers.Add(Constants.Headers.WebHookRequestOrigin, origin);
             }
             if (userId != null)
             {

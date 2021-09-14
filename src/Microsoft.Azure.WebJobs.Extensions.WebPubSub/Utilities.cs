@@ -177,25 +177,25 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
             return Convert.ToBase64String(Encoding.UTF8.GetBytes(JObject.FromObject(connectionStates).ToString()));
         }
 
-        public static bool RespondToServiceAbuseCheck(HttpRequestMessage req, WebPubSubValidationOptions options, out HttpResponseMessage response)
+        public static bool IsValidationRequest(HttpRequestMessage req, out List<string> requestHosts)
         {
-            response = new HttpResponseMessage();
             if (req.Method == HttpMethod.Options || req.Method == HttpMethod.Get)
             {
-                var requestHosts = req.Headers.GetValues(Constants.Headers.WebHookRequestOrigin).ToList();
-                return RespondToServiceAbuseCheck(requestHosts, options, out response);
+                requestHosts = req.Headers.GetValues(Constants.Headers.WebHookRequestOrigin).ToList();
+                return true;
             }
+            requestHosts = null;
             return false;
         }
 
-        public static bool RespondToServiceAbuseCheck(IList<string> requestHosts, WebPubSubValidationOptions options, out HttpResponseMessage response)
+        public static HttpResponseMessage RespondToServiceAbuseCheck(IList<string> requestHosts, WebPubSubValidationOptions options)
         {
-            response = new HttpResponseMessage();
+            var response = new HttpResponseMessage();
             // skip validation and allow all.
             if (options == null || !options.ContainsHost())
             {
                 response.Headers.Add(Constants.Headers.WebHookAllowedOrigin, "*");
-                return true;
+                return response;
             }
             else
             {
@@ -204,12 +204,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
                     if (options.ContainsHost(item))
                     {
                         response.Headers.Add(Constants.Headers.WebHookAllowedOrigin, item);
-                        return true;
+                        return response;
                     }
                 }
             }
             response.StatusCode = HttpStatusCode.BadRequest;
-            return true;
+            return response;
         }
     }
 }

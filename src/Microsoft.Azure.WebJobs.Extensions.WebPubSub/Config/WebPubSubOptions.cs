@@ -1,11 +1,10 @@
 ﻿// Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using System.Collections.Generic;
 using Microsoft.Azure.WebJobs.Hosting;
-using Newtonsoft.Json.Linq;
-using Newtonsoft.Json;
 using Microsoft.Azure.WebPubSub.AspNetCore;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 
 namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
 {

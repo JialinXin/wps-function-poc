@@ -14,14 +14,14 @@ namespace Microsoft.Azure.WebPubSub.AspNetCore
         /// <summary>
         /// Message.
         /// </summary>
-        [JsonPropertyName("message")]
-        public BinaryData Message { get; }
+        [JsonPropertyName("message"), JsonConverter(typeof(BinaryDataConverter))]
+        public BinaryData Message { get; set; }
 
         /// <summary>
         /// Message data type.
         /// </summary>
-        [JsonPropertyName("dataType")]
-        public MessageDataType DataType { get; }
+        [JsonPropertyName("dataType"), JsonConverter(typeof(JsonStringEnumConverter))]
+        public MessageDataType DataType { get; set; }
 
         /// <summary>
         /// Initialize an instance of MessageResponse.
@@ -41,6 +41,12 @@ namespace Microsoft.Azure.WebPubSub.AspNetCore
         /// <param name="dataType"></param>
         public MessageResponse(string message, MessageDataType dataType = MessageDataType.Text)
             : this(BinaryData.FromString(message), dataType)
+        { }
+
+        /// <summary>
+        /// Default constructor for JsonSerialize
+        /// </summary>
+        public MessageResponse()
         { }
     }
 }

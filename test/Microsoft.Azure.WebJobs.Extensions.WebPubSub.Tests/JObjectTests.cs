@@ -10,6 +10,8 @@ using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using NUnit.Framework;
 
+using SystemJson = System.Text.Json;
+
 namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub.Tests
 {
     public class JObjectTests
@@ -46,7 +48,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub.Tests
         {
             var testData = @"{""type"":""Buffer"", ""data"": [66, 105, 110, 97, 114, 121, 68, 97, 116, 97]}";
 
-            var converted = JsonConvert.DeserializeObject<BinaryData>(testData, new BinaryDataJsonConverter());
+            var options = new SystemJson.JsonSerializerOptions();
+            options.Converters.Add(new BinaryDataConverter());
+
+            var converted = SystemJson.JsonSerializer.Deserialize<BinaryData>(testData, options);
 
             Assert.AreEqual("BinaryData", converted.ToString());
         }

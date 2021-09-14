@@ -4,16 +4,13 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Linq;
 using System.Net;
 using System.Net.Http.Headers;
 using System.Threading.Tasks;
-using Azure.Messaging.WebPubSub;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Azure.WebJobs.Host.Bindings;
 using Microsoft.Azure.WebPubSub.AspNetCore;
 using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.Primitives;
 using Newtonsoft.Json;
 
 namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
@@ -51,9 +48,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
             }
 
             // Build abuse response
-            if (httpContext.Request.IsValidationRequest(out var requestHosts)
-              && Utilities.RespondToServiceAbuseCheck(requestHosts, attrResolved.ValidationOptions, out var abuseResponse))
+            if (httpContext.Request.IsValidationRequest(out var requestHosts))
             {
+                var abuseResponse = Utilities.RespondToServiceAbuseCheck(requestHosts, attrResolved.ValidationOptions);
                 var abuseRequest = new WebPubSubRequest(new ValidationRequest(abuseResponse.StatusCode == HttpStatusCode.OK, requestHosts), abuseResponse);
                 return new WebPubSubRequestValueProvider(abuseRequest, _userType);
             }

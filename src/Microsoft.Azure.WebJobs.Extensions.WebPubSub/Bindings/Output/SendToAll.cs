@@ -11,6 +11,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
     [JsonObject(NamingStrategyType = typeof(CamelCaseNamingStrategy))]
     public class SendToAll : WebPubSubOperation
     {
+        [JsonConverter(typeof(BinaryDataJsonConverter))]
         public BinaryData Message { get; set; }
 
         public MessageDataType DataType { get; set; } = MessageDataType.Binary;

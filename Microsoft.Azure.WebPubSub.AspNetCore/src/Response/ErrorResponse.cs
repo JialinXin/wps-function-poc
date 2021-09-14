@@ -11,9 +11,9 @@ namespace Microsoft.Azure.WebPubSub.AspNetCore
     public class ErrorResponse : ServiceResponse
     {
         /// <summary>
-        /// Error code.
+        /// Error code. Required field to deserialize ErrorResponse.
         /// </summary>
-        [JsonPropertyName("code")]
+        [JsonPropertyName("code"), JsonConverter(typeof(JsonStringEnumConverter))]
         public WebPubSubErrorCode Code { get; set; }
 
         /// <summary>
@@ -32,5 +32,11 @@ namespace Microsoft.Azure.WebPubSub.AspNetCore
             Code = code;
             ErrorMessage = message;
         }
+
+        /// <summary>
+        /// Default constructor for JsonDeserialize.
+        /// </summary>
+        public ErrorResponse()
+        { }
     }
 }

@@ -21,42 +21,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
         public void Configure(IWebJobsBuilder builder)
         {
             builder.AddWebPubSub();
-
-            builder.AddHttp(o =>
-            {
-                o.SetResponse = (request, result) =>
-                {
-                    if (result is ConnectResponse response)
-                    {
-                        request.Headers.Add("test", "test");
-                    }
-                    return;
-                };
-            });
-        }
-
-        private static HttpRequest BuildRequest(HttpRequest request, object result)
-        {
-            var context = new DefaultHttpContext();
-            var resFeature = context.Request.HttpContext.Features.Get<IHttpResponseFeature>();
-
-            var headers = new HeaderDictionary();
-
-            foreach (var header in request.HttpContext.Response.Headers)
-            {
-                headers.Add(header.Key, header.Value);
-            }
-            headers.Add("test", "value");
-
-            var jResult = JObject.FromObject(result);
-            var streamResult = new MemoryStream(Encoding.UTF8.GetBytes(jResult.ToString()));
-            resFeature.Body = streamResult;
-            context.Response.ContentLength = jResult.ToString().Length;
-            headers["Content-Length"] = jResult.ToString().Length.ToString();
-
-            resFeature.Headers = headers;
-
-            return context.Request;
         }
     }
 }
