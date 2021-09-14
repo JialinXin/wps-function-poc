@@ -6,15 +6,14 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Net;
 using System.Net.Http;
-using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Azure.WebJobs.Host.Executors;
 using Microsoft.Azure.WebPubSub.AspNetCore;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Primitives;
-//using Newtonsoft.Json;
-//using Newtonsoft.Json.Linq;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 
 namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
 {
@@ -22,10 +21,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
     {
         private readonly Dictionary<string, WebPubSubListener> _listeners = new(StringComparer.InvariantCultureIgnoreCase);
         private readonly ILogger _logger;
+        private readonly WebPubSubOptions _options;
 
-        public WebPubSubTriggerDispatcher(ILogger logger)
+        public WebPubSubTriggerDispatcher(ILogger logger, WebPubSubOptions options)
         {
             _logger = logger;
+            _options = options;
         }
 
         public void AddListener(string key, WebPubSubListener listener)
@@ -40,8 +41,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
         public async Task<HttpResponseMessage> ExecuteAsync(HttpRequestMessage req,
             CancellationToken token = default)
         {
-            var abuseCheck = Utilities.IsValidationRequest(req, out var requestHosts);
-            if (!TryParseRequest(req, out var context) && !abuseCheck)
+            if (Utilities.IsValidationRequest(req, out var requestHosts))
+            {
+                return Utilities.RespondToServiceAbuseCheck(requestHosts, _options.ValidationOptions);
+            }
+
+            if (!TryParseRequest(req, out var context))
             {
                 return new HttpResponseMessage(HttpStatusCode.BadRequest);
             }
@@ -52,13 +57,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
 
             if (_listeners.TryGetValue(function, out var executor))
             {
-                // Handle service abuse check.
-                if (abuseCheck)
-                {
-                    return Utilities.RespondToServiceAbuseCheck(requestHosts, executor.ValidationOptions);
-                }
-
-                if (!context.IsValidSignature(executor.ValidationOptions))
+                if (!context.IsValidSignature(_options.ValidationOptions))
                 {
                     return new HttpResponseMessage(HttpStatusCode.Unauthorized);
                 }
@@ -83,7 +82,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
                     case RequestType.Connect:
                         {
                             var content = await req.Content.ReadAsStringAsync().ConfigureAwait(false);
-                            var request = JsonSerializer.Deserialize<ConnectEventRequest>(content);
+                            var request = JsonConvert.DeserializeObject<ConnectEventRequest>(content);//JsonSerializer.Deserialize<ConnectEventRequest>(content);
                             claims = request.Claims;
                             subprotocols = request.Subprotocols;
                             query = request.Query;
@@ -93,7 +92,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
                     case RequestType.Disconnected:
                         {
                             var content = await req.Content.ReadAsStringAsync().ConfigureAwait(false);
-                            var request = JsonSerializer.Deserialize<DisconnectedEventRequest>(content);
+                            var request = JsonConvert.DeserializeObject<DisconnectedEventRequest>(content); // JsonSerializer.Deserialize<DisconnectedEventRequest>(content);
                             reason = request.Reason;
                             break;
                         }
@@ -214,7 +213,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
 
         internal static HttpResponseMessage BuildValidResponse(object response, RequestType requestType)
         {
-            JsonDocument converted = null;
+            //JsonDocument converted = null;
+            JObject converted = null;
             bool needConvert = true;
             if (response is ServiceResponse)
             {
@@ -222,17 +222,22 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
             }
             else
             {
-                converted = JsonDocument.Parse(response.ToString());
+                converted = JObject.Parse(response.ToString());
             }
 
             try
             {
                 // Check error, errorCode is required.
-                if (needConvert && converted.RootElement.TryGetProperty("code", out var code))
+                if (needConvert && converted.ContainsKey("code"))
                 {
-                    var error = JsonSerializer.Deserialize<ErrorResponse>(response.ToString());
+                    var error = converted.ToObject<ErrorResponse>();
                     return Utilities.BuildErrorResponse(error);
                 }
+                //if (needConvert && converted.RootElement.TryGetProperty("code", out var code))
+                //{
+                //    var error = JsonSerializer.Deserialize<ErrorResponse>(response.ToString());
+                //    return Utilities.BuildErrorResponse(error);
+                //}
                 else if (response is ErrorResponse errorResponse)
                 {
                     return Utilities.BuildErrorResponse(errorResponse);
@@ -249,12 +254,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
                         return Utilities.BuildResponse(connectResponse);
                     }
                 }
-
+                // TODO: compatable between Newtonsoft & SystemJson
                 if (requestType == RequestType.User)
                 {
                     if (needConvert)
                     {
-                        return Utilities.BuildResponse(JsonSerializer.Deserialize<MessageResponse>(response.ToString()));
+                        return Utilities.BuildResponse(converted.ToObject<MessageResponse>());
+                        //return Utilities.BuildResponse(JsonSerializer.Deserialize<MessageResponse>(response.ToString()));
                     }
                     else if (response is MessageResponse messageResponse)
                     {

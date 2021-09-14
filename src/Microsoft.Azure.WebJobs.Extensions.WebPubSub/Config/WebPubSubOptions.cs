@@ -12,9 +12,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
     {
         public string Hub { get; set; }
 
-        internal string ConnectionString { get; set; }
+        public string ConnectionString { get; set; }
 
-        internal WebPubSubValidationOptions ValidationOptions { get; set;}
+        internal WebPubSubValidationOptions ValidationOptions { get; set; }
 
         /// <summary>
         /// Formats the options as JSON objects for display.

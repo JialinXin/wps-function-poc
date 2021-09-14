@@ -148,7 +148,7 @@ namespace SimpleChat
         //}
 
         [FunctionName("disconnect")]
-        [return: WebPubSub]
+        [return: WebPubSub(Hub = "%abc%")]
         public static WebPubSubOperation Disconnect(
             [WebPubSubTrigger("%abc%", WebPubSubEventType.System, "disconnected")] ConnectionContext connectionContext)
         {

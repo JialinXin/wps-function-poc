@@ -50,10 +50,5 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
         /// The event type, allowed value is system or user
         /// </summary>
         public WebPubSubEventType EventType { get; }
-
-        /// <summary>
-        /// Validation options
-        /// </summary>
-        public WebPubSubValidationOptions ValidationOptions { get; set; }
     }
 }

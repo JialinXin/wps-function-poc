@@ -39,7 +39,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
             _logger = loggerFactory.CreateLogger(LogCategories.CreateTriggerCategory("WebPubSub"));
             _nameResolver = nameResolver;
             _configuration = configuration;
-            _dispatcher = new WebPubSubTriggerDispatcher(_logger);
+            _dispatcher = new WebPubSubTriggerDispatcher(_logger, _options);
         }
 
         public void Initialize(ExtensionConfigContext context)
@@ -58,6 +58,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
             {
                 _options.Hub = _nameResolver.Resolve(Constants.HubNameStringName);
             }
+
+            // resolve validation options
+            var upstream = _nameResolver.Resolve(Constants.WebPubSubValidationUpsteamStringName);
+            _options.ValidationOptions = new WebPubSubValidationOptions(upstream);
 
             Exception webhookException = null;
             try

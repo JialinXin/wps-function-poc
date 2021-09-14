@@ -8,6 +8,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
         // WebPubSubOptions can be set by customers.
         public const string WebPubSubConnectionStringName = "WebPubSubConnectionString";
         public const string HubNameStringName = "WebPubSubHub";
+        public const string WebPubSubValidationUpsteamStringName = "WebPubSubValidationUpstream";
 
         public static class ContentTypes
         {

@@ -112,11 +112,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub.Tests
         private static WebPubSubTriggerDispatcher SetupDispatcher(string hub = TestHub, WebPubSubEventType type = TestType, string eventName = TestEvent, WebPubSubValidationOptions options = null)
         {
             var funcName = $"{hub}.{type}.{eventName}".ToLower();
-            var dispatcher = new WebPubSubTriggerDispatcher(NullLogger.Instance);
+            var wpsOptions = new WebPubSubOptions();
+            wpsOptions.ValidationOptions = options;
+            var dispatcher = new WebPubSubTriggerDispatcher(NullLogger.Instance, wpsOptions);
             var executor = new Mock<ITriggeredFunctionExecutor>();
             executor.Setup(f => f.TryExecuteAsync(It.IsAny<TriggeredFunctionData>(), It.IsAny<CancellationToken>()))
                 .Returns(Task.FromResult(new FunctionResult(true)));
-            var listener = new WebPubSubListener(executor.Object, funcName, dispatcher, options);
+            var listener = new WebPubSubListener(executor.Object, funcName, dispatcher);
 
             dispatcher.AddListener(funcName, listener);
 
