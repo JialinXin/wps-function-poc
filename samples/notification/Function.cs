@@ -9,7 +9,7 @@ using Microsoft.Extensions.Logging;
 
 namespace notifications
 {
-    public static class notification
+    public static class Function
     {
         [FunctionName("notification")]
         public static async Task Run([HttpTrigger(AuthorizationLevel.Function, "get", "post", Route = null)] HttpRequest req, ILogger log,

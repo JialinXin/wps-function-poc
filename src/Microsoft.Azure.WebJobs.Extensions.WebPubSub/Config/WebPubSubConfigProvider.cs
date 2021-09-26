@@ -6,7 +6,6 @@ using System.Collections.Generic;
 using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
-using Azure.Messaging.WebPubSub;
 using Microsoft.Azure.WebJobs.Description;
 using Microsoft.Azure.WebJobs.Host.Config;
 using Microsoft.Azure.WebJobs.Logging;
@@ -17,6 +16,7 @@ using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Converters;
 using Newtonsoft.Json.Linq;
+using Newtonsoft.Json.Serialization;
 
 namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
 {
@@ -60,8 +60,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
             }
 
             // resolve validation options
-            var upstream = _nameResolver.Resolve(Constants.WebPubSubValidationUpsteamStringName);
-            _options.ValidationOptions = new WebPubSubValidationOptions(upstream);
+            var upstream = _nameResolver.Resolve(Constants.WebPubSubTriggerValidationStringName);
+            if (upstream != null)
+            {
+                _options.ValidationOptions = new WebPubSubValidationOptions(upstream);
+            }
 
             Exception webhookException = null;
             try
@@ -83,7 +86,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
             // bindings
             context
                 .AddConverter<WebPubSubConnection, JObject>(JObject.FromObject)
-                .AddConverter<WebPubSubRequest, JObject>(JObject.FromObject)
+                .AddConverter<WebPubSubContext, JObject>(JObject.FromObject)
                 .AddConverter<JObject, WebPubSubOperation>(ConvertToWebPubSubOperation)
                 .AddConverter<JArray, WebPubSubOperation[]>(ConvertToWebPubSubOperationArray);
 
@@ -96,8 +99,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
             webpubsubConnectionAttributeRule.AddValidator(ValidateWebPubSubConnectionAttributeBinding);
             webpubsubConnectionAttributeRule.BindToInput(GetClientConnection);
 
-            var webPubSubRequestAttributeRule = context.AddBindingRule<WebPubSubRequestAttribute>();
-            webPubSubRequestAttributeRule.Bind(new WebPubSubRequestBindingProvider(_options, _nameResolver, _configuration));
+            var webPubSubRequestAttributeRule = context.AddBindingRule<WebPubSubContextAttribute>();
+            webPubSubRequestAttributeRule.Bind(new WebPubSubContextBindingProvider(_nameResolver, _configuration));
 
             // Output binding
             var webPubSubAttributeRule = context.AddBindingRule<WebPubSubAttribute>();
@@ -162,8 +165,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
                 Converters = new List<JsonConverter>
                 {
                     new StringEnumConverter(),
-                    new BinaryDataJsonConverter()
-                }
+                    new BinaryDataJsonConverter(),
+                },
+                ContractResolver = new CamelCasePropertyNamesContractResolver()
             };
         }
 

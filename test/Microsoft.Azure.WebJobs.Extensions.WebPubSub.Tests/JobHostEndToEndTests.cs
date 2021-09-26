@@ -1,25 +1,22 @@
 ﻿// Copyright (c) .NET Foundation. All rights reserved.
 // Licensed under the MIT License. See License.txt in the project root for license information.
 
-using Azure.Messaging.WebPubSub;
+using System;
+using System.Collections.Generic;
+using System.Threading.Tasks;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Azure.WebJobs.Host;
 using Microsoft.Azure.WebJobs.Host.Indexers;
 using Microsoft.Azure.WebPubSub.AspNetCore;
-using Moq;
 using NUnit.Framework;
-using System;
-using System.Collections.Generic;
-using System.Threading;
-using System.Threading.Tasks;
 
 namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub.Tests
 {
     public class JobHostEndToEndTests
     {
-        private static ConnectionContext TestContext = CreateConnectionContext();
-        private static BinaryData TestMessage = BinaryData.FromString("JobHostEndToEndTests");
-        private static Dictionary<string, string> FuncConfiguration = new Dictionary<string, string>
+        private static readonly ConnectionContext TestContext = CreateConnectionContext();
+        private static readonly BinaryData TestMessage = BinaryData.FromString("JobHostEndToEndTests");
+        private static readonly Dictionary<string, string> FuncConfiguration = new()
         {
             { Constants.WebPubSubConnectionStringName, "Endpoint=https://abc;AccessKey=ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789ABCDEFGH;Version=1.0;" }
         };
@@ -73,17 +70,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub.Tests
             var host = TestHelpers.NewHost(typeof(WebPubSubFuncs), configuration: FuncConfiguration);
 
             await host.GetJobHost().CallAsync("WebPubSubFuncs.TestWebPubSubOutput");
-        }
-
-        [TestCase]
-        public async Task BasicResponse()
-        {
-            HttpRequest request = TestHelpers.CreateHttpRequest("GET", "http://functions.com/api/abc");
-            var method = typeof(WebPubSubFuncs).GetMethod(nameof(WebPubSubFuncs.TestResponse));
-            var host = TestHelpers.NewHost(typeof(WebPubSubFuncs), configuration: FuncConfiguration);
-            await host.GetJobHost().CallAsync(method, new { req = request });
-
-            Assert.AreEqual("test-response", request.HttpContext.Items["$ret"]); // Verify resposne was set
         }
 
         private static WebPubSubTriggerEvent CreateTestTriggerEvent()

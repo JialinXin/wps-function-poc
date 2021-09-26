@@ -27,6 +27,10 @@ namespace Microsoft.Azure.WebPubSub.AspNetCore
         {
             foreach (var item in connectionStrings)
             {
+                if (string.IsNullOrEmpty(item))
+                {
+                    continue;
+                }
                 (Uri host, string accessKey) = ParseConnectionString(item);
                 _hostKeyMappings.Add(host.Host, accessKey);
             }
@@ -60,7 +64,7 @@ namespace Microsoft.Azure.WebPubSub.AspNetCore
         {
             if (string.IsNullOrEmpty(connectionString))
             {
-                throw new ArgumentNullException(nameof(ConnectedEventRequest));
+                throw new ArgumentNullException(nameof(connectionString));
             }
 
             var properties = connectionString.Split(PropertySeparator, StringSplitOptions.RemoveEmptyEntries);

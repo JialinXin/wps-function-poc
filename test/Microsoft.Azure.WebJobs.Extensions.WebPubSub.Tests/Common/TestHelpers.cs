@@ -151,7 +151,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub.Tests
             requestFeature.PathBase = "/";
             requestFeature.QueryString = uri.GetComponents(UriComponents.KeepDelimiter | UriComponents.Query, UriFormat.Unescaped);
 
-            headers = headers ?? new HeaderDictionary();
+            headers ??= new HeaderDictionary();
 
             if (!string.IsNullOrEmpty(uri.Host))
             {

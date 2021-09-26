@@ -8,7 +8,7 @@ using System.Text.Json.Serialization;
 
 namespace Microsoft.Azure.WebPubSub.AspNetCore
 {
-    class BinaryDataConverter : JsonConverter<BinaryData>
+    internal class BinaryDataJsonConverter : JsonConverter<BinaryData>
     {
         public override BinaryData Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
         {
@@ -34,7 +34,7 @@ namespace Microsoft.Azure.WebPubSub.AspNetCore
         private static bool TryLoadBinary(ref Utf8JsonReader input, out byte[] output)
         {
             var doc = JsonDocument.ParseValue(ref input);
-            if (doc.RootElement.TryGetProperty("type", out var value) && value.GetString().Equals("Buffer")
+            if (doc.RootElement.TryGetProperty("type", out var value) && value.GetString().Equals("Buffer", StringComparison.OrdinalIgnoreCase)
                 && doc.RootElement.TryGetProperty("data", out var data))
             {
                 output = JsonSerializer.Deserialize<List<byte>>(data.GetRawText()).ToArray();

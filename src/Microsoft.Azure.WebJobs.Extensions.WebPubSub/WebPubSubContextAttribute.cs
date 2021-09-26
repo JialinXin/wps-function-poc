@@ -9,7 +9,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
 {
     [AttributeUsage(AttributeTargets.ReturnValue | AttributeTargets.Parameter)]
     [Binding]
-    public class WebPubSubRequestAttribute : Attribute
+    public class WebPubSubContextAttribute : Attribute
     {
         public WebPubSubValidationOptions ValidationOptions { get; set; }
     }

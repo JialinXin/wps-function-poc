@@ -12,7 +12,7 @@ namespace Microsoft.Azure.WebPubSub.AspNetCore
     public sealed class ValidationRequest : ServiceRequest
     {
         /// <summary>
-        /// Flag to indicate whether a valid request.
+        /// Flag to indicate whether is a valid request.
         /// </summary>
         [JsonPropertyName("valid")]
         public bool Valid { get; }
@@ -22,11 +22,6 @@ namespace Microsoft.Azure.WebPubSub.AspNetCore
         /// </summary>
         [JsonPropertyName("requestHosts")]
         internal List<string> RequestHosts { get; }
-
-        /// <summary>
-        /// Name of the request type.
-        /// </summary>
-        public override string Name => nameof(ValidationRequest);
 
         internal ValidationRequest(bool valid, List<string> requestHosts)
             :base(null)

@@ -6,14 +6,14 @@ namespace Microsoft.Azure.WebPubSub.AspNetCore
     /// <summary>
     /// Request builder.
     /// </summary>
-    public class WebPubSubRequestBuilder
+    public class WebPubSubRequestHandlerBuilder
     {
         private WebPubSubValidationOptions _options;
 
         /// <summary>
         /// ctor.
         /// </summary>
-        public WebPubSubRequestBuilder()
+        public WebPubSubRequestHandlerBuilder()
         {
         }
 
@@ -22,7 +22,7 @@ namespace Microsoft.Azure.WebPubSub.AspNetCore
         /// </summary>
         /// <param name="options"></param>
         /// <returns></returns>
-        public WebPubSubRequestBuilder AddValidationOptions(WebPubSubValidationOptions options)
+        public WebPubSubRequestHandlerBuilder AddValidationOptions(WebPubSubValidationOptions options)
         {
             _options = options;
             return this;

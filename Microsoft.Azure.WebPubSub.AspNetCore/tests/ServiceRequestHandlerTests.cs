@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Text;
 using System.Text.Json;
 using System.Threading.Tasks;
@@ -18,15 +19,11 @@ namespace Microsoft.Azure.WebPubSub.AspNetCore.Tests
     public class ServiceRequestHandlerTests
     {
         private const string TestEndpoint = "https://my-host.webpubsub.net";
-        private readonly WebPubSubValidationOptions _options;
-        private readonly IServiceRequestHandler _handler;
-        private readonly string _testHost;
+        private readonly ServiceRequestHandler _handler;
 
         public ServiceRequestHandlerTests()
         {
-            _options = new WebPubSubValidationOptions($"Endpoint={TestEndpoint};AccessKey=7aab239577fd4f24bc919802fb629f5f;Version=1.0;");
-            _handler = new ServiceRequestHandler(_options);
-            _testHost = new Uri(TestEndpoint).Host;
+            _handler = new ServiceRequestHandlerAdapter(new WebPubSubValidationOptions($"Endpoint={TestEndpoint};AccessKey=7aab239577fd4f24bc919802fb629f5f;Version=1.0;"));
         }
 
         [Test]
@@ -38,7 +35,7 @@ namespace Microsoft.Azure.WebPubSub.AspNetCore.Tests
 
             context.Response.Headers.TryGetValue(Constants.Headers.WebHookAllowedOrigin, out var allowedOrigin);
             Assert.AreEqual(StatusCodes.Status200OK, context.Response.StatusCode);
-            Assert.AreEqual(_testHost, allowedOrigin);
+            Assert.AreEqual("*", allowedOrigin.SingleOrDefault());
         }
 
         [Test]
@@ -83,8 +80,10 @@ namespace Microsoft.Azure.WebPubSub.AspNetCore.Tests
         [Test]
         public async Task TestStateChanges()
         {
-            var initState = new Dictionary<string, object>();
-            initState.Add("counter", 2);
+            var initState = new Dictionary<string, object>
+            {
+                { "counter", 2 }
+            };
             var context = PrepareHttpContext(httpMethod: HttpMethods.Post, type: WebPubSubEventType.User, eventName: "message", body: "hello world", connectionState: initState);
 
             // 1 to update counter to 10.
@@ -92,7 +91,7 @@ namespace Microsoft.Azure.WebPubSub.AspNetCore.Tests
 
             context.Response.Headers.TryGetValue(Constants.Headers.CloudEvents.State, out var states);
             Assert.NotNull(states);
-            var updated = states[0].DecodeConnectionState();
+            var updated = states[0].DecodeConnectionStates();
             Assert.AreEqual(1, updated.Count);
             Assert.AreEqual("10", updated["counter"]);
 
@@ -102,7 +101,7 @@ namespace Microsoft.Azure.WebPubSub.AspNetCore.Tests
 
             context.Response.Headers.TryGetValue(Constants.Headers.CloudEvents.State, out states);
             Assert.NotNull(states);
-            updated = states[0].DecodeConnectionState();
+            updated = states[0].DecodeConnectionStates();
             Assert.AreEqual(2, updated.Count);
             Assert.AreEqual("new", updated["new"]);
 
@@ -110,8 +109,18 @@ namespace Microsoft.Azure.WebPubSub.AspNetCore.Tests
             context = PrepareHttpContext(httpMethod: HttpMethods.Post, type: WebPubSubEventType.User, eventName: "message", body: "hello world", connectionState: initState);
             await _handler.HandleRequest(context, new TestHub(3));
 
-            var exist = context.Response.Headers.TryGetValue(Constants.Headers.CloudEvents.State, out states);
+            var exist = context.Response.Headers.TryGetValue(Constants.Headers.CloudEvents.State, out _);
             Assert.False(exist);
+
+            // 4 clar and add
+            context = PrepareHttpContext(httpMethod: HttpMethods.Post, type: WebPubSubEventType.User, eventName: "message", body: "hello world", connectionState: initState);
+            await _handler.HandleRequest(context, new TestHub(4));
+
+            context.Response.Headers.TryGetValue(Constants.Headers.CloudEvents.State, out states);
+            Assert.NotNull(states);
+            updated = states[0].DecodeConnectionStates();
+            Assert.AreEqual(2, updated.Count);
+            Assert.AreEqual("new1", updated["new1"]);
         }
 
         private static HttpContext PrepareHttpContext(
@@ -164,7 +173,7 @@ namespace Microsoft.Azure.WebPubSub.AspNetCore.Tests
 
             if (connectionState != null)
             {
-                headers.Add(Constants.Headers.CloudEvents.State, connectionState.ToHeaderStates());
+                headers.Add(Constants.Headers.CloudEvents.State, connectionState.EncodeConnectionStates());
             }
 
             if (body != null)
@@ -224,8 +233,14 @@ namespace Microsoft.Azure.WebPubSub.AspNetCore.Tests
                         break;
                     case 2: response.SetState("new", "new");
                         break;
-                    default:
+                    case 3:
                         response.ClearStates();
+                        break;
+                    case 4:
+                        response.ClearStates();
+                        response.SetState("new1", "new1");
+                        break;
+                    default:
                         break;
                 };
                 return Task.FromResult<ServiceResponse>(response);

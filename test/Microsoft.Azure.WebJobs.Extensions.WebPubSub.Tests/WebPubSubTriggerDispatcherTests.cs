@@ -22,7 +22,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub.Tests
         private const WebPubSubEventType TestType = WebPubSubEventType.System;
         private const string TestEvent = Constants.Events.ConnectedEvent;
 
-        private static readonly WebPubSubValidationOptions TestValidationOption = new WebPubSubValidationOptions($"Endpoint=http://{TestOrigin};Port=8080;AccessKey={TestKey.AccessKey};Version=1.0;");
+        private static readonly WebPubSubValidationOptions TestValidationOption = new($"Endpoint=http://{TestOrigin};Port=8080;AccessKey={TestKey.AccessKey};Version=1.0;");
         private static readonly string[] ValidSignature = new string[] { TestKey.Signature };
 
         [TestCase]
@@ -112,8 +112,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub.Tests
         private static WebPubSubTriggerDispatcher SetupDispatcher(string hub = TestHub, WebPubSubEventType type = TestType, string eventName = TestEvent, WebPubSubValidationOptions options = null)
         {
             var funcName = $"{hub}.{type}.{eventName}".ToLower();
-            var wpsOptions = new WebPubSubOptions();
-            wpsOptions.ValidationOptions = options;
+            var wpsOptions = new WebPubSubOptions
+            {
+                ValidationOptions = options
+            };
             var dispatcher = new WebPubSubTriggerDispatcher(NullLogger.Instance, wpsOptions);
             var executor = new Mock<ITriggeredFunctionExecutor>();
             executor.Setup(f => f.TryExecuteAsync(It.IsAny<TriggeredFunctionData>(), It.IsAny<CancellationToken>()))

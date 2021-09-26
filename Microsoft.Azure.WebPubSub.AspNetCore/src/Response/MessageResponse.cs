@@ -2,6 +2,7 @@
 // Licensed under the MIT License.
 
 using System;
+using System.Collections.Generic;
 using System.Text.Json.Serialization;
 
 namespace Microsoft.Azure.WebPubSub.AspNetCore
@@ -11,10 +12,12 @@ namespace Microsoft.Azure.WebPubSub.AspNetCore
     /// </summary>
     public class MessageResponse : ServiceResponse
     {
+        internal Dictionary<string, object> States = new();
+
         /// <summary>
         /// Message.
         /// </summary>
-        [JsonPropertyName("message"), JsonConverter(typeof(BinaryDataConverter))]
+        [JsonPropertyName("message"), JsonConverter(typeof(BinaryDataJsonConverter))]
         public BinaryData Message { get; set; }
 
         /// <summary>
@@ -37,8 +40,8 @@ namespace Microsoft.Azure.WebPubSub.AspNetCore
         /// <summary>
         /// Initialize an instance of MessageResponse.
         /// </summary>
-        /// <param name="message"></param>
-        /// <param name="dataType"></param>
+        /// <param name="message">String type message</param>
+        /// <param name="dataType">Message data type. Default set to text.</param>
         public MessageResponse(string message, MessageDataType dataType = MessageDataType.Text)
             : this(BinaryData.FromString(message), dataType)
         { }
@@ -48,5 +51,28 @@ namespace Microsoft.Azure.WebPubSub.AspNetCore
         /// </summary>
         public MessageResponse()
         { }
+
+        /// <summary>
+        /// Set connection states.
+        /// </summary>
+        /// <param name="key">State key.</param>
+        /// <param name="value">State value.</param>
+        public void SetState(string key, object value)
+        {
+            // In case user cleared states.
+            if (States == null)
+            {
+                States = new Dictionary<string, object>();
+            }
+            States[key] = value;
+        }
+
+        /// <summary>
+        /// Clear all states.
+        /// </summary>
+        public void ClearStates()
+        {
+            States = null;
+        }
     }
 }

@@ -10,15 +10,13 @@ using Microsoft.Extensions.Configuration;
 
 namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
 {
-    internal class WebPubSubRequestBindingProvider : IBindingProvider
+    internal class WebPubSubContextBindingProvider : IBindingProvider
     {
-        private readonly WebPubSubOptions _options;
         private readonly INameResolver _nameResolver;
         private readonly IConfiguration _configuration;
 
-        public WebPubSubRequestBindingProvider(WebPubSubOptions options, INameResolver nameResolver, IConfiguration configuration)
+        public WebPubSubContextBindingProvider(INameResolver nameResolver, IConfiguration configuration)
         {
-            _options = options;
             _nameResolver = nameResolver;
             _configuration = configuration;
         }
@@ -31,13 +29,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
             }
 
             ParameterInfo parameter = context.Parameter;
-            WebPubSubRequestAttribute attribute = parameter.GetCustomAttribute<WebPubSubRequestAttribute>(inherit: false);
+            WebPubSubContextAttribute attribute = parameter.GetCustomAttribute<WebPubSubContextAttribute>(inherit: false);
             if (attribute == null)
             {
                 return Task.FromResult<IBinding>(null);
             }
 
-            return Task.FromResult<IBinding>(new WebPubSubRequestBinding(context, _configuration, _nameResolver, _options));
+            return Task.FromResult<IBinding>(new WebPubSubContextBinding(context, _configuration, _nameResolver));
         }
     }
 }

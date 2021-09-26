@@ -23,10 +23,10 @@ namespace Microsoft.Azure.WebPubSub.AspNetCore
         public string ErrorMessage { get; set; }
 
         /// <summary>
-        /// ctor.
+        /// Create an instance of <see cref="ErrorResponse"/>.
         /// </summary>
-        /// <param name="code"></param>
-        /// <param name="message"></param>
+        /// <param name="code">Error code indicate error type.</param>
+        /// <param name="message">Detail error message.</param>
         public ErrorResponse(WebPubSubErrorCode code, string message = null)
         {
             Code = code;
@@ -34,7 +34,7 @@ namespace Microsoft.Azure.WebPubSub.AspNetCore
         }
 
         /// <summary>
-        /// Default constructor for JsonDeserialize.
+        /// Default constructor for JsonSerialize.
         /// </summary>
         public ErrorResponse()
         { }

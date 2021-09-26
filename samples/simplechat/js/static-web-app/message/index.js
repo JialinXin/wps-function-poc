@@ -2,15 +2,15 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 module.exports = async function (context, req, wpsReq) {
-  if (!wpsReq.request.valid)
+  if (wpsReq.request.name == 'InvalidRequest')
   {
     return wpsReq.response;
   }
   else {
     context.bindings.webPubSubEvent = {
       "operationKind": "sendToAll",
-      "message": wpsReq.request.message,
-      "dataType": wpsReq.request.dataType
+      "message": wpsReq.request.Message,
+      "dataType": wpsReq.request.DataType
     };
     return { body: { from: '[System]', content: 'ack.'} };
   }

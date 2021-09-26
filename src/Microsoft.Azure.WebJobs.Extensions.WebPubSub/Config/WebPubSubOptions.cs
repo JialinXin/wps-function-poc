@@ -23,7 +23,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
         public string Format()
         {
             // Not expose ConnectionString in logging.
-            JObject options = new JObject
+            JObject options = new()
             {
                 { nameof(Hub), Hub }
             };

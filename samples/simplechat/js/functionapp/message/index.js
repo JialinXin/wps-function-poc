@@ -8,8 +8,8 @@ module.exports = async function (context, message) {
     "dataType": context.bindingData.dataType
   };
   var response = { 
-    "message": { from: '[System]', content: 'ack.'},
-    "dataType" : "json"
+    "message": message,
+    "dataType" : context.bindingData.dataType
   };
   return response;
 };

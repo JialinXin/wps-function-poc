@@ -11,22 +11,19 @@ namespace Microsoft.Azure.WebPubSub.AspNetCore
     /// </summary>
     public abstract class ServiceRequest
     {
+        internal const string ConnectionContextProperty = "connectionContext";
+        internal const string NameProperty = "name";
+
         /// <summary>
-        /// ConnectionContext.
+        /// Connection context contains connection metadata following CloudEvents.
         /// </summary>
-        [JsonPropertyName("connectionContext")]
+        [JsonPropertyName(ConnectionContextProperty)]
         public ConnectionContext ConnectionContext { get; internal set;}
 
         /// <summary>
-        /// Request name.
+        /// Create instance of <see cref="ServiceRequest"/>
         /// </summary>
-        [JsonPropertyName("name")]
-        public abstract string Name { get; }
-
-        /// <summary>
-        /// Create instance of ServiceRequest.
-        /// </summary>
-        /// <param name="context"></param>
+        /// <param name="context">Parameter connection context.</param>
         public ServiceRequest(ConnectionContext context)
         {
             ConnectionContext = context;

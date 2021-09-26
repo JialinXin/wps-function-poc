@@ -9,7 +9,7 @@ namespace Microsoft.Azure.WebPubSub.AspNetCore.Tests.Samples
     {
         public void Configure(IApplicationBuilder app)
         {
-            var wpsHandler = new WebPubSubRequestBuilder()
+            var wpsHandler = new WebPubSubRequestHandlerBuilder()
                 .AddValidationOptions(new WebPubSubValidationOptions("<connection-string>"))
                 .Build();
 

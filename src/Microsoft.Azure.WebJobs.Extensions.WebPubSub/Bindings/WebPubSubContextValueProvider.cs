@@ -8,13 +8,13 @@ using Newtonsoft.Json.Linq;
 
 namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
 {
-    internal class WebPubSubRequestValueProvider : IValueProvider
+    internal class WebPubSubContextValueProvider : IValueProvider
     {
-        private readonly WebPubSubRequest _request;
+        private readonly WebPubSubContext _request;
 
         public Type Type { get; }
 
-        public WebPubSubRequestValueProvider(WebPubSubRequest request, Type type)
+        public WebPubSubContextValueProvider(WebPubSubContext request, Type type)
         {
             _request = request;
             Type = type;
@@ -27,7 +27,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
 
         public string ToInvokeString()
         {
-            return nameof(WebPubSubRequest);
+            return nameof(WebPubSubContext);
         }
 
         private object GetRequest()

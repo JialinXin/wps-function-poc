@@ -5,7 +5,7 @@ VisualStudioVersion = 17.0.31410.414
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Microsoft.Azure.WebJobs.Extensions.WebPubSub", "src\Microsoft.Azure.WebJobs.Extensions.WebPubSub\Microsoft.Azure.WebJobs.Extensions.WebPubSub.csproj", "{D3F6A924-23C1-4983-9CF8-D505072554B5}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SimpleChat", "samples\simplechat\csharp\SimpleChat.csproj", "{FBA48C13-D9A2-444E-91C9-C390D83800B1}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SimpleChat-Trigger", "samples\simplechat\csharp\wpstrigger\SimpleChat-Trigger.csproj", "{FBA48C13-D9A2-444E-91C9-C390D83800B1}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{1AAC386C-108E-4F95-8BB3-2A183A024BF9}"
 EndProject
@@ -23,6 +23,10 @@ EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Microsoft.Azure.WebJobs.Extensions.WebPubSub.Tests", "test\Microsoft.Azure.WebJobs.Extensions.WebPubSub.Tests\Microsoft.Azure.WebJobs.Extensions.WebPubSub.Tests.csproj", "{0C0511C8-B16E-42A5-9982-08EBC16CFD0E}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Microsoft.Azure.WebPubSub.AspNetCore", "Microsoft.Azure.WebPubSub.AspNetCore\src\Microsoft.Azure.WebPubSub.AspNetCore.csproj", "{026D5168-BE58-4B8E-A095-2648F0743A63}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Microsoft.Azure.WebPubSub.AspNetCore.Tests", "Microsoft.Azure.WebPubSub.AspNetCore\tests\Microsoft.Azure.WebPubSub.AspNetCore.Tests.csproj", "{CE112FA8-0462-4665-ABB3-22EAD891564C}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SimpleChat-Input", "samples\simplechat\csharp\wpsrequest\SimpleChat-Input.csproj", "{3FD028D1-A0CE-43FB-9111-600A79188AFA}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -50,6 +54,14 @@ Global
 		{026D5168-BE58-4B8E-A095-2648F0743A63}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{026D5168-BE58-4B8E-A095-2648F0743A63}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{026D5168-BE58-4B8E-A095-2648F0743A63}.Release|Any CPU.Build.0 = Release|Any CPU
+		{CE112FA8-0462-4665-ABB3-22EAD891564C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{CE112FA8-0462-4665-ABB3-22EAD891564C}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{CE112FA8-0462-4665-ABB3-22EAD891564C}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{CE112FA8-0462-4665-ABB3-22EAD891564C}.Release|Any CPU.Build.0 = Release|Any CPU
+		{3FD028D1-A0CE-43FB-9111-600A79188AFA}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{3FD028D1-A0CE-43FB-9111-600A79188AFA}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{3FD028D1-A0CE-43FB-9111-600A79188AFA}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{3FD028D1-A0CE-43FB-9111-600A79188AFA}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -59,6 +71,7 @@ Global
 		{FBA48C13-D9A2-444E-91C9-C390D83800B1} = {9F6B40A4-C90B-4F9F-A626-052EF2D8D5DA}
 		{B134D06E-B162-4518-BF3D-3EB10FD43672} = {9F6B40A4-C90B-4F9F-A626-052EF2D8D5DA}
 		{0C0511C8-B16E-42A5-9982-08EBC16CFD0E} = {C8F3737F-072B-4620-A7A2-A9EB3B51B6A1}
+		{3FD028D1-A0CE-43FB-9111-600A79188AFA} = {9F6B40A4-C90B-4F9F-A626-052EF2D8D5DA}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {19CE8259-F856-463A-9D49-40FB11B6C68C}

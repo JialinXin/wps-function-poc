@@ -14,11 +14,6 @@ namespace Microsoft.Azure.WebPubSub.AspNetCore
         /// Certificate thumbprint.
         /// </summary>
         [JsonPropertyName("thumbprint")]
-        public string Thumbprint { get; }
-
-        internal ClientCertificateInfo(string thumbprint)
-        {
-            Thumbprint = thumbprint;
-        }
+        public string Thumbprint { get; set; }
     }
 }

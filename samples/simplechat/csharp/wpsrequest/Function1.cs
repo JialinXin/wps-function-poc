@@ -1,20 +1,20 @@
-using Azure.Messaging.WebPubSub;
-using Microsoft.AspNetCore.Http;
+using System;
+using System.IO;
+using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Azure.WebJobs;
 using Microsoft.Azure.WebJobs.Extensions.Http;
+using Microsoft.AspNetCore.Http;
+using Newtonsoft.Json;
 using Microsoft.Azure.WebJobs.Extensions.WebPubSub;
 using Microsoft.Azure.WebPubSub.AspNetCore;
-using Newtonsoft.Json;
-using System;
-using System.IO;
 using System.Net.Http;
-using System.Threading.Tasks;
 
-namespace SimpleChat
+namespace SimpleChat_Input
 {
-    public static class Functions
+    public static class Function1
     {
+
         [FunctionName("index")]
         public static IActionResult Home([HttpTrigger(AuthorizationLevel.Anonymous)] HttpRequest req)
         {
@@ -34,13 +34,21 @@ namespace SimpleChat
             return connection;
         }
 
-        #region Work with HttpTrigger
-        [FunctionName("connect")]
-        public static object ConnectV2(
-            [HttpTrigger(AuthorizationLevel.Anonymous, "post")] HttpRequest req,
-            [WebPubSubRequest] WebPubSubRequest wpsReq)
+        // validate method when upstream set as http://<func-host>/api/{event}
+        [FunctionName("validate")]
+        public static HttpResponseMessage Validate(
+            [HttpTrigger(AuthorizationLevel.Anonymous, "options")] HttpRequest req,
+            [WebPubSub] WebPubSubContext wpsReq)
         {
-            if (wpsReq.Request is ValidationRequest || wpsReq.Request is InvalidRequest)
+            return wpsReq.Response;
+        }
+
+        [FunctionName("connect")]
+        public static object Connect(
+            [HttpTrigger(AuthorizationLevel.Anonymous, "post")] HttpRequest req,
+            [WebPubSub] WebPubSubContext wpsReq)
+        {
+            if (wpsReq.Request is ValidationRequest || wpsReq.ErrorMessage != null)
             {
                 return wpsReq.Response;
             }
@@ -52,22 +60,14 @@ namespace SimpleChat
             return response;
         }
 
-        [FunctionName("validate")]
-        public static HttpResponseMessage Validate(
-            [HttpTrigger(AuthorizationLevel.Anonymous, "options")] HttpRequest req,
-            [WebPubSubRequest] WebPubSubRequest wpsReq)
-        {
-            return wpsReq.Response;
-        }
-
         // Http Trigger Message
         [FunctionName("message")]
         public static async Task<object> Broadcast(
             [HttpTrigger(AuthorizationLevel.Anonymous, "post")] HttpRequest req,
-            [WebPubSubRequest] WebPubSubRequest wpsReq,
+            [WebPubSubContext] WebPubSubContext wpsReq,
             [WebPubSub(Hub = "%abc%")] IAsyncCollector<WebPubSubOperation> operations)
         {
-            if (wpsReq.Request is ValidationRequest || wpsReq.Request is InvalidRequest)
+            if (wpsReq.Request is ValidationRequest || wpsReq.ErrorMessage != null)
             {
                 return wpsReq.Response;
             }
@@ -82,83 +82,47 @@ namespace SimpleChat
 
             return new ClientContent("ack").ToString();
         }
-        #endregion
 
-        #region Work with WebPubSubTrigger
-        //public static ServiceResponse Connect(
-        //    [WebPubSubTrigger("simplechat", WebPubSubEventType.System, "connect")] ConnectionContext connectionContext)
-        //{
-        //    Console.WriteLine($"Received client connect with connectionId: {connectionContext.ConnectionId}");
-        //    if (connectionContext.UserId == "attacker")
-        //    {
-        //        return new ErrorResponse(WebPubSubErrorCode.Unauthorized);
-        //    }
-        //    return new ConnectResponse
-        //    {
-        //        UserId = connectionContext.UserId
-        //    };
-        //}
-
-        // multi tasks sample
         [FunctionName("connected")]
         public static async Task Connected(
-            [WebPubSubTrigger("%abc%",WebPubSubEventType.System, "connected")] ConnectionContext connectionContext,
+            [HttpTrigger(AuthorizationLevel.Anonymous, "post")] HttpRequest req,
+            [WebPubSubContext] WebPubSubContext wpsReq,
             [WebPubSub(Hub = "%abc%")] IAsyncCollector<WebPubSubOperation> webpubsubOperation)
         {
+            Console.WriteLine("Connected.");
             await webpubsubOperation.AddAsync(new SendToAll
             {
-                Message = BinaryData.FromString(new ClientContent($"{connectionContext.UserId} connected.").ToString()),
+                Message = BinaryData.FromString(new ClientContent($"{wpsReq.Request.ConnectionContext.UserId} connected.").ToString()),
                 DataType = MessageDataType.Json
             });
 
             await webpubsubOperation.AddAsync(new AddUserToGroup
             {
-                UserId = connectionContext.UserId,
+                UserId = wpsReq.Request.ConnectionContext.UserId,
                 Group = "group1"
             });
             await webpubsubOperation.AddAsync(new SendToUser
             {
-                UserId = connectionContext.UserId,
-                Message = BinaryData.FromString(new ClientContent($"{connectionContext.UserId} joined group: group1.").ToString()),
+                UserId = wpsReq.Request.ConnectionContext.UserId,
+                Message = BinaryData.FromString(new ClientContent($"{wpsReq.Request.ConnectionContext.UserId} joined group: group1.").ToString()),
                 DataType = MessageDataType.Json
             });
         }
 
-        #endregion
-
-        // single message sample
-        //[FunctionName("broadcast")]
-        //public static async Task<MessageResponse> Broadcast(
-        //    [WebPubSubTrigger(WebPubSubEventType.User, "message")] ConnectionContext context,
-        //    BinaryData message,
-        //    MessageDataType dataType,
-        //    [WebPubSub(Hub = "simplechat")] IAsyncCollector<WebPubSubOperation> operations)
-        //{
-        //    await operations.AddAsync(new SendToAll
-        //    {
-        //        Message = message,
-        //        DataType = dataType
-        //    });
-        //
-        //    return new MessageResponse
-        //    {
-        //        Message = BinaryData.FromString(new ClientContent("ack").ToString()),
-        //        DataType = MessageDataType.Json
-        //    };
-        //}
-
-        [FunctionName("disconnect")]
+        [FunctionName("disconnected")]
         [return: WebPubSub(Hub = "%abc%")]
         public static WebPubSubOperation Disconnect(
-            [WebPubSubTrigger("%abc%", WebPubSubEventType.System, "disconnected")] ConnectionContext connectionContext)
+            [HttpTrigger(AuthorizationLevel.Anonymous, "post")] HttpRequest req,
+            [WebPubSubContext] WebPubSubContext wpsReq)
         {
-            Console.WriteLine("Disconnect.");
+            Console.WriteLine("Disconnected.");
             return new SendToAll
             {
-                Message = BinaryData.FromString(new ClientContent($"{connectionContext.UserId} disconnect.").ToString()),
+                Message = BinaryData.FromString(new ClientContent($"{wpsReq.Request.ConnectionContext.UserId} disconnect.").ToString()),
                 DataType = MessageDataType.Text
             };
         }
+
 
         [JsonObject]
         public sealed class ClientContent
