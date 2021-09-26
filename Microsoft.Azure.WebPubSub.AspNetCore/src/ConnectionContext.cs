@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Text.Json.Serialization;
 using Microsoft.Extensions.Primitives;
 
@@ -13,6 +14,8 @@ namespace Microsoft.Azure.WebPubSub.AspNetCore
     /// </summary>
     public class ConnectionContext
     {
+        private static ReadOnlyDictionary<string, object> _states;
+        private static ReadOnlyDictionary<string, StringValues> _headers;
         /// <summary>
         /// The type of the message.
         /// </summary>
@@ -59,12 +62,21 @@ namespace Microsoft.Azure.WebPubSub.AspNetCore
         /// The connection states.
         /// </summary>
         [JsonPropertyName("states")]
-        public Dictionary<string, object> States { get; internal set; } = new Dictionary<string, object>();
+        public ReadOnlyDictionary<string, object> States => _states;
 
         /// <summary>
         /// The headers of request.
         /// </summary>
         [JsonPropertyName("headers")]
-        public Dictionary<string, StringValues> Headers { get; internal set; }
+        public ReadOnlyDictionary<string, StringValues> Headers => _headers;
+
+        internal void InitStates(Dictionary<string, object> states)
+        {
+            _states = new ReadOnlyDictionary<string, object>(states);
+        }
+        internal void InitHeaders(Dictionary<string, StringValues> headers)
+        {
+            _headers = new ReadOnlyDictionary<string, StringValues>(headers);
+        }
     }
 }

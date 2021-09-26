@@ -1,17 +1,12 @@
-using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
-using System.Threading.Tasks;
-
 using Azure.Messaging.WebPubSub;
-
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
+using Microsoft.Azure.WebPubSub.AspNetCore;
 using Microsoft.Extensions.Azure;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using System.IO;
 
 namespace chatapp
 {
@@ -23,7 +18,7 @@ namespace chatapp
         {
             services.AddAzureClients(builder =>
             {
-                builder.AddWebPubSubServiceClient("Endpoint=http://localhost;Port=8080;AccessKey=ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789ABCDEFGH;Version=1.0;", "chat");
+                builder.AddWebPubSubServiceClient("Endpoint=http://localhost;Port=8080;AccessKey=ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789ABCDEFGH;Version=1.0;", "simplechat");
             });
         }
 
@@ -39,57 +34,31 @@ namespace chatapp
 
             app.UseRouting();
 
+            app.UseWebPubSub(handler =>
+            {
+                handler.MapHub("/api", 
+                    new TestHub(app.ApplicationServices.GetRequiredService<WebPubSubServiceClient>()));
+            }, 
+            options =>
+            {
+                options = new WebPubSubValidationOptions("Endpoint=http://localhost;Port=8080;AccessKey=ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789ABCDEFGH;Version=1.0;");
+            });
 
-            //app.UseEndpoints(endpoints =>
-            //{
-            //    endpoints.MapBlazorHub
-            //    endpoints.MapGet("/negotiate", async context =>
-            //    {
-            //        var id = context.Request.Query["id"];
-            //        if (id.Count != 1)
-            //        {
-            //            context.Response.StatusCode = 400;
-            //            await context.Response.WriteAsync("missing user id");
-            //            return;
-            //        }
-            //        var serviceClient = context.RequestServices.GetRequiredService<WebPubSubServiceClient>();
-            //        await context.Response.WriteAsync(serviceClient.GenerateClientAccessUri(userId: id).AbsoluteUri);
-            //    });
-            //
-            //    // abuse protection
-            //    endpoints.Map("/eventhandler", async context =>
-            //    {
-            //        var serviceClient = context.RequestServices.GetRequiredService<WebPubSubServiceClient>();
-            //        if (context.Request.Method == "OPTIONS")
-            //        {
-            //            if (context.Request.Headers["WebHook-Request-Origin"].Count > 0)
-            //            {
-            //                context.Response.Headers["WebHook-Allowed-Origin"] = "*";
-            //                context.Response.StatusCode = 200;
-            //                return;
-            //            }
-            //        }
-            //        else if (context.Request.Method == "POST")
-            //        {
-            //            // get the userId from header
-            //            var userId = context.Request.Headers["ce-userId"];
-            //            if (context.Request.Headers["ce-type"] == "azure.webpubsub.sys.connected")
-            //            {
-            //                // the connected event
-            //                Console.WriteLine($"{userId} connected");
-            //                context.Response.StatusCode = 200; await serviceClient.SendToAllAsync($"[SYSTEM] {userId} joined.");
-            //                return;
-            //            }
-            //            else if (context.Request.Headers["ce-type"] == "azure.webpubsub.user.message")
-            //            {
-            //                using var stream = new StreamReader(context.Request.Body);
-            //                await serviceClient.SendToAllAsync($"[{userId}] {await stream.ReadToEndAsync()}");
-            //                context.Response.StatusCode = 200;
-            //                return;
-            //            }
-            //        }
-            //    });
-            //});
+            app.UseEndpoints(endpoints =>
+            {
+                endpoints.MapGet("/negotiate", async context =>
+                {
+                    var id = context.Request.Query["id"];
+                    if (id.Count != 1)
+                    {
+                        context.Response.StatusCode = 400;
+                        await context.Response.WriteAsync("missing user id");
+                        return;
+                    }
+                    var serviceClient = context.RequestServices.GetRequiredService<WebPubSubServiceClient>();
+                    await context.Response.WriteAsync(serviceClient.GenerateClientAccessUri(userId: id).AbsoluteUri);
+                });
+            });
         }
     }
 }

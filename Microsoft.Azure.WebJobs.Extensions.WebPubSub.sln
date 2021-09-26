@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio Version 17
-VisualStudioVersion = 17.0.31410.414
+# Visual Studio Version 16
+VisualStudioVersion = 16.0.31702.278
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Microsoft.Azure.WebJobs.Extensions.WebPubSub", "src\Microsoft.Azure.WebJobs.Extensions.WebPubSub\Microsoft.Azure.WebJobs.Extensions.WebPubSub.csproj", "{D3F6A924-23C1-4983-9CF8-D505072554B5}"
 EndProject
@@ -26,7 +26,9 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Microsoft.Azure.WebPubSub.A
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Microsoft.Azure.WebPubSub.AspNetCore.Tests", "Microsoft.Azure.WebPubSub.AspNetCore\tests\Microsoft.Azure.WebPubSub.AspNetCore.Tests.csproj", "{CE112FA8-0462-4665-ABB3-22EAD891564C}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SimpleChat-Input", "samples\simplechat\csharp\wpsrequest\SimpleChat-Input.csproj", "{3FD028D1-A0CE-43FB-9111-600A79188AFA}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SimpleChat-Input", "samples\simplechat\csharp\wpsrequest\SimpleChat-Input.csproj", "{3FD028D1-A0CE-43FB-9111-600A79188AFA}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "chatapp", "samples\chatapp\chatapp.csproj", "{40003E4A-08EC-4B08-A6C1-D4E66A768584}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -62,6 +64,10 @@ Global
 		{3FD028D1-A0CE-43FB-9111-600A79188AFA}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{3FD028D1-A0CE-43FB-9111-600A79188AFA}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{3FD028D1-A0CE-43FB-9111-600A79188AFA}.Release|Any CPU.Build.0 = Release|Any CPU
+		{40003E4A-08EC-4B08-A6C1-D4E66A768584}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{40003E4A-08EC-4B08-A6C1-D4E66A768584}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{40003E4A-08EC-4B08-A6C1-D4E66A768584}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{40003E4A-08EC-4B08-A6C1-D4E66A768584}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -72,6 +78,7 @@ Global
 		{B134D06E-B162-4518-BF3D-3EB10FD43672} = {9F6B40A4-C90B-4F9F-A626-052EF2D8D5DA}
 		{0C0511C8-B16E-42A5-9982-08EBC16CFD0E} = {C8F3737F-072B-4620-A7A2-A9EB3B51B6A1}
 		{3FD028D1-A0CE-43FB-9111-600A79188AFA} = {9F6B40A4-C90B-4F9F-A626-052EF2D8D5DA}
+		{40003E4A-08EC-4B08-A6C1-D4E66A768584} = {9F6B40A4-C90B-4F9F-A626-052EF2D8D5DA}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {19CE8259-F856-463A-9D49-40FB11B6C68C}

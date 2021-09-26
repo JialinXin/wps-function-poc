@@ -9,16 +9,22 @@ using Microsoft.AspNetCore.Http;
 
 namespace Microsoft.Azure.WebPubSub.AspNetCore
 {
-    internal class ServiceRequestHandlerAdapter : ServiceRequestHandler
+    internal class ServiceRequestHandlerAdapter
     {
         private readonly WebPubSubValidationOptions _options;
+        private readonly ServiceHub _serviceHub;
+        internal readonly string Path;
 
-        public ServiceRequestHandlerAdapter(WebPubSubValidationOptions options)
+        public ServiceRequestHandlerAdapter(WebPubSubValidationOptions options,
+            ServiceHub hub, 
+            string path)
         {
             _options = options;
+            _serviceHub = hub;
+            Path = path;
         }
 
-        public override async Task HandleRequest<THub>(HttpContext context, THub serviceHub)
+        public async Task HandleRequest(HttpContext context)
         {
             HttpRequest request = context.Request;
 
@@ -48,7 +54,7 @@ namespace Microsoft.Azure.WebPubSub.AspNetCore
                         }
                     case ConnectEventRequest connectEventRequest:
                         {
-                            var response = await serviceHub.Connect(connectEventRequest).ConfigureAwait(false);
+                            var response = await _serviceHub.Connect(connectEventRequest).ConfigureAwait(false);
                             if (response is ErrorResponse error)
                             {
                                 context.Response.StatusCode = ConvertToStatusCode(error.Code);
@@ -67,7 +73,7 @@ namespace Microsoft.Azure.WebPubSub.AspNetCore
                         }
                     case MessageEventRequest messageRequest:
                         {
-                            var response = await serviceHub.Message(messageRequest).ConfigureAwait(false);
+                            var response = await _serviceHub.Message(messageRequest).ConfigureAwait(false);
                             if (response is ErrorResponse error)
                             {
                                 context.Response.StatusCode = ConvertToStatusCode(error.Code);
@@ -88,12 +94,12 @@ namespace Microsoft.Azure.WebPubSub.AspNetCore
                         }
                     case ConnectedEventRequest connectedEvent:
                         {
-                            await serviceHub.Connected(connectedEvent).ConfigureAwait(false);
+                            await _serviceHub.Connected(connectedEvent).ConfigureAwait(false);
                             return;
                         }
                     case DisconnectedEventRequest disconnectedEvent:
                         {
-                            await serviceHub.Disconnected(disconnectedEvent).ConfigureAwait(false);
+                            await _serviceHub.Disconnected(disconnectedEvent).ConfigureAwait(false);
                             return;
                         }
                     default:

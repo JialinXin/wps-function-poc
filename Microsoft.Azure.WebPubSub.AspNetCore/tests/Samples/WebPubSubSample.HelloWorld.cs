@@ -9,17 +9,13 @@ namespace Microsoft.Azure.WebPubSub.AspNetCore.Tests.Samples
     {
         public void Configure(IApplicationBuilder app)
         {
-            var wpsHandler = new WebPubSubRequestHandlerBuilder()
-                .AddValidationOptions(new WebPubSubValidationOptions("<connection-string>"))
-                .Build();
-
-            app.UseEndpoints(endpoints =>
+            app.UseWebPubSub(builder =>
             {
-                endpoints.Map("/eventhandler", async context =>
-                {
-                    var testHub = new SampleHub();
-                    await wpsHandler.HandleRequest(context, testHub);
-                });
+                builder.MapHub("/eventhander", new SampleHub());
+            },
+            options =>
+            {
+                options = new WebPubSubValidationOptions("<connection-string1>", "<connection-string2");
             });
         }
     }

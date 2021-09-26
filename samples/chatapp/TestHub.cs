@@ -1,4 +1,5 @@
-﻿using Microsoft.Azure.WebPubSub.AspNetCore;
+﻿using Azure.Messaging.WebPubSub;
+using Microsoft.Azure.WebPubSub.AspNetCore;
 using System;
 using System.Threading.Tasks;
 
@@ -6,14 +7,30 @@ namespace chatapp
 {
     public class TestHub : ServiceHub
     {
-        public override Task<ServiceResponse> Connect(ConnectEventRequest request)
+        private readonly WebPubSubServiceClient _client;
+
+        public TestHub(WebPubSubServiceClient client)
         {
-            throw new NotImplementedException();
+            _client = client;
         }
 
-        public override Task<ServiceResponse> Message(MessageEventRequest request)
+        public override async Task<ServiceResponse> Connect(ConnectEventRequest request)
         {
-            throw new NotImplementedException();
+            await _client.SendToAllAsync($"user: {request.ConnectionContext.UserId} is connecting...");
+            return new ConnectResponse
+            {
+                UserId = request.ConnectionContext.UserId,
+            };
+        }
+
+        public override async Task<ServiceResponse> Message(MessageEventRequest request)
+        {
+            await _client.SendToAllAsync(request.Message.ToString());
+            return new MessageResponse
+            {
+                Message = BinaryData.FromString("ack"),
+                DataType = MessageDataType.Text
+            };
         }
     }
 }

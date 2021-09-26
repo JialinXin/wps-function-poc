@@ -185,7 +185,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
                 context.EventName = request.Headers.GetValues(Constants.Headers.CloudEvents.EventName).SingleOrDefault();
                 context.Signature = request.Headers.GetValues(Constants.Headers.CloudEvents.Signature).SingleOrDefault();
                 context.Origin = request.Headers.GetValues(Constants.Headers.WebHookRequestOrigin).SingleOrDefault();
-                context.Headers = request.Headers.ToDictionary(x => x.Key, v => new StringValues(v.Value.ToArray()), StringComparer.OrdinalIgnoreCase);
+                context.InitHeaders(request.Headers.ToDictionary(x => x.Key, v => new StringValues(v.Value.ToArray()), StringComparer.OrdinalIgnoreCase));
 
                 // UserId is optional, e.g. connect
                 if (request.Headers.TryGetValues(Constants.Headers.CloudEvents.UserId, out var values))
@@ -195,7 +195,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
 
                 if (request.Headers.TryGetValues(Constants.Headers.CloudEvents.State, out var connectionStates))
                 {
-                    context.States = connectionStates.SingleOrDefault().DecodeConnectionStates();
+                    context.InitStates(connectionStates.SingleOrDefault().DecodeConnectionStates());
                 }
             }
             catch (Exception)

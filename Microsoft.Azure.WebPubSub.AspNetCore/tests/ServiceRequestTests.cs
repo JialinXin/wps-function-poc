@@ -27,10 +27,9 @@ namespace Microsoft.Azure.WebPubSub.AspNetCore.Tests
                 { "aaa", "aaa" },
                 { "bbb", "bbb" }
             };
-            var connectionContext = new ConnectionContext
-            {
-                States = exist
-            };
+            var connectionContext = new ConnectionContext();
+
+            connectionContext.InitStates(exist);
 
             var response = new ConnectResponse
             {

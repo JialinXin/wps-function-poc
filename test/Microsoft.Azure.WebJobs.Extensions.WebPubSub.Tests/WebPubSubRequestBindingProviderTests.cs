@@ -38,7 +38,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub.Tests
         }
 
         public static void TestFunc(
-            [WebPubSub] WebPubSubContext request)
+            [WebPubSubContext] WebPubSubContext request)
         {
         }
     }

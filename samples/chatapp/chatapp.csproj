@@ -9,4 +9,8 @@
     <PackageReference Include="Microsoft.Extensions.Azure" Version="1.0.0" />
   </ItemGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="..\..\Microsoft.Azure.WebPubSub.AspNetCore\src\Microsoft.Azure.WebPubSub.AspNetCore.csproj" />
+  </ItemGroup>
+
 </Project>

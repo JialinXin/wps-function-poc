@@ -171,7 +171,7 @@ namespace Microsoft.Azure.WebPubSub.AspNetCore
                 var states = new Dictionary<string, object>();
                 if (connectionContext.States?.Count > 0)
                 {
-                    states = connectionContext.States;
+                    states = connectionContext.States.ToDictionary(x => x.Key, y => y.Value);
                 }
 
                 // response states keep empty is no change.
@@ -202,7 +202,7 @@ namespace Microsoft.Azure.WebPubSub.AspNetCore
                 var states = new Dictionary<string, object>();
                 if (connectionContext.States?.Count > 0)
                 {
-                    states = connectionContext.States;
+                    states = connectionContext.States.ToDictionary(x => x.Key, v => v.Value);
                 }
 
                 // response states keep empty is no change.
@@ -236,7 +236,7 @@ namespace Microsoft.Azure.WebPubSub.AspNetCore
                 connectionContext.EventName = request.Headers.GetFirstHeaderValueOrDefault(Constants.Headers.CloudEvents.EventName);
                 connectionContext.Signature = request.Headers.GetFirstHeaderValueOrDefault(Constants.Headers.CloudEvents.Signature);
                 connectionContext.Origin = request.Headers.GetFirstHeaderValueOrDefault(Constants.Headers.WebHookRequestOrigin);
-                connectionContext.Headers = request.Headers.ToDictionary(x => x.Key, v => new StringValues(v.Value.ToArray()), StringComparer.OrdinalIgnoreCase);
+                connectionContext.InitHeaders(request.Headers.ToDictionary(x => x.Key, v => new StringValues(v.Value.ToArray()), StringComparer.OrdinalIgnoreCase));
 
                 // UserId is optional, e.g. connect
                 if (request.Headers.ContainsKey(Constants.Headers.CloudEvents.UserId))
@@ -247,7 +247,7 @@ namespace Microsoft.Azure.WebPubSub.AspNetCore
                 // connection states.
                 if (request.Headers.ContainsKey(Constants.Headers.CloudEvents.State))
                 {
-                    connectionContext.States = request.Headers.GetFirstHeaderValueOrDefault(Constants.Headers.CloudEvents.State).DecodeConnectionStates();
+                    connectionContext.InitStates(request.Headers.GetFirstHeaderValueOrDefault(Constants.Headers.CloudEvents.State).DecodeConnectionStates());
                 }
             }
             catch (Exception)
