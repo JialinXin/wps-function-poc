@@ -200,7 +200,7 @@ namespace Microsoft.Azure.WebPubSub.AspNetCore.Tests
                 $"{Constants.Headers.CloudEvents.TypeSystemPrefix}{eventName}";
         }
 
-        private sealed class TestHub : ServiceHub
+        private sealed class TestHub : WebPubSubHub
         {
             private readonly int _flag;
 
@@ -212,7 +212,7 @@ namespace Microsoft.Azure.WebPubSub.AspNetCore.Tests
                 _flag = flag;
             }
 
-            public override Task<ServiceResponse> Connect(ConnectEventRequest request)
+            public override Task<ServiceResponse> OnConnectAsync(ConnectEventRequest request)
             {
                 Assert.NotNull(request);
                 Assert.AreEqual("my-host.webpubsub.net", request.ConnectionContext.Origin);
@@ -222,7 +222,7 @@ namespace Microsoft.Azure.WebPubSub.AspNetCore.Tests
                 });
             }
 
-            public override Task<ServiceResponse> Message(MessageEventRequest request)
+            public override Task<ServiceResponse> OnMessageAsync(MessageEventRequest request)
             {
                 Assert.NotNull(request);
                 Assert.AreEqual("my-host.webpubsub.net", request.ConnectionContext.Origin);
@@ -248,14 +248,14 @@ namespace Microsoft.Azure.WebPubSub.AspNetCore.Tests
                 return Task.FromResult<ServiceResponse>(response);
             }
 
-            public override Task Connected(ConnectedEventRequest request)
+            public override Task OnConnectedAsync(ConnectedEventRequest request)
             {
                 Assert.NotNull(request);
                 Assert.AreEqual("my-host.webpubsub.net", request.ConnectionContext.Origin);
                 return Task.CompletedTask;
             }
 
-            public override Task Disconnected(DisconnectedEventRequest request)
+            public override Task OnDisconnectedAsync(DisconnectedEventRequest request)
             {
                 Assert.NotNull(request);
                 Assert.AreEqual("my-host.webpubsub.net", request.ConnectionContext.Origin);

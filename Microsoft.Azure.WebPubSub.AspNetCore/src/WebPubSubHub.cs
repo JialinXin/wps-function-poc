@@ -9,27 +9,27 @@ namespace Microsoft.Azure.WebPubSub.AspNetCore
     /// <summary>
     /// Web PubSub hub methods.
     /// </summary>
-    public abstract class ServiceHub : IDisposable
+    public abstract class WebPubSubHub : IDisposable
     {
         /// <summary>
         /// Connect event method.
         /// </summary>
         /// <param name="request"><see cref="ConnectedEventRequest"/> to get client connect request information.</param>
         /// <returns><see cref="ConnectResponse"/> or <see cref="ErrorResponse"/></returns>
-        public abstract Task<ServiceResponse> Connect(ConnectEventRequest request);
+        public abstract Task<ServiceResponse> OnConnectAsync(ConnectEventRequest request);
 
         /// <summary>
         /// User event method.
         /// </summary>
         /// <param name="request"><see cref="MessageEventRequest"/> to get client message request information.</param>
         /// <returns><see cref="MessageResponse"/> or <see cref="ErrorResponse"/></returns>
-        public abstract Task<ServiceResponse> Message(MessageEventRequest request);
+        public abstract Task<ServiceResponse> OnMessageAsync(MessageEventRequest request);
 
         /// <summary>
         /// Connected event method.
         /// </summary>
         /// <param name="request"><see cref="ConnectedEventRequest"/> to get client connected request information.</param>
-        public virtual Task Connected(ConnectedEventRequest request)
+        public virtual Task OnConnectedAsync(ConnectedEventRequest request)
         {
             return Task.CompletedTask;
         }
@@ -38,7 +38,7 @@ namespace Microsoft.Azure.WebPubSub.AspNetCore
         /// Disconnected event method.
         /// </summary>
         /// <param name="request"><see cref="DisconnectedEventRequest"/> to get client disconnected request information.</param>
-        public virtual Task Disconnected(DisconnectedEventRequest request)
+        public virtual Task OnDisconnectedAsync(DisconnectedEventRequest request)
         {
             return Task.CompletedTask;
         }

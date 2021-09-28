@@ -5,11 +5,11 @@ using System.Threading.Tasks;
 
 namespace chatapp
 {
-    public class TestHub : WebPubSubHub
+    public class TestHub1 : WebPubSubHub
     {
         private readonly WebPubSubServiceClient _client;
 
-        public TestHub(WebPubSubServiceClient client)
+        public TestHub1(WebPubSubServiceClient client)
         {
             _client = client;
         }

@@ -20,6 +20,11 @@ namespace chatapp
             {
                 builder.AddWebPubSubServiceClient("Endpoint=http://localhost;Port=8080;AccessKey=ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789ABCDEFGH;Version=1.0;", "simplechat");
             });
+
+            services.AddWebPubSub(o =>
+            {
+                o = new WebPubSubValidationOptions("Endpoint=http://localhost;Port=8080;AccessKey=ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789ABCDEFGH;Version=1.0;");
+            });
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
@@ -34,15 +39,7 @@ namespace chatapp
 
             app.UseRouting();
 
-            app.UseWebPubSub(handler =>
-            {
-                handler.MapHub("/api", 
-                    new TestHub(app.ApplicationServices.GetRequiredService<WebPubSubServiceClient>()));
-            }, 
-            options =>
-            {
-                options = new WebPubSubValidationOptions("Endpoint=http://localhost;Port=8080;AccessKey=ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789ABCDEFGH;Version=1.0;");
-            });
+            app.UseWebPubSub<TestHub>("/api");
 
             app.UseEndpoints(endpoints =>
             {

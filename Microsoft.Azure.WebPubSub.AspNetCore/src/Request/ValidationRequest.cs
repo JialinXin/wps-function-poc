@@ -1,7 +1,6 @@
 ﻿// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
-using System.Collections.Generic;
 using System.Text.Json.Serialization;
 
 namespace Microsoft.Azure.WebPubSub.AspNetCore
@@ -14,20 +13,13 @@ namespace Microsoft.Azure.WebPubSub.AspNetCore
         /// <summary>
         /// Flag to indicate whether is a valid request.
         /// </summary>
-        [JsonPropertyName("valid")]
-        public bool Valid { get; }
+        [JsonPropertyName("isValid")]
+        public bool IsValid { get; }
 
-        /// <summary>
-        /// Request hosts from headers.
-        /// </summary>
-        [JsonPropertyName("requestHosts")]
-        internal List<string> RequestHosts { get; }
-
-        internal ValidationRequest(bool valid, List<string> requestHosts)
+        internal ValidationRequest(bool isValid)
             :base(null)
         {
-            Valid = valid;
-            RequestHosts = requestHosts;
+            IsValid = isValid;
         }
     }
 }

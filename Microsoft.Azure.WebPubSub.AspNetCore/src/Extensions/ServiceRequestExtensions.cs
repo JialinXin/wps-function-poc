@@ -38,7 +38,7 @@ namespace Microsoft.Azure.WebPubSub.AspNetCore
             {
                 if (options == null || !options.ContainsHost())
                 {
-                    return new ValidationRequest(true, requestHosts);
+                    return new ValidationRequest(true);
                 }
                 else
                 {
@@ -46,11 +46,11 @@ namespace Microsoft.Azure.WebPubSub.AspNetCore
                     {
                         if (options.ContainsHost(item))
                         {
-                            return new ValidationRequest(true, requestHosts);
+                            return new ValidationRequest(true);
                         }
                     }
                 }
-                return new ValidationRequest(false, requestHosts);
+                return new ValidationRequest(false);
             }
 
             if (!request.TryParseCloudEvents(out var context))

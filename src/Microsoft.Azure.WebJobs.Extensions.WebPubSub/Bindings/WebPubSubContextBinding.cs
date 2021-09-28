@@ -54,7 +54,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
                     case ValidationRequest validationRequest:
                         {
                             var response = new HttpResponseMessage();
-                            if (validationRequest.Valid)
+                            if (validationRequest.IsValid)
                             {
                                 response.Headers.Add(Constants.Headers.WebHookAllowedOrigin, "*");
                             }

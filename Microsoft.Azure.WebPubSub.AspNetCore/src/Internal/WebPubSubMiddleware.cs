@@ -1,4 +1,5 @@
 ﻿using Microsoft.AspNetCore.Http;
+using System.Linq;
 using System.Threading.Tasks;
 
 namespace Microsoft.Azure.WebPubSub.AspNetCore
@@ -8,12 +9,6 @@ namespace Microsoft.Azure.WebPubSub.AspNetCore
         private readonly RequestDelegate _next;
         private readonly ServiceRequestHandlerAdapter _handler;
 
-        /// <summary>
-        /// Instantiates a new <see cref="WebPubSubMiddleware"/>.
-        /// </summary>
-        /// <param name="next">The next middleware in the pipeline.</param>
-        /// <param name="corsService">An instance of <see cref="ICorsService"/>.</param>
-        /// <param name="loggerFactory">An instance of <see cref="ILoggerFactory"/>.</param>
         public WebPubSubMiddleware(
             RequestDelegate next,
             ServiceRequestHandlerAdapter handler)
@@ -30,7 +25,8 @@ namespace Microsoft.Azure.WebPubSub.AspNetCore
                 return;
             }
             
-            if (!context.Request.Path.StartsWithSegments(_handler.Path))
+            if (!context.Request.Headers.TryGetValue(Constants.Headers.CloudEvents.Hub, out var hub)
+                && !hub.SingleOrDefault().Equals(nameof(_handler.Hub), System.StringComparison.OrdinalIgnoreCase))
             {
                 await _next(context);
                 return;

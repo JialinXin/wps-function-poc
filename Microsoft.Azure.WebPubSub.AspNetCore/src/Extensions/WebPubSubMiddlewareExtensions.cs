@@ -1,4 +1,8 @@
-﻿using Microsoft.Azure.WebPubSub.AspNetCore;
+﻿// Copyright (c) Microsoft Corporation. All rights reserved.
+// Licensed under the MIT License.
+
+using Microsoft.AspNetCore.Http;
+using Microsoft.Azure.WebPubSub.AspNetCore;
 using Microsoft.Extensions.DependencyInjection;
 using System;
 
@@ -16,26 +20,25 @@ namespace Microsoft.AspNetCore.Builder
         /// <param name="configure">A callback to configure the <see cref="ServiceRequestBuilder"/></param>
         /// <param name="options">A callback to add the <see cref="WebPubSubValidationOptions"/></param>
         /// <returns>The original app parameter</returns>
-        public static IApplicationBuilder UseWebPubSub(this IApplicationBuilder app, Action<ServiceRequestBuilder> configure, Action<WebPubSubValidationOptions> options = null)
+        public static IApplicationBuilder UseWebPubSub<THub>(this IApplicationBuilder app, PathString pathString) where THub: WebPubSubHub
         {
             if (app == null)
             {
                 throw new ArgumentNullException(nameof(app));
             }
 
-            if (configure == null)
-            {
-                throw new ArgumentException(nameof(configure));
-            }
+            //if (configure == null)
+            //{
+            //    throw new ArgumentException(nameof(configure));
+            //}
 
-            ServiceRequestBuilder builder = new ServiceRequestBuilder();
-            configure(builder);
+            ServiceRequestBuilder builder = new ServiceRequestBuilder(app.ApplicationServices);
+            builder.MapHub<THub>(pathString);
+            var options = app.ApplicationServices.GetRequiredService<WebPubSubValidationOptions>();
 
             if (options != null)
             {
-                var validationOptions = new WebPubSubValidationOptions();
-                options(validationOptions);
-                builder.AddValidationOptions(validationOptions);
+                builder.AddValidationOptions(options);
             }
 
             return app.UseMiddleware<WebPubSubMiddleware>(builder.Build());

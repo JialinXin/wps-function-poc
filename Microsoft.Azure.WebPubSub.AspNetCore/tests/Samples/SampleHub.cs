@@ -2,9 +2,9 @@
 
 namespace Microsoft.Azure.WebPubSub.AspNetCore.Tests.Samples
 {
-    public class SampleHub : ServiceHub
+    public class SampleHub : WebPubSubHub
     {
-        public override Task<ServiceResponse> Connect(ConnectEventRequest request)
+        public override Task<ServiceResponse> OnConnectAsync(ConnectEventRequest request)
         {
             var response = new ConnectResponse
             {
@@ -13,7 +13,7 @@ namespace Microsoft.Azure.WebPubSub.AspNetCore.Tests.Samples
             return Task.FromResult<ServiceResponse>(response);
         }
 
-        public override Task<ServiceResponse> Message(MessageEventRequest request)
+        public override Task<ServiceResponse> OnMessageAsync(MessageEventRequest request)
         {
             var response = new MessageResponse("ack");
             return Task.FromResult<ServiceResponse>(response);
