@@ -19,14 +19,16 @@ namespace Microsoft.Azure.WebPubSub.AspNetCore
 
         public async Task InvokeAsync(HttpContext context)
         {
-            if (!context.Request.Headers.ContainsKey(Constants.Headers.CloudEvents.WebPubSubVersion))
+            // Not Web PubSub requests.
+            if (!context.Request.Headers.ContainsKey(Constants.Headers.CloudEvents.WebPubSubVersion)
+                || !context.Request.Headers.TryGetValue(Constants.Headers.CloudEvents.Hub, out var hub))
             {
                 await _next(context);
                 return;
             }
-            
-            if (!context.Request.Headers.TryGetValue(Constants.Headers.CloudEvents.Hub, out var hub)
-                && !hub.SingleOrDefault().Equals(nameof(_handler.Hub), System.StringComparison.OrdinalIgnoreCase))
+
+            // Hub not registered or path not match will skip.
+            if (_handler.GetHub(hub) == null || !context.Request.Path.StartsWithSegments(_handler.GetPath(hub)))
             {
                 await _next(context);
                 return;

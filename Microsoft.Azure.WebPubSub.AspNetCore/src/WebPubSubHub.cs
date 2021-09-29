@@ -16,14 +16,14 @@ namespace Microsoft.Azure.WebPubSub.AspNetCore
         /// </summary>
         /// <param name="request"><see cref="ConnectedEventRequest"/> to get client connect request information.</param>
         /// <returns><see cref="ConnectResponse"/> or <see cref="ErrorResponse"/></returns>
-        public abstract Task<ServiceResponse> OnConnectAsync(ConnectEventRequest request);
+        public abstract Task<WebPubSubResponse> OnConnectAsync(ConnectEventRequest request);
 
         /// <summary>
         /// User event method.
         /// </summary>
         /// <param name="request"><see cref="MessageEventRequest"/> to get client message request information.</param>
         /// <returns><see cref="MessageResponse"/> or <see cref="ErrorResponse"/></returns>
-        public abstract Task<ServiceResponse> OnMessageAsync(MessageEventRequest request);
+        public abstract Task<WebPubSubResponse> OnMessageAsync(MessageEventRequest request);
 
         /// <summary>
         /// Connected event method.

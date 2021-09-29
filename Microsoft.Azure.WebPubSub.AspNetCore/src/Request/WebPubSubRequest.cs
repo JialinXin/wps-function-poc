@@ -9,7 +9,7 @@ namespace Microsoft.Azure.WebPubSub.AspNetCore
     /// <summary>
     /// Web PubSub service request.
     /// </summary>
-    public abstract class ServiceRequest
+    public abstract class WebPubSubRequest
     {
         internal const string ConnectionContextProperty = "connectionContext";
         internal const string NameProperty = "name";
@@ -21,10 +21,10 @@ namespace Microsoft.Azure.WebPubSub.AspNetCore
         public ConnectionContext ConnectionContext { get; internal set;}
 
         /// <summary>
-        /// Create instance of <see cref="ServiceRequest"/>
+        /// Create instance of <see cref="WebPubSubRequest"/>
         /// </summary>
         /// <param name="context">Parameter connection context.</param>
-        public ServiceRequest(ConnectionContext context)
+        public WebPubSubRequest(ConnectionContext context)
         {
             ConnectionContext = context;
         }

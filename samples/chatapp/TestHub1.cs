@@ -14,7 +14,7 @@ namespace chatapp
             _client = client;
         }
 
-        public override async Task<ServiceResponse> OnConnectAsync(ConnectEventRequest request)
+        public override async Task<WebPubSubResponse> OnConnectAsync(ConnectEventRequest request)
         {
             await _client.SendToAllAsync($"user: {request.ConnectionContext.UserId} is connecting...");
             return new ConnectResponse
@@ -23,7 +23,7 @@ namespace chatapp
             };
         }
 
-        public override async Task<ServiceResponse> OnMessageAsync(MessageEventRequest request)
+        public override async Task<WebPubSubResponse> OnMessageAsync(MessageEventRequest request)
         {
             await _client.SendToAllAsync(request.Message.ToString());
             return new MessageResponse

@@ -10,7 +10,7 @@ namespace Microsoft.Azure.WebPubSub.AspNetCore
     /// <summary>
     /// Response for message events.
     /// </summary>
-    public class MessageResponse : ServiceResponse
+    public class MessageResponse : WebPubSubResponse
     {
         internal Dictionary<string, object> States = new();
 
@@ -29,9 +29,9 @@ namespace Microsoft.Azure.WebPubSub.AspNetCore
         /// <summary>
         /// Initialize an instance of MessageResponse.
         /// </summary>
-        /// <param name="message"></param>
-        /// <param name="dataType"></param>
-        public MessageResponse(BinaryData message, MessageDataType dataType = MessageDataType.Text)
+        /// <param name="message">BinaryData type message.</param>
+        /// <param name="dataType">Message data type.</param>
+        public MessageResponse(BinaryData message, MessageDataType dataType)
         {
             Message = message;
             DataType = dataType;
@@ -40,7 +40,7 @@ namespace Microsoft.Azure.WebPubSub.AspNetCore
         /// <summary>
         /// Initialize an instance of MessageResponse.
         /// </summary>
-        /// <param name="message">String type message</param>
+        /// <param name="message">String type message.</param>
         /// <param name="dataType">Message data type. Default set to text.</param>
         public MessageResponse(string message, MessageDataType dataType = MessageDataType.Text)
             : this(BinaryData.FromString(message), dataType)

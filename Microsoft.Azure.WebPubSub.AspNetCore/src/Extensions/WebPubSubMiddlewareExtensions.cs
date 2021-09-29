@@ -18,22 +18,21 @@ namespace Microsoft.AspNetCore.Builder
         /// </summary>
         /// <param name="app">The IApplicationBuilder passed to your Configure method</param>
         /// <param name="configure">A callback to configure the <see cref="ServiceRequestBuilder"/></param>
-        /// <param name="options">A callback to add the <see cref="WebPubSubValidationOptions"/></param>
         /// <returns>The original app parameter</returns>
-        public static IApplicationBuilder UseWebPubSub<THub>(this IApplicationBuilder app, PathString pathString) where THub: WebPubSubHub
+        public static IApplicationBuilder UseWebPubSub(this IApplicationBuilder app, Action<ServiceRequestBuilder> configure)
         {
             if (app == null)
             {
                 throw new ArgumentNullException(nameof(app));
             }
 
-            //if (configure == null)
-            //{
-            //    throw new ArgumentException(nameof(configure));
-            //}
+            if (configure == null)
+            {
+                throw new ArgumentException(nameof(configure));
+            }
 
             ServiceRequestBuilder builder = new ServiceRequestBuilder(app.ApplicationServices);
-            builder.MapHub<THub>(pathString);
+            configure(builder);
             var options = app.ApplicationServices.GetRequiredService<WebPubSubValidationOptions>();
 
             if (options != null)

@@ -18,15 +18,15 @@ namespace Microsoft.Azure.WebPubSub.AspNetCore
     /// <summary>
     /// Helper methods to parse upstream requests.
     /// </summary>
-    public static class ServiceRequestExtensions
+    public static class WebPubSubRequestExtensions
     {
         /// <summary>
         /// Parse request to system/user type ServiceRequest.
         /// </summary>
         /// <param name="request">Upstream HttpRequest.</param>
         /// <param name="options"></param>
-        /// <returns>Deserialize <see cref="ServiceRequest"/></returns>
-        public static async Task<ServiceRequest> ParseServiceRequest(this HttpRequest request, WebPubSubValidationOptions options)
+        /// <returns>Deserialize <see cref="WebPubSubRequest"/></returns>
+        public static async Task<WebPubSubRequest> ParseServiceRequest(this HttpRequest request, WebPubSubValidationOptions options)
         {
             if (request == null)
             {

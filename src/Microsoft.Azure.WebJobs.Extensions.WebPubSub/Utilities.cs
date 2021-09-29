@@ -84,7 +84,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
             JsonDocument converted = null;
             string originStr = null;
             bool needConvert = true;
-            if (response is ServiceResponse)
+            if (response is WebPubSubResponse)
             {
                 needConvert = false;
             }

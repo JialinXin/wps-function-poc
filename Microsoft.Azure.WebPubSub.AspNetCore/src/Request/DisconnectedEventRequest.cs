@@ -9,7 +9,7 @@ namespace Microsoft.Azure.WebPubSub.AspNetCore
     /// Disconnected event request.
     /// </summary>
     [JsonConverter(typeof(DisconnectedEventRequestJsonConverter))]
-    public sealed class DisconnectedEventRequest : ServiceRequest
+    public sealed class DisconnectedEventRequest : WebPubSubRequest
     {
         internal const string ReasonProperty = "reason";
 

@@ -36,7 +36,7 @@ namespace SimpleChat
 
         #region Work with WebPubSubTrigger
         [FunctionName("connect")]
-        public static ServiceResponse Connect(
+        public static WebPubSubResponse Connect(
             [WebPubSubTrigger("simplechat", WebPubSubEventType.System, "connect")] ConnectionContext connectionContext)
         {
             Console.WriteLine($"Received client connect with connectionId: {connectionContext.ConnectionId}");

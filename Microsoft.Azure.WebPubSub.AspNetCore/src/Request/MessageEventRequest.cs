@@ -9,7 +9,7 @@ namespace Microsoft.Azure.WebPubSub.AspNetCore
     /// <summary>
     /// User message event request.
     /// </summary>
-    public sealed class MessageEventRequest : ServiceRequest
+    public sealed class MessageEventRequest : WebPubSubRequest
     {
         /// <summary>
         /// Message content.

@@ -12,7 +12,7 @@ namespace Microsoft.Azure.WebPubSub.AspNetCore
     /// Connect event request.
     /// </summary>
     [JsonConverter(typeof(ConnectEventRequestJsonConverter))]
-    public sealed class ConnectEventRequest : ServiceRequest
+    public sealed class ConnectEventRequest : WebPubSubRequest
     {
         internal const string ClaimsProperty = "claims";
         internal const string QueryProperty = "query";

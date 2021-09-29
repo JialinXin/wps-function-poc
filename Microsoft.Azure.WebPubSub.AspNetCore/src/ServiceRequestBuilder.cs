@@ -15,7 +15,8 @@ namespace Microsoft.Azure.WebPubSub.AspNetCore
     public class ServiceRequestBuilder
     {
         private readonly IServiceProvider _provider;
-        private readonly Dictionary<WebPubSubHub, string> _hubRegistry = new Dictionary<WebPubSubHub, string>();
+        // <hubName, <Hub,path>>
+        private readonly Dictionary<string, HubRegistry> _hubRegistry = new (StringComparer.OrdinalIgnoreCase);
 
         private WebPubSubValidationOptions _options;
         private WebPubSubHub _hub;
@@ -31,11 +32,11 @@ namespace Microsoft.Azure.WebPubSub.AspNetCore
         /// </summary>
         /// <typeparam name="THub">User defined <see cref="WebPubSubHub"/></typeparam>
         /// <param name="path">Target request path.</param>
-        public void MapHub<THub>(PathString path) where THub: WebPubSubHub
+        public void MapWebPubSubHub<THub>(PathString path) where THub: WebPubSubHub
         {
             _path = path;
             _hub = Create<THub>();
-            _hubRegistry[_hub] = _path;
+            _hubRegistry[_hub.GetType().Name] = new HubRegistry(_hub, _path);
         }
 
         internal void AddValidationOptions(WebPubSubValidationOptions options)
@@ -45,7 +46,7 @@ namespace Microsoft.Azure.WebPubSub.AspNetCore
 
         internal ServiceRequestHandlerAdapter Build()
         {
-            return new ServiceRequestHandlerAdapter(_options, _hub, _path);
+            return new ServiceRequestHandlerAdapter(_options, _hubRegistry);
         }
 
         private THub Create<THub>() where THub: WebPubSubHub
@@ -56,7 +57,7 @@ namespace Microsoft.Azure.WebPubSub.AspNetCore
                 hub = ActivatorUtilities.CreateInstance<THub>(_provider);
             }
 
-            if (_hubRegistry.TryGetValue(hub, out _))
+            if (_hubRegistry.TryGetValue(nameof(hub), out _))
             {
                 Debug.Assert(true, $"{typeof(THub)} must not be reused.");
             }

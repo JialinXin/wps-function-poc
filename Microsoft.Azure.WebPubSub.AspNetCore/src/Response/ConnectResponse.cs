@@ -9,7 +9,7 @@ namespace Microsoft.Azure.WebPubSub.AspNetCore
     /// <summary>
     /// Response for connect event.
     /// </summary>
-    public class ConnectResponse : ServiceResponse
+    public class ConnectResponse : WebPubSubResponse
     {
         internal Dictionary<string, object> States = new();
 

@@ -34,7 +34,7 @@ namespace Microsoft.Azure.WebPubSub.AspNetCore
             JsonSerializer.Serialize(writer, value.ClientCertificates, options);
             if (value.ConnectionContext != null)
             {
-                writer.WritePropertyName(ServiceRequest.ConnectionContextProperty);
+                writer.WritePropertyName(WebPubSubRequest.ConnectionContextProperty);
                 JsonSerializer.Serialize(writer, value.ConnectionContext, options);
             }
             writer.WriteEndObject();

@@ -39,7 +39,16 @@ namespace chatapp
 
             app.UseRouting();
 
-            app.UseWebPubSub<TestHub>("/api");
+            app.UseWebPubSub(builder => {
+                builder.MapWebPubSubHub<TestHub>("/api");
+                builder.MapWebPubSubHub<TestHub1>("/api1");
+            });
+
+            //app.UseEndpoints(e => {
+            //    e.MapWebPubSubHub<TestHub>();
+            //    e.MapWebPubSubHub<TestHub1>();
+            //});
+
 
             app.UseEndpoints(endpoints =>
             {

@@ -8,7 +8,7 @@ namespace Microsoft.Azure.WebPubSub.AspNetCore
     /// <summary>
     /// Response for errors.
     /// </summary>
-    public class ErrorResponse : ServiceResponse
+    public class ErrorResponse : WebPubSubResponse
     {
         /// <summary>
         /// Error code. Required field to deserialize ErrorResponse.

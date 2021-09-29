@@ -8,7 +8,7 @@ namespace Microsoft.Azure.WebPubSub.AspNetCore
     /// <summary>
     /// Validation request for abuse protection.
     /// </summary>
-    public sealed class ValidationRequest : ServiceRequest
+    public sealed class ValidationRequest : WebPubSubRequest
     {
         /// <summary>
         /// Flag to indicate whether is a valid request.

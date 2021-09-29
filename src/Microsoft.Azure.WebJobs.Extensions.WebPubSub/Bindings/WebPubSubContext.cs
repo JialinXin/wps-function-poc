@@ -13,7 +13,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
         /// Request body.
         /// </summary>
         [JsonPropertyName("request")]
-        public ServiceRequest Request { get; }
+        public WebPubSubRequest Request { get; }
 
         /// <summary>
         /// System build response for easy return, works for AbuseProtection and Errors.
@@ -35,7 +35,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
             ErrorCode = errorCode;
         }
 
-        internal WebPubSubContext(ServiceRequest request, HttpResponseMessage response = null)
+        internal WebPubSubContext(WebPubSubRequest request, HttpResponseMessage response = null)
         {
             Request = request;
             Response = response ?? new HttpResponseMessage();

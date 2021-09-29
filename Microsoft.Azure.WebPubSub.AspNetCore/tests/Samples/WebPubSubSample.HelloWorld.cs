@@ -11,11 +11,7 @@ namespace Microsoft.Azure.WebPubSub.AspNetCore.Tests.Samples
         {
             app.UseWebPubSub(builder =>
             {
-                builder.MapHub("/eventhander", new SampleHub());
-            },
-            options =>
-            {
-                options = new WebPubSubValidationOptions("<connection-string1>", "<connection-string2");
+                builder.MapWebPubSubHub<SampleHub>("/eventhander");
             });
         }
     }

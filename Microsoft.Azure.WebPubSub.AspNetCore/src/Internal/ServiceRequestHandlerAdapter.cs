@@ -3,7 +3,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.Collections.ObjectModel;
 using System.Text.Json;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Http;
@@ -13,22 +12,39 @@ namespace Microsoft.Azure.WebPubSub.AspNetCore
     internal class ServiceRequestHandlerAdapter
     {
         private readonly WebPubSubValidationOptions _options;
-        private readonly WebPubSubHub _hub;
-        private readonly string _path;
-        // <WebPubSubHub, Path>
-        //private readonly Dictionary<WebPubSubHub, string> _hubRegistry;
 
-        //public Dictionary<WebPubSubHub, string> HubRegistry => _hubRegistry;
+        // <hubName, <Hub,path>>
+        private readonly Dictionary<string, HubRegistry> _hubRegistry = new(StringComparer.OrdinalIgnoreCase);
 
-        public WebPubSubHub Hub => _hub;
-        public string Path => _path;
-
-        public ServiceRequestHandlerAdapter(WebPubSubValidationOptions options, WebPubSubHub hub, string path)
+        // for tests.
+        internal ServiceRequestHandlerAdapter(WebPubSubValidationOptions options, WebPubSubHub hub, string path)
         {
             _options = options;
-            _hub = hub;
-            _path = path;
-            //_hubRegistry = hubRegistry;
+            _hubRegistry.Add(hub.GetType().Name, new HubRegistry(hub, path));
+        }
+
+        public ServiceRequestHandlerAdapter(WebPubSubValidationOptions options, Dictionary<string, HubRegistry> hubRegistry)
+        {
+            _options = options;
+            _hubRegistry = hubRegistry;
+        }
+
+        public string GetPath(string hubName)
+        {
+            if (_hubRegistry.TryGetValue(hubName, out var registry))
+            {
+                return registry.Path;
+            }
+            return null;
+        }
+
+        public WebPubSubHub GetHub(string hubName)
+        {
+            if (_hubRegistry.TryGetValue(hubName, out var registry))
+            {
+                return registry.Hub;
+            }
+            return null;
         }
 
         public async Task HandleRequest(HttpContext context)
@@ -41,6 +57,28 @@ namespace Microsoft.Azure.WebPubSub.AspNetCore
                 await context.Response.WriteAsync("HttpContext is null").ConfigureAwait(false);
                 return;
             }
+
+            // Should check in middleware to skip not match calls.
+            // And keep here for internal reference lib robustness amd return as 400BadRequest.
+            #region WebPubSubRequest Check
+            // Not Web PubSub request.
+            if (!context.Request.Headers.ContainsKey(Constants.Headers.CloudEvents.WebPubSubVersion)
+                || !context.Request.Headers.TryGetValue(Constants.Headers.CloudEvents.Hub, out var hubName))
+            {
+                context.Response.StatusCode = StatusCodes.Status400BadRequest;
+                await context.Response.WriteAsync("Not Web PubSub request.").ConfigureAwait(false);
+                return;
+            }
+
+            // Hub not registered or path not match will skip.
+            var hub = GetHub(hubName);
+            if (hub == null || !context.Request.Path.StartsWithSegments(GetPath(hubName)))
+            {
+                context.Response.StatusCode = StatusCodes.Status400BadRequest;
+                await context.Response.WriteAsync("Hub is not registered.").ConfigureAwait(false);
+                return;
+            }
+            #endregion
 
             try
             {
@@ -61,7 +99,7 @@ namespace Microsoft.Azure.WebPubSub.AspNetCore
                         }
                     case ConnectEventRequest connectEventRequest:
                         {
-                            var response = await _hub.OnConnectAsync(connectEventRequest).ConfigureAwait(false);
+                            var response = await hub.OnConnectAsync(connectEventRequest).ConfigureAwait(false);
                             if (response is ErrorResponse error)
                             {
                                 context.Response.StatusCode = ConvertToStatusCode(error.Code);
@@ -80,7 +118,7 @@ namespace Microsoft.Azure.WebPubSub.AspNetCore
                         }
                     case MessageEventRequest messageRequest:
                         {
-                            var response = await _hub.OnMessageAsync(messageRequest).ConfigureAwait(false);
+                            var response = await hub.OnMessageAsync(messageRequest).ConfigureAwait(false);
                             if (response is ErrorResponse error)
                             {
                                 context.Response.StatusCode = ConvertToStatusCode(error.Code);
@@ -101,12 +139,12 @@ namespace Microsoft.Azure.WebPubSub.AspNetCore
                         }
                     case ConnectedEventRequest connectedEvent:
                         {
-                            await _hub.OnConnectedAsync(connectedEvent).ConfigureAwait(false);
+                            await hub.OnConnectedAsync(connectedEvent).ConfigureAwait(false);
                             return;
                         }
                     case DisconnectedEventRequest disconnectedEvent:
                         {
-                            await _hub.OnDisconnectedAsync(disconnectedEvent).ConfigureAwait(false);
+                            await hub.OnDisconnectedAsync(disconnectedEvent).ConfigureAwait(false);
                             return;
                         }
                     default:

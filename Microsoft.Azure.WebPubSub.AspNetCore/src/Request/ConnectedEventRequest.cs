@@ -6,7 +6,7 @@ namespace Microsoft.Azure.WebPubSub.AspNetCore
     /// <summary>
     /// ServiceRequest for connected event.
     /// </summary>
-    public class ConnectedEventRequest : ServiceRequest
+    public class ConnectedEventRequest : WebPubSubRequest
     {
         internal ConnectedEventRequest(ConnectionContext connectionContext)
             : base(connectionContext)
