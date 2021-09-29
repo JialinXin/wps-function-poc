@@ -14,8 +14,8 @@ namespace Microsoft.Azure.WebPubSub.AspNetCore
     /// </summary>
     public class ConnectionContext
     {
-        private static ReadOnlyDictionary<string, object> _states;
-        private static ReadOnlyDictionary<string, StringValues> _headers;
+        private ReadOnlyDictionary<string, object> _states;
+        private ReadOnlyDictionary<string, StringValues> _headers;
         /// <summary>
         /// The type of the message.
         /// </summary>
