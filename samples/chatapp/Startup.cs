@@ -2,7 +2,6 @@ using Azure.Messaging.WebPubSub;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
-using Microsoft.Azure.WebPubSub.AspNetCore;
 using Microsoft.Extensions.Azure;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -18,12 +17,12 @@ namespace chatapp
         {
             services.AddAzureClients(builder =>
             {
-                builder.AddWebPubSubServiceClient("Endpoint=http://localhost;Port=8080;AccessKey=ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789ABCDEFGH;Version=1.0;", "simplechat");
+                builder.AddWebPubSubServiceClient("<connection-string>", "samplehub");
             });
 
             services.AddWebPubSub(o =>
             {
-                o = new WebPubSubValidationOptions("Endpoint=http://localhost;Port=8080;AccessKey=ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789ABCDEFGH;Version=1.0;");
+                o.ValidationOptions.Add("<connection-string>");
             });
         }
 
@@ -38,20 +37,15 @@ namespace chatapp
             app.UseStaticFiles();
 
             app.UseRouting();
-
-            app.UseWebPubSub(builder => {
-                builder.MapWebPubSubHub<TestHub>("/api");
-                builder.MapWebPubSubHub<TestHub1>("/api1");
-            });
-
-            //app.UseEndpoints(e => {
-            //    e.MapWebPubSubHub<TestHub>();
-            //    e.MapWebPubSubHub<TestHub1>();
+            //app.UseWebPubSub(builder => {
+            //    builder.MapWebPubSubHub<SampleHub>("/api");
+            //    builder.MapWebPubSubHub<SampleHub1>("/api1");
             //});
-
 
             app.UseEndpoints(endpoints =>
             {
+                endpoints.MapWebPubSubHub<SampleHub>("api");
+
                 endpoints.MapGet("/negotiate", async context =>
                 {
                     var id = context.Request.Query["id"];
@@ -65,6 +59,18 @@ namespace chatapp
                     await context.Response.WriteAsync(serviceClient.GenerateClientAccessUri(userId: id).AbsoluteUri);
                 });
             });
+
+            //app.UseEndpoints(endpoints =>
+            //{
+            //    endpoints.MapGet("/negotiate", async context =>
+            //    {
+            //        var request = await context.Request.ReadWebPubSubEventRequestAsync(null);
+            //        if (request is ConnectEventRequest)
+            //        {
+            //            //
+            //        }
+            //    });
+            //});
         }
     }
 }

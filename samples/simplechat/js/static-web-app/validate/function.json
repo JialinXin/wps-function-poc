@@ -15,7 +15,7 @@
       "name": "$return"
     },
     {
-      "type": "webPubSubRequest",
+      "type": "webPubSubContext",
       "name": "wpsReq",
       "direction": "in"
     }

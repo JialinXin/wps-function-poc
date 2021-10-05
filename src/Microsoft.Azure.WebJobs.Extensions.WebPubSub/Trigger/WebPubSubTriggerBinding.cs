@@ -12,7 +12,7 @@ using Microsoft.Azure.WebJobs.Host.Bindings;
 using Microsoft.Azure.WebJobs.Host.Listeners;
 using Microsoft.Azure.WebJobs.Host.Protocols;
 using Microsoft.Azure.WebJobs.Host.Triggers;
-using Microsoft.Azure.WebPubSub.AspNetCore;
+using Microsoft.Azure.WebPubSub.Common;
 using Newtonsoft.Json.Linq;
 
 namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
@@ -22,9 +22,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
         private readonly ParameterInfo _parameterInfo;
         private readonly WebPubSubTriggerAttribute _attribute;
         private readonly IWebPubSubTriggerDispatcher _dispatcher;
-        private readonly WebPubSubOptions _options;
+        private readonly WebPubSubFunctionsOptions _options;
 
-        public WebPubSubTriggerBinding(ParameterInfo parameterInfo, WebPubSubTriggerAttribute attribute, WebPubSubOptions options, IWebPubSubTriggerDispatcher dispatcher)
+        public WebPubSubTriggerBinding(ParameterInfo parameterInfo, WebPubSubTriggerAttribute attribute, WebPubSubFunctionsOptions options, IWebPubSubTriggerDispatcher dispatcher)
         {
             _parameterInfo = parameterInfo ?? throw new ArgumentNullException(nameof(parameterInfo));
             _attribute = attribute ?? throw new ArgumentNullException(nameof(attribute));
@@ -84,6 +84,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
 
         private static void AddBindingData(Dictionary<string, object> bindingData, WebPubSubTriggerEvent triggerEvent)
         {
+            bindingData.Add(nameof(triggerEvent.Request), triggerEvent.Request);
             bindingData.Add(nameof(triggerEvent.ConnectionContext), triggerEvent.ConnectionContext);
             bindingData.Add(nameof(triggerEvent.Message), triggerEvent.Message);
             bindingData.Add(nameof(triggerEvent.DataType), triggerEvent.DataType);
@@ -105,14 +106,15 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
             };
 
             contract.Add(parameterInfo.Name, parameterInfo.ParameterType);
-            SafeAddContract(() => contract.Add("ConnectionContext", parameterInfo.ParameterType));
+            SafeAddContract(() => contract.Add("Request", parameterInfo.ParameterType));
+            SafeAddContract(() => contract.Add("ConnectionContext", typeof(WebPubSubConnectionContext)));
             SafeAddContract(() => contract.Add("Message", typeof(BinaryData)));
             SafeAddContract(() => contract.Add("DataType", typeof(MessageDataType)));
             SafeAddContract(() => contract.Add("Claims", typeof(IDictionary<string, string[]>)));
             SafeAddContract(() => contract.Add("Query", typeof(IDictionary<string, string[]>)));
             SafeAddContract(() => contract.Add("Reason", typeof(string)));
             SafeAddContract(() => contract.Add("Subprotocols", typeof(string[])));
-            SafeAddContract(() => contract.Add("ClientCertificates", typeof(ClientCertificateInfo[])));
+            SafeAddContract(() => contract.Add("ClientCertificates", typeof(WebPubSubClientCertificate[])));
 
             return contract;
         }
@@ -145,10 +147,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
 
             public Task<object> GetValueAsync()
             {
-                // Bind un-restrict name to default ConnectionContext with type recognized.
-                if (_parameter.ParameterType == typeof(ConnectionContext))
+                // Bind un-restrict name to default WebPubSubEventRequest.
+                if (_parameter.ParameterType.BaseType == typeof(WebPubSubEventRequest))
                 {
-                    return Task.FromResult<object>(_triggerEvent.ConnectionContext);
+                    return Task.FromResult<object>(_triggerEvent.Request);
                 }
 
                 // Bind rest with name and type repected.

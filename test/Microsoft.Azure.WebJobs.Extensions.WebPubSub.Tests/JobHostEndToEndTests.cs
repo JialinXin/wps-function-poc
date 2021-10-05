@@ -7,14 +7,14 @@ using System.Threading.Tasks;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Azure.WebJobs.Host;
 using Microsoft.Azure.WebJobs.Host.Indexers;
-using Microsoft.Azure.WebPubSub.AspNetCore;
+using Microsoft.Azure.WebPubSub.Common;
 using NUnit.Framework;
 
 namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub.Tests
 {
     public class JobHostEndToEndTests
     {
-        private static readonly ConnectionContext TestContext = CreateConnectionContext();
+        private static readonly WebPubSubConnectionContext TestContext = CreateConnectionContext();
         private static readonly BinaryData TestMessage = BinaryData.FromString("JobHostEndToEndTests");
         private static readonly Dictionary<string, string> FuncConfiguration = new()
         {
@@ -83,9 +83,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub.Tests
             };
         }
 
-        private static ConnectionContext CreateConnectionContext()
+        private static WebPubSubConnectionContext CreateConnectionContext()
         {
-            return new ConnectionContext
+            return new WebPubSubConnectionContext
             {
                 ConnectionId = "000000",
                 EventName = "message",
@@ -98,10 +98,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub.Tests
         private sealed class WebPubSubFuncs
         {
             public static void TestWebPubSubTrigger(
-                [WebPubSubTrigger("chat", WebPubSubEventType.System, "connect")] ConnectionContext request)
+                [WebPubSubTrigger("chat", WebPubSubEventType.System, "connect")] ConnectEventRequest request,
+                WebPubSubConnectionContext connectionContext)
             {
                 // Valid case use default url for verification.
-                Assert.AreEqual(TestContext, request);
+                Assert.AreEqual(TestContext, connectionContext);
             }
 
             public static void TestWebPubSubTriggerInvalid(

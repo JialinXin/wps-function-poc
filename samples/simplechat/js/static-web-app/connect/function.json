@@ -14,7 +14,7 @@
       "name": "res"
     },
     {
-      "type": "webPubSubRequest",
+      "type": "webPubSubContext",
       "name": "wpsReq",
       "direction": "in"
     }

@@ -1,5 +1,6 @@
 using System;
 using System.IO;
+using System.Net.Http;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Azure.WebJobs;
@@ -7,8 +8,7 @@ using Microsoft.Azure.WebJobs.Extensions.Http;
 using Microsoft.AspNetCore.Http;
 using Newtonsoft.Json;
 using Microsoft.Azure.WebJobs.Extensions.WebPubSub;
-using Microsoft.Azure.WebPubSub.AspNetCore;
-using System.Net.Http;
+using Microsoft.Azure.WebPubSub.Common;
 
 namespace SimpleChat_Input
 {
@@ -38,7 +38,7 @@ namespace SimpleChat_Input
         [FunctionName("validate")]
         public static HttpResponseMessage Validate(
             [HttpTrigger(AuthorizationLevel.Anonymous, "options")] HttpRequest req,
-            [WebPubSub] WebPubSubContext wpsReq)
+            [WebPubSubContext] WebPubSubContext wpsReq)
         {
             return wpsReq.Response;
         }
@@ -46,18 +46,14 @@ namespace SimpleChat_Input
         [FunctionName("connect")]
         public static object Connect(
             [HttpTrigger(AuthorizationLevel.Anonymous, "post")] HttpRequest req,
-            [WebPubSub] WebPubSubContext wpsReq)
+            [WebPubSubContext] WebPubSubContext wpsReq)
         {
             if (wpsReq.Request is ValidationRequest || wpsReq.ErrorMessage != null)
             {
                 return wpsReq.Response;
             }
             var request = wpsReq.Request as ConnectEventRequest;
-            var response = new ConnectResponse
-            {
-                UserId = request.ConnectionContext.UserId
-            };
-            return response;
+            return request.CreateResponse(request.ConnectionContext.UserId, null, null, null);
         }
 
         // Http Trigger Message
@@ -71,7 +67,7 @@ namespace SimpleChat_Input
             {
                 return wpsReq.Response;
             }
-            if (wpsReq.Request is MessageEventRequest request)
+            if (wpsReq.Request is UserEventRequest request)
             {
                 await operations.AddAsync(new SendToAll
                 {

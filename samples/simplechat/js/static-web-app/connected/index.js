@@ -7,14 +7,14 @@ module.exports = function (context, req) {
     "operationKind": "sendToAll",
     "message": JSON.stringify({
         from: '[System]',
-        content: `${context.bindings.wpsReq.request.ConnectionContext.UserId} connected.`
+        content: `${context.bindings.wpsReq.request.connectionContext.userId} connected.`
       }),
     "dataType" : "json"
   });
 
   context.bindings.webPubSubEvent.push({
     "operationKind": "addUserToGroup",
-    "userId": `${context.bindings.wpsReq.request.ConnectionContext.UserId}`,
+    "userId": `${context.bindings.wpsReq.request.connectionContext.userId}`,
     "group": "group1"
   });
 
@@ -22,7 +22,7 @@ module.exports = function (context, req) {
     "operationKind": "sendToAll",
     "message": JSON.stringify({
           from: '[System]',
-          content: `${context.bindings.wpsReq.request.ConnectionContext.UserId} joined group: group1.`
+          content: `${context.bindings.wpsReq.request.connectionContext.userId} joined group: group1.`
       }),
     "dataType": "json"
   });

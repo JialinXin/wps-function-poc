@@ -5,6 +5,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
 {
     internal static class Constants
     {
+        public static readonly char[] HeaderSeparator = { ',' };
+
         // WebPubSubOptions can be set by customers.
         public const string WebPubSubConnectionStringName = "WebPubSubConnectionString";
         public const string HubNameStringName = "WebPubSubHub";
@@ -41,6 +43,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
                 public const string EventName = Prefix + "eventName";
                 public const string UserId = Prefix + "userId";
                 public const string State = Prefix + "connectionState";
+                public const string AwpsVersion = Prefix + "awpsversion";
 
                 public const string TypeSystemPrefix = "azure.webpubsub.sys.";
                 public const string TypeUserPrefix = "azure.webpubsub.user.";

@@ -2,40 +2,43 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System.Net.Http;
-using System.Text.Json.Serialization;
-using Microsoft.Azure.WebPubSub.AspNetCore;
+using Microsoft.Azure.WebPubSub.Common;
+using Newtonsoft.Json;
 
 namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
 {
+    [JsonConverter(typeof(WebPubSubContextJsonConverter))]
     public class WebPubSubContext
     {
         /// <summary>
         /// Request body.
         /// </summary>
-        [JsonPropertyName("request")]
-        public WebPubSubRequest Request { get; }
+        [JsonProperty("request")]
+        public WebPubSubEventRequest Request { get; }
 
         /// <summary>
         /// System build response for easy return, works for AbuseProtection and Errors.
         /// </summary>
-        [JsonConverter(typeof(HttpResponseMessageJsonConverter))]
-        [JsonPropertyName("response")]
+        [JsonProperty("response"), JsonConverter(typeof(HttpResponseMessageJsonConverter))]
         public HttpResponseMessage Response { get; }
 
+        [JsonProperty("errorMessage")]
         public string ErrorMessage { get; }
 
-        public WebPubSubErrorCode  ErrorCode { get; }
+        [JsonProperty("errorCode")]
+        public string ErrorCode { get; }
 
+        [JsonProperty("isValidationRequest")]
         public bool IsValidationRequest => Request is ValidationRequest;
 
         // Invalid Request
         internal WebPubSubContext(string errorMessage, WebPubSubErrorCode errorCode)
         {
             ErrorMessage = errorMessage;
-            ErrorCode = errorCode;
+            ErrorCode = errorCode.ToString();
         }
 
-        internal WebPubSubContext(WebPubSubRequest request, HttpResponseMessage response = null)
+        internal WebPubSubContext(WebPubSubEventRequest request, HttpResponseMessage response = null)
         {
             Request = request;
             Response = response ?? new HttpResponseMessage();

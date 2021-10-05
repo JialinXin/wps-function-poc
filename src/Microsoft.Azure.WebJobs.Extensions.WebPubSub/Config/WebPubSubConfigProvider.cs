@@ -9,7 +9,7 @@ using System.Threading.Tasks;
 using Microsoft.Azure.WebJobs.Description;
 using Microsoft.Azure.WebJobs.Host.Config;
 using Microsoft.Azure.WebJobs.Logging;
-using Microsoft.Azure.WebPubSub.AspNetCore;
+using Microsoft.Azure.WebPubSub.Common;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -26,11 +26,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
         private readonly IConfiguration _configuration;
         private readonly INameResolver _nameResolver;
         private readonly ILogger _logger;
-        private readonly WebPubSubOptions _options;
+        private readonly WebPubSubFunctionsOptions _options;
         private readonly IWebPubSubTriggerDispatcher _dispatcher;
 
         public WebPubSubConfigProvider(
-            IOptions<WebPubSubOptions> options,
+            IOptions<WebPubSubFunctionsOptions> options,
             INameResolver nameResolver,
             ILoggerFactory loggerFactory,
             IConfiguration configuration)
@@ -154,7 +154,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
 
             if (string.IsNullOrEmpty(connectionString))
             {
-                throw new InvalidOperationException($"The Service connection string must be set either via an '{Constants.WebPubSubConnectionStringName}' app setting, via an '{Constants.WebPubSubConnectionStringName}' environment variable, or directly in code via {nameof(WebPubSubOptions)}.{nameof(WebPubSubOptions.ConnectionString)} or {attributeConnectionStringName}.");
+                throw new InvalidOperationException($"The Service connection string must be set either via an '{Constants.WebPubSubConnectionStringName}' app setting, via an '{Constants.WebPubSubConnectionStringName}' environment variable, or directly in code via {nameof(WebPubSubFunctionsOptions)}.{nameof(WebPubSubFunctionsOptions.ConnectionString)} or {attributeConnectionStringName}.");
             }
         }
 
@@ -219,13 +219,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
                 {
                     return input.ToObject<CloseClientConnection>();
                 }
-                else if (kind.ToString().Equals(nameof(GrantGroupPermission), StringComparison.OrdinalIgnoreCase))
+                else if (kind.ToString().Equals(nameof(GrantPermission), StringComparison.OrdinalIgnoreCase))
                 {
-                    return input.ToObject<GrantGroupPermission>();
+                    return input.ToObject<GrantPermission>();
                 }
-                else if (kind.ToString().Equals(nameof(RevokeGroupPermission), StringComparison.OrdinalIgnoreCase))
+                else if (kind.ToString().Equals(nameof(RevokePermission), StringComparison.OrdinalIgnoreCase))
                 {
-                    return input.ToObject<RevokeGroupPermission>();
+                    return input.ToObject<RevokePermission>();
                 }
             }
             return input.ToObject<WebPubSubOperation>();

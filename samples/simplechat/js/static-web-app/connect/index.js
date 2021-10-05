@@ -3,7 +3,7 @@
 
 module.exports = function (context, req, wpsReq) {
   console.log("response connect");
-  console.log(wpsReq.request.ConnectionContext.UserId);
-  context.res = { body: {"userId": wpsReq.request.ConnectionContext.UserId} };
+  console.log(wpsReq.request.connectionContext.userId);
+  context.res = { body: {"userId": wpsReq.request.connectionContext.userId} };
   context.done();
 };

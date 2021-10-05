@@ -5,7 +5,7 @@ using System;
 using System.Net;
 using System.Net.Http;
 using System.Threading.Tasks;
-using Microsoft.Azure.WebPubSub.AspNetCore;
+using Microsoft.Azure.WebPubSub.Common;
 using Newtonsoft.Json.Linq;
 using NUnit.Framework;
 
@@ -25,8 +25,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub.Tests
         [TestCase(nameof(RemoveUserFromAllGroups))]
         [TestCase(nameof(RemoveUserFromGroup))]
         [TestCase(nameof(CloseClientConnection))]
-        [TestCase(nameof(GrantGroupPermission))]
-        [TestCase(nameof(RevokeGroupPermission))]
+        [TestCase(nameof(GrantPermission))]
+        [TestCase(nameof(RevokePermission))]
         public void TestOutputConvert(string operationKind)
         {
             WebPubSubConfigProvider.RegisterJsonConverter();
@@ -48,7 +48,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub.Tests
             var testData = @"{""type"":""Buffer"", ""data"": [66, 105, 110, 97, 114, 121, 68, 97, 116, 97]}";
 
             var options = new SystemJson.JsonSerializerOptions();
-            options.Converters.Add(new Azure.WebPubSub.AspNetCore.BinaryDataJsonConverter());
+            options.Converters.Add(new System.BinaryDataJsonConverter());
 
             var converted = SystemJson.JsonSerializer.Deserialize<BinaryData>(testData, options);
 
@@ -80,7 +80,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub.Tests
             Assert.AreEqual(HttpStatusCode.OK, result.StatusCode);
 
             var response = await result.Content.ReadAsStringAsync();
-            var message = (JObject.Parse(response)).ToObject<ConnectResponse>();
+            var message = (JObject.Parse(response)).ToObject<ConnectEventResponse>();
             Assert.AreEqual("aaa", message.UserId);
         }
 
@@ -124,9 +124,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub.Tests
         }
 
         [TestCase]
-        public void TestWebPubSubRequest()
+        public void TestWebPubSubContext()
         {
-            var context = new ConnectionContext()
+            var context = new WebPubSubConnectionContext()
             {
                 ConnectionId = "connectionId",
                 UserId = "userA",
@@ -135,7 +135,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub.Tests
             };
             var test = new WebPubSubContext(new ConnectedEventRequest(context));
 
-            var serilized = System.Text.Json.JsonSerializer.Serialize(test);
+            var serialize = JObject.FromObject(test);
+
+            Assert.NotNull(serialize["request"]);
+            Assert.NotNull(serialize["response"]);
+            Assert.AreEqual("", serialize["errorMessage"].ToString());
+            Assert.AreEqual("", serialize["errorCode"].ToString());
+            Assert.AreEqual("False", serialize["isValidationRequest"].ToString());
         }
 
         private static HttpResponseMessage BuildResponse(string input, RequestType requestType)

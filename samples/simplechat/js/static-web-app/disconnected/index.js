@@ -7,7 +7,7 @@ module.exports = function (context, req, wpsReq) {
     "operationKind": "sendToAll",
     "message": JSON.stringify({
         from: '[System]',
-        content: `${wpsReq.request.ConnectionContext.UserId} disconnected.`
+        content: `${wpsReq.request.connectionContext.userId} disconnected.`
       }),
     "dataType" : "json"
   });

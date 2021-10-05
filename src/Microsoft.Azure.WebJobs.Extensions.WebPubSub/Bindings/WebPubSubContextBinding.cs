@@ -3,16 +3,13 @@
 
 using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Net;
 using System.Net.Http;
-using System.Net.Http.Headers;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Azure.WebJobs.Host.Bindings;
-using Microsoft.Azure.WebPubSub.AspNetCore;
+using Microsoft.Azure.WebPubSub.Common;
 using Microsoft.Extensions.Configuration;
-using Newtonsoft.Json;
 
 namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
 {
@@ -47,7 +44,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
 
             try
             {
-                var serviceRequest = await request.ParseServiceRequest(attrResolved.ValidationOptions);
+                var serviceRequest = await request.ReadWebPubSubRequestAsync(attrResolved.ValidationOptions);
 
                 switch (serviceRequest)
                 {
@@ -66,7 +63,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
                             return new WebPubSubContextValueProvider(abuseRequest, _userType);
                         }
                     case ConnectEventRequest:
-                    case MessageEventRequest:
+                    case UserEventRequest:
                     case ConnectedEventRequest:
                     case DisconnectedEventRequest:
                     default:

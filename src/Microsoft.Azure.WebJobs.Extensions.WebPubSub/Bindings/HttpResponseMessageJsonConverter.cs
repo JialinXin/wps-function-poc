@@ -1,44 +1,42 @@
 ﻿// Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Net.Http;
-using System.Text.Json;
-using System.Text.Json.Serialization;
 using System.Threading.Tasks;
 
 using Microsoft.Extensions.Primitives;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Serialization;
 
-namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
+namespace System.Net.Http
 {
     internal class HttpResponseMessageJsonConverter : JsonConverter<HttpResponseMessage>
     {
-        public override HttpResponseMessage Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+        public override HttpResponseMessage ReadJson(JsonReader reader, Type objectType, HttpResponseMessage existingValue, bool hasExistingValue, JsonSerializer serializer)
         {
             throw new NotImplementedException();
         }
 
-        public override void Write(Utf8JsonWriter writer, HttpResponseMessage value, JsonSerializerOptions options)
+        public override void WriteJson(JsonWriter writer, HttpResponseMessage value, JsonSerializer serializer)
         {
 #pragma warning disable AZC0102 // Do not use GetAwaiter().GetResult().
             var simpleRes = SimpleResponse.FromHttpResponse(value).GetAwaiter().GetResult();
 #pragma warning restore AZC0102 // Do not use GetAwaiter().GetResult().
-            JsonSerializer.Serialize(writer, simpleRes, options);
+            serializer.Serialize(writer, simpleRes);
         }
 
         // js accecpts simple HttpResponse object.
         private sealed class SimpleResponse
         {
-            [JsonPropertyName("body")]
+            [JsonProperty("body")]
             public Stream Body { get; set; }
 
-            [JsonPropertyName("status")]
+            [JsonProperty("status")]
             public int Status { get; set; }
 
-            [JsonPropertyName("headers")]
+            [JsonProperty("headers")]
             public Dictionary<string, StringValues> Headers { get; set; }
 
             public static async Task<SimpleResponse> FromHttpResponse(HttpResponseMessage response)

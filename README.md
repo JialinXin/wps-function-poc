@@ -1,15 +1,15 @@
 # Azure WebJobs Web PubSub client library for .NET
 
-This extension provides functionality for receiving Web PubSub webhook calls in Azure Functions, allowing you to easily write functions that respond to any event published to Web PubSub.
+This extension provides data models using in communication with Web PubSub Service.
 
 ## Getting started
 
 ### Install the package
 
-Install the Web PubSub extension with [NuGet][nuget]:
+Install the package with [NuGet][nuget]:
 
 ```Powershell
-dotnet add package Microsoft.Azure.WebJobs.Extensions.WebPubSub
+dotnet add package Microsoft.Azure.WebPubSub.Common
 ```
 
 ### Prerequisites

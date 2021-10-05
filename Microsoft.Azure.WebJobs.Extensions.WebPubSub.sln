@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio Version 17
-VisualStudioVersion = 17.0.31410.414
+# Visual Studio Version 16
+VisualStudioVersion = 16.0.31507.150
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Microsoft.Azure.WebJobs.Extensions.WebPubSub", "src\Microsoft.Azure.WebJobs.Extensions.WebPubSub\Microsoft.Azure.WebJobs.Extensions.WebPubSub.csproj", "{D3F6A924-23C1-4983-9CF8-D505072554B5}"
 EndProject
@@ -22,13 +22,15 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "notifications", "samples\no
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Microsoft.Azure.WebJobs.Extensions.WebPubSub.Tests", "test\Microsoft.Azure.WebJobs.Extensions.WebPubSub.Tests\Microsoft.Azure.WebJobs.Extensions.WebPubSub.Tests.csproj", "{0C0511C8-B16E-42A5-9982-08EBC16CFD0E}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Microsoft.Azure.WebPubSub.AspNetCore", "Microsoft.Azure.WebPubSub.AspNetCore\src\Microsoft.Azure.WebPubSub.AspNetCore.csproj", "{026D5168-BE58-4B8E-A095-2648F0743A63}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Microsoft.Azure.WebPubSub.AspNetCore", "src\Microsoft.Azure.WebPubSub.AspNetCore\src\Microsoft.Azure.WebPubSub.AspNetCore.csproj", "{026D5168-BE58-4B8E-A095-2648F0743A63}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Microsoft.Azure.WebPubSub.AspNetCore.Tests", "Microsoft.Azure.WebPubSub.AspNetCore\tests\Microsoft.Azure.WebPubSub.AspNetCore.Tests.csproj", "{CE112FA8-0462-4665-ABB3-22EAD891564C}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Microsoft.Azure.WebPubSub.AspNetCore.Tests", "src\Microsoft.Azure.WebPubSub.AspNetCore\tests\Microsoft.Azure.WebPubSub.AspNetCore.Tests.csproj", "{CE112FA8-0462-4665-ABB3-22EAD891564C}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SimpleChat-Input", "samples\simplechat\csharp\wpsrequest\SimpleChat-Input.csproj", "{3FD028D1-A0CE-43FB-9111-600A79188AFA}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "chatapp", "samples\chatapp\chatapp.csproj", "{B89A5EE3-24D0-45C3-BD87-12449CD1773B}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Microsoft.Azure.WebPubSub.Common", "src\Microsoft.Azure.WebPubSub.Common\Microsoft.Azure.WebPubSub.Common.csproj", "{0E948A73-530A-4798-BF64-90534C1EE7A3}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -68,6 +70,10 @@ Global
 		{B89A5EE3-24D0-45C3-BD87-12449CD1773B}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{B89A5EE3-24D0-45C3-BD87-12449CD1773B}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{B89A5EE3-24D0-45C3-BD87-12449CD1773B}.Release|Any CPU.Build.0 = Release|Any CPU
+		{0E948A73-530A-4798-BF64-90534C1EE7A3}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{0E948A73-530A-4798-BF64-90534C1EE7A3}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{0E948A73-530A-4798-BF64-90534C1EE7A3}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{0E948A73-530A-4798-BF64-90534C1EE7A3}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

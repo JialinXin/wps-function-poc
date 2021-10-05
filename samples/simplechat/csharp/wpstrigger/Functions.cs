@@ -1,14 +1,12 @@
-using Azure.Messaging.WebPubSub;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Azure.WebJobs;
 using Microsoft.Azure.WebJobs.Extensions.Http;
 using Microsoft.Azure.WebJobs.Extensions.WebPubSub;
-using Microsoft.Azure.WebPubSub.AspNetCore;
+using Microsoft.Azure.WebPubSub.Common;
 using Newtonsoft.Json;
 using System;
 using System.IO;
-using System.Net.Http;
 using System.Threading.Tasks;
 
 namespace SimpleChat
@@ -36,24 +34,22 @@ namespace SimpleChat
 
         #region Work with WebPubSubTrigger
         [FunctionName("connect")]
-        public static WebPubSubResponse Connect(
-            [WebPubSubTrigger("simplechat", WebPubSubEventType.System, "connect")] ConnectionContext connectionContext)
+        public static WebPubSubEventResponse Connect(
+            [WebPubSubTrigger("simplechat", WebPubSubEventType.System, "connect")] ConnectEventRequest request)
         {
-            Console.WriteLine($"Received client connect with connectionId: {connectionContext.ConnectionId}");
-            if (connectionContext.UserId == "attacker")
+            Console.WriteLine($"Received client connect with connectionId: {request.ConnectionContext.ConnectionId}");
+            if (request.ConnectionContext.UserId == "attacker")
             {
-                return new ErrorResponse(WebPubSubErrorCode.Unauthorized);
+                return request.CreateErrorResponse(WebPubSubErrorCode.Unauthorized, null);
             }
-            return new ConnectResponse
-            {
-                UserId = connectionContext.UserId
-            };
+            //return request.CreateResponse(request.ConnectionContext.UserId, null, null, null);
+            return request.CreateResponse(request.ConnectionContext.UserId, null, null, null);
         }
 
         // multi tasks sample
         [FunctionName("connected")]
         public static async Task Connected(
-            [WebPubSubTrigger("%abc%",WebPubSubEventType.System, "connected")] ConnectionContext connectionContext,
+            [WebPubSubTrigger("%abc%",WebPubSubEventType.System, "connected")] WebPubSubConnectionContext connectionContext,
             [WebPubSub(Hub = "%abc%")] IAsyncCollector<WebPubSubOperation> webpubsubOperation)
         {
             await webpubsubOperation.AddAsync(new SendToAll
@@ -77,29 +73,27 @@ namespace SimpleChat
 
         // single message sample
         [FunctionName("broadcast")]
-        public static async Task<MessageResponse> Broadcast(
-            [WebPubSubTrigger("%abc%", WebPubSubEventType.User, "message")] ConnectionContext context,
-            BinaryData message,
-            MessageDataType dataType,
+        public static async Task<WebPubSubEventResponse> Broadcast(
+            [WebPubSubTrigger("%abc%", WebPubSubEventType.User, "message")]
+            UserEventRequest request,
+            WebPubSubConnectionContext connectionContext,
+            //BinaryData message,
+            //MessageDataType dataType,
             [WebPubSub(Hub = "simplechat")] IAsyncCollector<WebPubSubOperation> operations)
         {
             await operations.AddAsync(new SendToAll
             {
-                Message = message,
-                DataType = dataType
+                Message = request.Message,
+                DataType = request.DataType
             });
-        
-            return new MessageResponse
-            {
-                Message = BinaryData.FromString(new ClientContent("ack").ToString()),
-                DataType = MessageDataType.Json
-            };
+
+            return request.CreateResponse(BinaryData.FromString(new ClientContent("ack").ToString()), MessageDataType.Json);
         }
 
         [FunctionName("disconnect")]
         [return: WebPubSub(Hub = "%abc%")]
         public static WebPubSubOperation Disconnect(
-            [WebPubSubTrigger("%abc%", WebPubSubEventType.System, "disconnected")] ConnectionContext connectionContext)
+            [WebPubSubTrigger("%abc%", WebPubSubEventType.System, "disconnected")] WebPubSubConnectionContext connectionContext)
         {
             Console.WriteLine("Disconnect.");
             return new SendToAll
