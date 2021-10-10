@@ -36,6 +36,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
         {
             ErrorMessage = errorMessage;
             ErrorCode = errorCode.ToString();
+            Response = Utilities.BuildErrorResponse(new EventErrorResponse(errorCode, errorMessage));
         }
 
         internal WebPubSubContext(WebPubSubEventRequest request, HttpResponseMessage response = null)

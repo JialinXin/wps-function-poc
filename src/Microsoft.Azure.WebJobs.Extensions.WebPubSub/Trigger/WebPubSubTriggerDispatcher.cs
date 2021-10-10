@@ -189,7 +189,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
         {
             try
             {
-                context = new ();
+                context = new();
                 context.ConnectionId = request.Headers.GetValues(Constants.Headers.CloudEvents.ConnectionId).SingleOrDefault();
                 context.Hub = request.Headers.GetValues(Constants.Headers.CloudEvents.Hub).SingleOrDefault();
                 context.EventType = Utilities.GetEventType(request.Headers.GetValues(Constants.Headers.CloudEvents.Type).SingleOrDefault());

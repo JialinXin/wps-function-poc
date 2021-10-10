@@ -159,7 +159,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
             return null;
         }
 
-        internal static Dictionary<string,object> UpdateStates(this WebPubSubConnectionContext connectionContext, Dictionary<string, object> newStates) 
+        internal static Dictionary<string,object> UpdateStates(this WebPubSubConnectionContext connectionContext, Dictionary<string, object> newStates)
         {
             // states cleared.
             if (newStates == null)

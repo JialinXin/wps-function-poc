@@ -9,6 +9,7 @@ using System.Net.Http.Headers;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
+using System.Threading;
 using System.Threading.Tasks;
 using Azure.Messaging.WebPubSub;
 using Microsoft.AspNetCore.Http;
@@ -27,8 +28,9 @@ namespace Microsoft.Azure.WebPubSub.AspNetCore
         /// </summary>
         /// <param name="request">Upstream HttpRequest.</param>
         /// <param name="options"></param>
+        /// <param name="cancellationToken"></param>
         /// <returns>Deserialize <see cref="WebPubSubEventRequest"/></returns>
-        public static async Task<WebPubSubEventRequest> ReadWebPubSubEventAsync(this HttpRequest request, WebPubSubValidationOptions options)
+        public static async Task<WebPubSubEventRequest> ReadWebPubSubEventAsync(this HttpRequest request, WebPubSubValidationOptions options = null, CancellationToken cancellationToken = default)
         {
             if (request == null)
             {

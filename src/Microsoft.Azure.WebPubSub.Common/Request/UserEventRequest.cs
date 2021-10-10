@@ -11,16 +11,18 @@ namespace Microsoft.Azure.WebPubSub.Common
     /// </summary>
     public sealed class UserEventRequest : WebPubSubEventRequest
     {
+        internal const string MessageProperty = "message";
+        internal const string DataTypeProperty = "dataType";
         /// <summary>
         /// Message content.
         /// </summary>
-        [JsonPropertyName("message"), JsonConverter(typeof(BinaryDataJsonConverter))]
+        [JsonPropertyName(MessageProperty), JsonConverter(typeof(BinaryDataJsonConverter))]
         public BinaryData Message { get; }
 
         /// <summary>
         /// Message data type.
         /// </summary>
-        [JsonPropertyName("dataType"), JsonConverter(typeof(JsonStringEnumConverter))]
+        [JsonPropertyName(DataTypeProperty), JsonConverter(typeof(JsonStringEnumConverter))]
         public MessageDataType DataType { get; }
 
         /// <summary>

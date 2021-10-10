@@ -31,7 +31,7 @@ namespace System.Net.Http
         private sealed class SimpleResponse
         {
             [JsonProperty("body")]
-            public Stream Body { get; set; }
+            public byte[] Body { get; set; }
 
             [JsonProperty("status")]
             public int Status { get; set; }
@@ -41,10 +41,10 @@ namespace System.Net.Http
 
             public static async Task<SimpleResponse> FromHttpResponse(HttpResponseMessage response)
             {
-                Stream body = null;
+                byte[] body = null;
                 if (response.Content != null)
                 {
-                    body = await response.Content.ReadAsStreamAsync().ConfigureAwait(false);
+                    body = await response.Content.ReadAsByteArrayAsync().ConfigureAwait(false);
                 }
                 return new SimpleResponse
                 {

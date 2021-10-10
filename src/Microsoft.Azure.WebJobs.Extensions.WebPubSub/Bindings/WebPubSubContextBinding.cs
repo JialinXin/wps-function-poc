@@ -44,7 +44,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
 
             try
             {
-                var serviceRequest = await request.ReadWebPubSubRequestAsync(attrResolved.ValidationOptions);
+                var serviceRequest = await request.ReadWebPubSubRequestAsync(attrResolved.ValidationOptions).ConfigureAwait(false);
 
                 switch (serviceRequest)
                 {

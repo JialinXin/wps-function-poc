@@ -83,6 +83,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
             // register JsonConverters
             RegisterJsonConverter();
 
+
             // bindings
             context
                 .AddConverter<WebPubSubConnection, JObject>(JObject.FromObject)

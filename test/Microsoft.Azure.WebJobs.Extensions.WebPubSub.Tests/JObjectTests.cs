@@ -2,6 +2,7 @@
 // Licensed under the MIT License. See License.txt in the project root for license information.
 
 using System;
+using System.Collections.Generic;
 using System.Net;
 using System.Net.Http;
 using System.Threading.Tasks;
@@ -124,7 +125,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub.Tests
         }
 
         [TestCase]
-        public void TestWebPubSubContext()
+        public void TestWebPubSubContext_ConnectedEvent()
         {
             var context = new WebPubSubConnectionContext()
             {
@@ -141,6 +142,72 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub.Tests
             Assert.NotNull(serialize["response"]);
             Assert.AreEqual("", serialize["errorMessage"].ToString());
             Assert.AreEqual("", serialize["errorCode"].ToString());
+            Assert.AreEqual("False", serialize["isValidationRequest"].ToString());
+        }
+
+        [TestCase]
+        public void TestWebPubSubContext_ConnectEvent()
+        {
+            var context = new WebPubSubConnectionContext()
+            {
+                ConnectionId = "connectionId",
+                UserId = "userA",
+                EventName = "connected",
+                EventType = WebPubSubEventType.System
+            };
+            var claims = new Dictionary<string, string[]>
+            {
+                { "aa", new string[]{"aa1, aa2"} },
+                { "bb", new string[]{"bb, bb2"} },
+            };
+            var subprotocol = new string[] { "sub1", "sub2" };
+            var test = new WebPubSubContext(new ConnectEventRequest(context, claims, null, subprotocol, null));
+
+            var serialize = JObject.FromObject(test);
+            var request = serialize["request"];
+
+            Assert.NotNull(request);
+            Assert.AreEqual(subprotocol, request["subprotocols"].ToObject<string[]>());
+            Assert.NotNull(serialize["response"]);
+            Assert.AreEqual("", serialize["errorMessage"].ToString());
+            Assert.AreEqual("", serialize["errorCode"].ToString());
+            Assert.AreEqual("False", serialize["isValidationRequest"].ToString());
+        }
+
+        [TestCase]
+        public void TestWebPubSubContext_UserEvent()
+        {
+            var context = new WebPubSubConnectionContext()
+            {
+                ConnectionId = "connectionId",
+                UserId = "userA",
+                EventName = "connected",
+                EventType = WebPubSubEventType.System
+            };
+            var test = new WebPubSubContext(new UserEventRequest(context, BinaryData.FromString("test"), MessageDataType.Text));
+
+            var serialize = JObject.FromObject(test);
+            var request = serialize["request"];
+
+            Assert.NotNull(request);
+            Assert.AreEqual("test", request["message"].ToString());
+            Assert.NotNull(serialize["response"]);
+            Assert.AreEqual("", serialize["errorMessage"].ToString());
+            Assert.AreEqual("", serialize["errorCode"].ToString());
+            Assert.AreEqual("False", serialize["isValidationRequest"].ToString());
+        }
+
+        [TestCase]
+        public void TestWebPubSubContext_ErrorResponse()
+        {
+            var test = new WebPubSubContext("Invalid Request", WebPubSubErrorCode.UserError);
+
+            var serialize = JObject.FromObject(test);
+
+            Assert.Null(serialize["request"]);
+            Assert.NotNull(serialize["response"]);
+            Assert.AreEqual("Invalid Request", serialize["errorMessage"].ToString());
+            Assert.AreEqual("UserError", serialize["errorCode"].ToString());
             Assert.AreEqual("False", serialize["isValidationRequest"].ToString());
         }
 

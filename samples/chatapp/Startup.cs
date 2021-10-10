@@ -44,7 +44,7 @@ namespace chatapp
 
             app.UseEndpoints(endpoints =>
             {
-                endpoints.MapWebPubSubHub<SampleHub>("api");
+                endpoints.MapWebPubSubHub<SampleHub>("/api");
 
                 endpoints.MapGet("/negotiate", async context =>
                 {

@@ -5,7 +5,7 @@ using Microsoft.Azure.WebPubSub.AspNetCore;
 
 namespace Microsoft.AspNetCore.Builder
 {
-    public static class ComponentEndpointRouteBuilderExtensions
+    public static class WebPubSubEndpointRouteBuilderExtensions
     {
         public static ComponentEndpointConventionBuilder MapWebPubSubHub<THub>(
             this IEndpointRouteBuilder endpoints,
