@@ -198,14 +198,40 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub.Tests
         }
 
         [TestCase]
+        public void TestWebPubSubContext_DisconnectedEvent()
+        {
+            var context = new WebPubSubConnectionContext()
+            {
+                ConnectionId = "connectionId",
+                UserId = "userA",
+                EventName = "connected",
+                EventType = WebPubSubEventType.System
+            };
+            var test = new WebPubSubContext(new DisconnectedEventRequest("dropped"));
+
+            var serialize = JObject.FromObject(test);
+            var request = serialize["request"];
+
+            Assert.NotNull(request);
+            Assert.AreEqual("dropped", request["reason"].ToString());
+            Assert.NotNull(serialize["response"]);
+            Assert.AreEqual("", serialize["errorMessage"].ToString());
+            Assert.AreEqual("", serialize["errorCode"].ToString());
+            Assert.AreEqual("False", serialize["isValidationRequest"].ToString());
+        }
+
+        [TestCase]
         public void TestWebPubSubContext_ErrorResponse()
         {
             var test = new WebPubSubContext("Invalid Request", WebPubSubErrorCode.UserError);
 
             var serialize = JObject.FromObject(test);
+            var response = serialize["response"];
 
             Assert.Null(serialize["request"]);
-            Assert.NotNull(serialize["response"]);
+            Assert.NotNull(response);
+            Assert.AreEqual("400", response["status"].ToString());
+            Assert.AreEqual("Invalid Request", response["body"].ToString());
             Assert.AreEqual("Invalid Request", serialize["errorMessage"].ToString());
             Assert.AreEqual("UserError", serialize["errorCode"].ToString());
             Assert.AreEqual("False", serialize["isValidationRequest"].ToString());

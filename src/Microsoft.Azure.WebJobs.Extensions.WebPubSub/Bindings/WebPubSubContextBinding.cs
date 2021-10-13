@@ -17,13 +17,16 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
     {
         private const string HttpRequestName = "$request";
         private readonly Type _userType;
+        private readonly WebPubSubFunctionsOptions _options;
 
         public WebPubSubContextBinding(
             BindingProviderContext context,
             IConfiguration configuration,
-            INameResolver nameResolver) : base(context, configuration, nameResolver)
+            INameResolver nameResolver,
+            WebPubSubFunctionsOptions options) : base(context, configuration, nameResolver)
         {
             _userType = context.Parameter.ParameterType;
+            _options = options;
         }
 
         protected async override Task<IValueProvider> BuildAsync(WebPubSubContextAttribute attrResolved, IReadOnlyDictionary<string, object> bindingData)
@@ -44,7 +47,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
 
             try
             {
-                var serviceRequest = await request.ReadWebPubSubRequestAsync(attrResolved.ValidationOptions).ConfigureAwait(false);
+                // Attribute options will overwrite global settings.
+                var validationOptions = _options.ValidationOptions;
+                if (attrResolved.ValidationOptions != null)
+                {
+                    validationOptions = new WebPubSubValidationOptions(attrResolved.ValidationOptions);
+                }
+                var serviceRequest = await request.ReadWebPubSubRequestAsync(validationOptions).ConfigureAwait(false);
 
                 switch (serviceRequest)
                 {
@@ -53,7 +62,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
                             var response = new HttpResponseMessage();
                             if (validationRequest.IsValid)
                             {
-                                response.Headers.Add(Constants.Headers.WebHookAllowedOrigin, "*");
+                                response.Headers.Add(Constants.Headers.WebHookAllowedOrigin, Constants.AllowedAllOrigins);
                             }
                             else
                             {

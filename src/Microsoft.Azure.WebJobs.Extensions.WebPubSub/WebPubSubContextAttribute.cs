@@ -10,6 +10,15 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
     [Binding]
     public class WebPubSubContextAttribute : Attribute
     {
-        public WebPubSubValidationOptions ValidationOptions { get; set; }
+        public WebPubSubContextAttribute(params string[] validationOptions)
+        {
+            ValidationOptions = validationOptions;
+        }
+        
+        public WebPubSubContextAttribute()
+        {
+        }
+
+        public string[] ValidationOptions { get; }
     }
 }

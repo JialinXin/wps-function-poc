@@ -46,7 +46,7 @@ namespace SimpleChat_Input
         [FunctionName("connect")]
         public static object Connect(
             [HttpTrigger(AuthorizationLevel.Anonymous, "post")] HttpRequest req,
-            [WebPubSubContext] WebPubSubContext wpsReq)
+            [WebPubSubContext("Endpoint=http://localhost;Port=8080;AccessKey=ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789ABCDEFGE;Version=1.0;")] WebPubSubContext wpsReq)
         {
             if (wpsReq.Request is ValidationRequest || wpsReq.ErrorMessage != null)
             {

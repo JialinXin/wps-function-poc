@@ -40,7 +40,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
 
         private static string ConvertString(WebPubSubEventRequest request)
         {
-            switch(request)
+            switch (request)
             {
                 case ConnectedEventRequest connected:
                     return SystemJson.JsonSerializer.Serialize<ConnectedEventRequest>(connected);
