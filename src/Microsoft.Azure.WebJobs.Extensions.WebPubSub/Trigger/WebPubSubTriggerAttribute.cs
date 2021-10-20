@@ -15,18 +15,46 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
     public class WebPubSubTriggerAttribute : Attribute
     {
         /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="hub"></param>
+        /// <param name="eventType"></param>
+        /// <param name="eventName"></param>
+        /// <param name="connectionStrings"></param>
+        public WebPubSubTriggerAttribute(string hub, WebPubSubEventType eventType, string eventName, params string[] connections)
+        {
+            Hub = hub;
+            EventName = eventName;
+            EventType = eventType;
+            Connections = connections;
+        }
+
+        /// <summary>
         /// Used to map to method name automatically
         /// </summary>
         /// <param name="hub"></param>
         /// <param name="eventName"></param>
         /// <param name="eventType"></param>
         public WebPubSubTriggerAttribute(string hub, WebPubSubEventType eventType, string eventName)
+            : this(hub, eventType, eventName, null)
         {
-            Hub = hub;
-            EventName = eventName;
-            EventType = eventType;
         }
 
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="eventType"></param>
+        /// <param name="eventName"></param>
+        public WebPubSubTriggerAttribute(WebPubSubEventType eventType, string eventName, params string[] connections)
+            : this("", eventType, eventName, connections)
+        {
+        }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="eventType"></param>
+        /// <param name="eventName"></param>
         public WebPubSubTriggerAttribute(WebPubSubEventType eventType, string eventName)
             : this ("", eventType, eventName)
         {
@@ -49,5 +77,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
         /// </summary>
         [Required]
         public WebPubSubEventType EventType { get; }
+
+        /// <summary>
+        /// Allowed service upstream ConnectionString for Signature checks.
+        /// </summary>
+        public string[] Connections { get; }
     }
 }

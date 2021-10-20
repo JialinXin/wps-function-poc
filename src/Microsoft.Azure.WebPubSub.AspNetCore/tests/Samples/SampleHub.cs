@@ -6,6 +6,7 @@ namespace Microsoft.Azure.WebPubSub.AspNetCore.Tests.Samples
 {
     public class SampleHub : WebPubSubHub
     {
+        #region Snippet:WebPubSubConnectMethods
         public override ValueTask<WebPubSubEventResponse> OnConnectAsync(ConnectEventRequest request, CancellationToken cancellationToken)
         {
             var response = new ConnectEventResponse
@@ -14,11 +15,11 @@ namespace Microsoft.Azure.WebPubSub.AspNetCore.Tests.Samples
             };
             return new ValueTask<WebPubSubEventResponse>(response);
         }
+        #endregion
 
         public override ValueTask<WebPubSubEventResponse> OnMessageReceivedAsync(UserEventRequest request, CancellationToken cancellationToken)
         {
-            var response = new UserEventResponse("ack");
-            return new ValueTask<WebPubSubEventResponse>(response);
+            return new ValueTask<WebPubSubEventResponse>(request.CreateResponse("ack"));
         }
     }
 }

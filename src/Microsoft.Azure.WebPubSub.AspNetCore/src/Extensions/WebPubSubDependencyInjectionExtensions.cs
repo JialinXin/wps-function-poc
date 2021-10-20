@@ -1,8 +1,9 @@
 ﻿// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
-
+#if NETCOREAPP3_0_OR_GREATER
 using System;
 using Microsoft.Azure.WebPubSub.AspNetCore;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 
 namespace Microsoft.Extensions.DependencyInjection
 {
@@ -10,9 +11,37 @@ namespace Microsoft.Extensions.DependencyInjection
     {
         public static IServiceCollection AddWebPubSub(this IServiceCollection services, Action<WebPubSubOptions> configure)
         {
-            services.Configure(configure);
+            if (services == null)
+            {
+                throw new ArgumentNullException(nameof(services));
+            }
+
+            if (configure == null)
+            {
+                throw new ArgumentNullException(nameof(configure));
+            }
+
+            var options = new WebPubSubOptions();
+            configure.Invoke(options);
+
+            services.AddWebPubSub()
+                .TryAddSingleton(options);
 
             return services;
         }
+
+        public static IServiceCollection AddWebPubSub(this IServiceCollection services)
+        {
+            if (services == null)
+            {
+                throw new ArgumentNullException(nameof(services));
+            }
+
+            services.TryAddSingleton<WebPubSubOptions>();
+
+            return services.AddSingleton<ServiceRequestHandlerAdapter>()
+                .AddSingleton<WebPubSubMarkerService>();
+        }
     }
 }
+#endif

@@ -3,47 +3,47 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Text.Json;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Azure.WebPubSub.Common;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace Microsoft.Azure.WebPubSub.AspNetCore
 {
     internal class ServiceRequestHandlerAdapter
     {
-        private readonly WebPubSubValidationOptions _options;
+        private readonly WebPubSubOptions _options;
+        private readonly IServiceProvider _provider;
 
-        // <hubName, <Hub,path>>
-        private readonly Dictionary<string, HubRegistry> _hubRegistry = new(StringComparer.OrdinalIgnoreCase);
+        // <hubName, HubImpl>
+        private readonly Dictionary<string, WebPubSubHub> _hubRegistry = new(StringComparer.OrdinalIgnoreCase);
+
+        public ServiceRequestHandlerAdapter(IServiceProvider provider, WebPubSubOptions options)
+        {
+            _provider = provider;
+            _options = options;
+        }
 
         // for tests.
-        internal ServiceRequestHandlerAdapter(WebPubSubValidationOptions options, WebPubSubHub hub, string path)
+        internal ServiceRequestHandlerAdapter(WebPubSubOptions options, WebPubSubHub hub)
         {
             _options = options;
-            _hubRegistry.Add(hub.GetType().Name, new HubRegistry(hub, path));
+            _hubRegistry.Add(hub.GetType().Name, hub);
         }
 
-        public ServiceRequestHandlerAdapter(WebPubSubValidationOptions options, Dictionary<string, HubRegistry> hubRegistry)
+        public void RegisterHub<THub>() where THub : WebPubSubHub
         {
-            _options = options;
-            _hubRegistry = hubRegistry;
-        }
-
-        public string GetPath(string hubName)
-        {
-            if (_hubRegistry.TryGetValue(hubName, out var registry))
-            {
-                return registry.Path;
-            }
-            return null;
+            var hub = Create<THub>();
+            _hubRegistry[hub.GetType().Name] = hub;
         }
 
         public WebPubSubHub GetHub(string hubName)
         {
-            if (_hubRegistry.TryGetValue(hubName, out var registry))
+            if (_hubRegistry.TryGetValue(hubName, out var hub))
             {
-                return registry.Hub;
+                return hub;
             }
             return null;
         }
@@ -71,9 +71,9 @@ namespace Microsoft.Azure.WebPubSub.AspNetCore
                 return;
             }
 
-            // Hub not registered or path not match will skip.
+            // Hub not registered
             var hub = GetHub(hubName);
-            if (hub == null || !context.Request.Path.StartsWithSegments(GetPath(hubName)))
+            if (hub == null)
             {
                 context.Response.StatusCode = StatusCodes.Status400BadRequest;
                 await context.Response.WriteAsync("Hub is not registered.").ConfigureAwait(false);
@@ -83,10 +83,11 @@ namespace Microsoft.Azure.WebPubSub.AspNetCore
 
             try
             {
-                var serviceRequest = await request.ReadWebPubSubEventAsync(_options);
+                var serviceRequest = await request.ReadWebPubSubEventAsync(_options.ValidationOptions);
 
                 switch (serviceRequest)
                 {
+                    // should not hit.
                     case ValidationRequest validationRequest:
                         {
                             if (validationRequest.IsValid)
@@ -185,5 +186,20 @@ namespace Microsoft.Azure.WebPubSub.AspNetCore
                 MessageDataType.Json => $"{Constants.ContentTypes.JsonContentType}; {Constants.ContentTypes.CharsetUTF8}",
                 _ => Constants.ContentTypes.BinaryContentType
             };
+
+        private THub Create<THub>() where THub : WebPubSubHub
+        {
+            var hub = _provider.GetService<THub>();
+            if (hub == null)
+            {
+                hub = ActivatorUtilities.CreateInstance<THub>(_provider);
+            }
+
+            if (_hubRegistry.TryGetValue(nameof(hub), out _))
+            {
+                Debug.Assert(true, $"{typeof(THub)} must not be reused.");
+            }
+            return hub;
+        }
     }
 }

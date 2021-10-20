@@ -41,7 +41,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
         {
             if (req.IsValidationRequest(out var requestHosts))
             {
-                return RespondToServiceAbuseCheck(requestHosts, _options.ValidationOptions);
+                return RespondToServiceAbuseCheck(requestHosts, new WebPubSubValidationOptions(_options.ConnectionString));
             }
 
             if (!TryParseCloudEvents(req, out var context))
@@ -55,7 +55,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
 
             if (_listeners.TryGetValue(function, out var executor))
             {
-                if (!context.IsValidSignature(_options.ValidationOptions))
+                if (!context.IsValidSignature(executor.ValidationOptions))
                 {
                     return new HttpResponseMessage(HttpStatusCode.Unauthorized);
                 }

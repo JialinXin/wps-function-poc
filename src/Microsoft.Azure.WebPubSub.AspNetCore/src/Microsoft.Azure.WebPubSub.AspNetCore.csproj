@@ -4,7 +4,7 @@
     <AssemblyTitle>Azure SDK for WebPubSub</AssemblyTitle>
     <Version>1.0.0-beta.1</Version>
     <PackageTags>Azure, WebPubSub, SignalR</PackageTags>
-    <TargetFrameworks>netstandard2.0;netcoreapp3.0</TargetFrameworks>
+    <TargetFrameworks>netstandard2.0;netcoreapp3.0;netcoreapp3.1;net5.0</TargetFrameworks>
     <NoWarn>$(NoWarn);419</NoWarn>
     <LangVersion>9.0</LangVersion>
   </PropertyGroup>
@@ -15,7 +15,7 @@
     <PackageReference Include="System.Memory.Data" Version="1.0.2" />
   </ItemGroup>
 
-  <ItemGroup Condition=" '$(TargetFramework)' == 'netcoreapp3.0'">
+  <ItemGroup Condition=" '$(TargetFramework)' != 'netstandard2.0'">
     <FrameworkReference Include="Microsoft.AspNetCore.App" />
   </ItemGroup>
 

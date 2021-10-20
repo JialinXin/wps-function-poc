@@ -71,7 +71,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
             var attributeName = $"{hub}.{_attribute.EventType}.{_attribute.EventName}";
             var listernerKey = attributeName;
 
-            return Task.FromResult<IListener>(new WebPubSubListener(context.Executor, listernerKey, _dispatcher));
+            var validationOptions = _attribute.Connections != null ?
+                new WebPubSubValidationOptions(_attribute.Connections) :
+                new WebPubSubValidationOptions(_options.ConnectionString);
+
+            return Task.FromResult<IListener>(new WebPubSubListener(context.Executor, listernerKey, _dispatcher, validationOptions));
         }
 
         public ParameterDescriptor ToParameterDescriptor()

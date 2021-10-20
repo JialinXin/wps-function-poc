@@ -6,6 +6,7 @@ namespace Microsoft.Azure.WebPubSub.AspNetCore
     internal static class Constants
     {
         public static readonly char[] HeaderSeparator = { ',' };
+        public const string AllowedAllOrigins = "*";
 
         public static class ContentTypes
         {

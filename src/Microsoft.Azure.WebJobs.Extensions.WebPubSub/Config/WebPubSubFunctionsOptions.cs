@@ -23,12 +23,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
         public string ConnectionString { get; set; }
 
         /// <summary>
-        /// Global validation options use for Abuse Protection and Signature checks for WebPubSubTrigger.
-        /// And WebPubSubContext input binding attribute options will overwite this.
-        /// </summary>
-        public WebPubSubValidationOptions ValidationOptions { get; set; }
-
-        /// <summary>
         /// Formats the options as JSON objects for display.
         /// </summary>
         /// <returns>Options formatted as JSON.</returns>

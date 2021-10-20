@@ -74,11 +74,11 @@ namespace SimpleChat
         // single message sample
         [FunctionName("broadcast")]
         public static async Task<WebPubSubEventResponse> Broadcast(
-            [WebPubSubTrigger("%abc%", WebPubSubEventType.User, "message")]
+            [WebPubSubTrigger("%abc%", WebPubSubEventType.User, "message", "Endpoint=http://localhost;Port=8080;AccessKey=ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789ABCDEFGE;Version=1.0;")]
             UserEventRequest request,
             WebPubSubConnectionContext connectionContext,
-            //BinaryData message,
-            //MessageDataType dataType,
+            BinaryData message,
+            MessageDataType dataType,
             [WebPubSub(Hub = "simplechat")] IAsyncCollector<WebPubSubOperation> operations)
         {
             await operations.AddAsync(new SendToAll

@@ -61,7 +61,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
             return new WebPubSubTriggerAttribute(
                 hub,
                 attribute.EventType,
-                eventName);
+                eventName,
+                attribute.Connections);
         }
     }
 }

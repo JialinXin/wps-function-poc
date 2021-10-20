@@ -67,15 +67,6 @@ namespace Microsoft.Azure.WebPubSub.AspNetCore
             return _hostKeyMappings.TryGetValue(host, out accessKey);
         }
 
-        internal List<string> GetAllowedHosts()
-        {
-            return _hostKeyMappings.Select(x => x.Key).ToList();
-        }
-
-        /// <summary>
-        /// Parse connection string to endpoint and credential
-        /// </summary>
-        /// <returns></returns>
         internal static (Uri Endpoint, string AccessKey) ParseConnectionString(string connectionString)
         {
             if (string.IsNullOrEmpty(connectionString))

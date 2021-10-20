@@ -11,7 +11,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
     /// Validation options when using Web PubSub service.
     /// Used for Abuse Protection and Signature checks.
     /// </summary>
-    public class WebPubSubValidationOptions
+    internal class WebPubSubValidationOptions
     {
         private const string EndpointPropertyName = "Endpoint";
         private const string AccessKeyPropertyName = "AccessKey";

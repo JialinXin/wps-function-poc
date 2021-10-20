@@ -48,11 +48,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
             try
             {
                 // Attribute options will overwrite global settings.
-                var validationOptions = _options.ValidationOptions;
-                if (attrResolved.ValidationOptions != null)
-                {
-                    validationOptions = new WebPubSubValidationOptions(attrResolved.ValidationOptions);
-                }
+                var validationOptions = attrResolved.Connections != null ?
+                    new WebPubSubValidationOptions(attrResolved.Connections) :
+                    new WebPubSubValidationOptions(_options.ConnectionString);
+
                 var serviceRequest = await request.ReadWebPubSubRequestAsync(validationOptions).ConfigureAwait(false);
 
                 switch (serviceRequest)
