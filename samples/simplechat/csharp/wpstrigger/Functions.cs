@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.Azure.WebJobs;
 using Microsoft.Azure.WebJobs.Extensions.Http;
 using Microsoft.Azure.WebJobs.Extensions.WebPubSub;
+using Microsoft.Azure.WebJobs.Extensions.WebPubSub.Operations;
 using Microsoft.Azure.WebPubSub.Common;
 using Newtonsoft.Json;
 using System;
@@ -35,7 +36,7 @@ namespace SimpleChat
         #region Work with WebPubSubTrigger
         [FunctionName("connect")]
         public static WebPubSubEventResponse Connect(
-            [WebPubSubTrigger("simplechat", WebPubSubEventType.System, "connect")] ConnectEventRequest request)
+            [WebPubSubTrigger("triggerchat", WebPubSubEventType.System, "connect")] ConnectEventRequest request)
         {
             Console.WriteLine($"Received client connect with connectionId: {request.ConnectionContext.ConnectionId}");
             if (request.ConnectionContext.UserId == "attacker")
@@ -74,12 +75,12 @@ namespace SimpleChat
         // single message sample
         [FunctionName("broadcast")]
         public static async Task<WebPubSubEventResponse> Broadcast(
-            [WebPubSubTrigger("%abc%", WebPubSubEventType.User, "message", "Endpoint=http://localhost;Port=8080;AccessKey=ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789ABCDEFGE;Version=1.0;")]
+            [WebPubSubTrigger("%abc%", WebPubSubEventType.User, "message")]
             UserEventRequest request,
             WebPubSubConnectionContext connectionContext,
             BinaryData message,
             MessageDataType dataType,
-            [WebPubSub(Hub = "simplechat")] IAsyncCollector<WebPubSubOperation> operations)
+            [WebPubSub(Hub = "triggerchat")] IAsyncCollector<WebPubSubOperation> operations)
         {
             await operations.AddAsync(new SendToAll
             {

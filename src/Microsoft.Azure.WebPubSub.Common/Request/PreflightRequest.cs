@@ -8,7 +8,7 @@ namespace Microsoft.Azure.WebPubSub.Common
     /// <summary>
     /// Validation request for abuse protection.
     /// </summary>
-    public sealed class ValidationRequest : WebPubSubEventRequest
+    public sealed class PreflightRequest : WebPubSubEventRequest
     {
         /// <summary>
         /// Flag to indicate whether is a valid request.
@@ -16,7 +16,7 @@ namespace Microsoft.Azure.WebPubSub.Common
         [JsonPropertyName("isValid")]
         public bool IsValid { get; }
 
-        internal ValidationRequest(bool isValid)
+        internal PreflightRequest(bool isValid)
             :base(null)
         {
             IsValid = isValid;

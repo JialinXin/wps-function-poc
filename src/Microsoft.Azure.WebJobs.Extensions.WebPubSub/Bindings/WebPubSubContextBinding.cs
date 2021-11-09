@@ -1,5 +1,5 @@
-﻿// Copyright (c) Microsoft. All rights reserved.
-// Licensed under the MIT license. See LICENSE file in the project root for full license information.
+﻿// Copyright (c) Microsoft Corporation. All rights reserved.
+// Licensed under the MIT License.
 
 using System;
 using System.Collections.Generic;
@@ -47,16 +47,15 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
 
             try
             {
-                // Attribute options will overwrite global settings.
+                // fallback to use global settings.
                 var validationOptions = attrResolved.Connections != null ?
                     new WebPubSubValidationOptions(attrResolved.Connections) :
                     new WebPubSubValidationOptions(_options.ConnectionString);
-
                 var serviceRequest = await request.ReadWebPubSubRequestAsync(validationOptions).ConfigureAwait(false);
 
                 switch (serviceRequest)
                 {
-                    case ValidationRequest validationRequest:
+                    case PreflightRequest validationRequest:
                         {
                             var response = new HttpResponseMessage();
                             if (validationRequest.IsValid)

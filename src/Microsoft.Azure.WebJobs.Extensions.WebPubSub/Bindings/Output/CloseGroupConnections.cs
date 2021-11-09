@@ -7,18 +7,23 @@ using Newtonsoft.Json.Serialization;
 namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub.Operations
 {
     /// <summary>
-    /// Operation to close a connection.
+    /// Operation to close connections in a group.
     /// </summary>
     [JsonObject(NamingStrategyType = typeof(CamelCaseNamingStrategy))]
-    public class CloseClientConnection : WebPubSubOperation
+    public class CloseGroupConnections : WebPubSubOperation
     {
         /// <summary>
-        /// Target connectionId.
+        /// Target group name.
         /// </summary>
-        public string ConnectionId { get; set; }
+        public string Group { get; set; }
 
         /// <summary>
-        /// Reason to close the connection.
+        /// ConnectionIds to exclude.
+        /// </summary>
+        public string[] Excluded { get; set; }
+
+        /// <summary>
+        /// Reason to close the connections.
         /// </summary>
         public string Reason { get; set; }
     }

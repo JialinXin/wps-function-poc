@@ -9,6 +9,7 @@ using Microsoft.AspNetCore.Http;
 using Newtonsoft.Json;
 using Microsoft.Azure.WebJobs.Extensions.WebPubSub;
 using Microsoft.Azure.WebPubSub.Common;
+using Microsoft.Azure.WebJobs.Extensions.WebPubSub.Operations;
 
 namespace SimpleChat_Input
 {
@@ -48,7 +49,7 @@ namespace SimpleChat_Input
             [HttpTrigger(AuthorizationLevel.Anonymous, "post")] HttpRequest req,
             [WebPubSubContext] WebPubSubContext wpsReq)
         {
-            if (wpsReq.Request is ValidationRequest || wpsReq.ErrorMessage != null)
+            if (wpsReq.Request is PreflightRequest || wpsReq.ErrorMessage != null)
             {
                 return wpsReq.Response;
             }
@@ -63,7 +64,7 @@ namespace SimpleChat_Input
             [WebPubSubContext] WebPubSubContext wpsReq,
             [WebPubSub(Hub = "%abc%")] IAsyncCollector<WebPubSubOperation> operations)
         {
-            if (wpsReq.Request is ValidationRequest || wpsReq.ErrorMessage != null)
+            if (wpsReq.Request is PreflightRequest || wpsReq.ErrorMessage != null)
             {
                 return wpsReq.Response;
             }
@@ -97,6 +98,13 @@ namespace SimpleChat_Input
                 UserId = wpsReq.Request.ConnectionContext.UserId,
                 Group = "group1"
             });
+
+            await webpubsubOperation.AddAsync(new AddConnectionToGroup
+            {
+                ConnectionId = "",
+                Group = "group1"
+            });
+
             await webpubsubOperation.AddAsync(new SendToUser
             {
                 UserId = wpsReq.Request.ConnectionContext.UserId,

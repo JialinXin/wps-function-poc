@@ -1,12 +1,14 @@
-﻿// Copyright (c) Microsoft. All rights reserved.
-// Licensed under the MIT license. See LICENSE file in the project root for full license information.
+﻿// Copyright (c) Microsoft Corporation. All rights reserved.
+// Licensed under the MIT License.
 
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Azure.WebJobs.Description;
+using Microsoft.Azure.WebJobs.Extensions.WebPubSub.Operations;
 using Microsoft.Azure.WebJobs.Host.Config;
 using Microsoft.Azure.WebJobs.Logging;
 using Microsoft.Azure.WebPubSub.Common;
@@ -168,60 +170,16 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
         {
             if (input.TryGetValue("operationKind", StringComparison.OrdinalIgnoreCase, out var kind))
             {
-                if (kind.ToString().Equals(nameof(SendToAll), StringComparison.OrdinalIgnoreCase))
+                var opeartions = typeof(WebPubSubOperation).Assembly.GetTypes().Where(t => t.BaseType == typeof(WebPubSubOperation));
+                foreach (var item in opeartions)
                 {
-                    CheckDataType(input);
-                    return input.ToObject<SendToAll>();
-                }
-                else if (kind.ToString().Equals(nameof(SendToConnection), StringComparison.OrdinalIgnoreCase))
-                {
-                    CheckDataType(input);
-                    return input.ToObject<SendToConnection>();
-                }
-                else if (kind.ToString().Equals(nameof(SendToUser), StringComparison.OrdinalIgnoreCase))
-                {
-                    CheckDataType(input);
-                    return input.ToObject<SendToUser>();
-                }
-                else if (kind.ToString().Equals(nameof(SendToGroup), StringComparison.OrdinalIgnoreCase))
-                {
-                    CheckDataType(input);
-                    return input.ToObject<SendToGroup>();
-                }
-                else if (kind.ToString().Equals(nameof(AddUserToGroup), StringComparison.OrdinalIgnoreCase))
-                {
-                    return input.ToObject<AddUserToGroup>();
-                }
-                else if (kind.ToString().Equals(nameof(RemoveUserFromGroup), StringComparison.OrdinalIgnoreCase))
-                {
-                    return input.ToObject<RemoveUserFromGroup>();
-                }
-                else if (kind.ToString().Equals(nameof(RemoveUserFromAllGroups), StringComparison.OrdinalIgnoreCase))
-                {
-                    return input.ToObject<RemoveUserFromAllGroups>();
-                }
-                else if (kind.ToString().Equals(nameof(AddConnectionToGroup), StringComparison.OrdinalIgnoreCase))
-                {
-                    return input.ToObject<AddConnectionToGroup>();
-                }
-                else if (kind.ToString().Equals(nameof(RemoveConnectionFromGroup), StringComparison.OrdinalIgnoreCase))
-                {
-                    return input.ToObject<RemoveConnectionFromGroup>();
-                }
-                else if (kind.ToString().Equals(nameof(CloseClientConnection), StringComparison.OrdinalIgnoreCase))
-                {
-                    return input.ToObject<CloseClientConnection>();
-                }
-                else if (kind.ToString().Equals(nameof(GrantPermission), StringComparison.OrdinalIgnoreCase))
-                {
-                    return input.ToObject<GrantPermission>();
-                }
-                else if (kind.ToString().Equals(nameof(RevokePermission), StringComparison.OrdinalIgnoreCase))
-                {
-                    return input.ToObject<RevokePermission>();
+                    if (TryToWebPubSubOperation(input, kind.ToString(), item, out var operation))
+                    {
+                        return operation;
+                    }
                 }
             }
-            return input.ToObject<WebPubSubOperation>();
+            throw new ArgumentException($"Not supported WebPubSubOperation: {kind}.");
         }
 
         internal static WebPubSubOperation[] ConvertToWebPubSubOperationArray(JArray input)
@@ -234,7 +192,23 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
             return result.ToArray();
         }
 
-        // Binary data accepts ArrayBuffer only.
+        private static bool TryToWebPubSubOperation(JObject input, string operationKind, Type operationType, out WebPubSubOperation operation)
+        {
+            // message events need check dataType.
+            if (operationKind.StartsWith("Send", StringComparison.OrdinalIgnoreCase))
+            {
+                CheckDataType(input);
+            }
+            if (operationKind.Equals(operationType.Name, StringComparison.OrdinalIgnoreCase))
+            {
+                operation = input.ToObject(operationType) as WebPubSubOperation;
+                return true;
+            }
+            operation = null;
+            return false;
+        }
+
+        // Binary data accepts ArrayBuffer only, script language checks.
         private static void CheckDataType(JObject input)
         {
             if (input.TryGetValue("dataType", StringComparison.OrdinalIgnoreCase, out var value))

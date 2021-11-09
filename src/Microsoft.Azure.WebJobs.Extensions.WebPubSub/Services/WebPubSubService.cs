@@ -1,7 +1,6 @@
-﻿// Copyright (c) Microsoft. All rights reserved.
-// Licensed under the MIT license. See LICENSE file in the project root for full license information.
+﻿// Copyright (c) Microsoft Corporation. All rights reserved.
+// Licensed under the MIT License.
 
-using System;
 using Azure.Messaging.WebPubSub;
 
 namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
@@ -25,7 +24,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
 
         internal WebPubSubConnection GetClientConnection(string userId = null, string[] roles = null)
         {
-            var url = _client.GenerateClientAccessUri(userId: userId, roles: roles);
+            var url = _client.GetClientAccessUri(userId: userId, roles: roles);
 
             return new WebPubSubConnection(url);
         }

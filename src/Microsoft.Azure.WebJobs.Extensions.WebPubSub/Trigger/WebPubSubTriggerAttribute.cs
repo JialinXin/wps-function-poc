@@ -1,5 +1,5 @@
-﻿// Copyright (c) Microsoft. All rights reserved.
-// Licensed under the MIT license. See LICENSE file in the project root for full license information.
+﻿// Copyright (c) Microsoft Corporation. All rights reserved.
+// Licensed under the MIT License.
 
 using System;
 using System.ComponentModel.DataAnnotations;
@@ -8,6 +8,9 @@ using Microsoft.Azure.WebJobs.Description;
 
 namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
 {
+    /// <summary>
+    /// Attribute used to bind a parameter to an Azure Web PubSub when a Web PubSub request is coming.
+    /// </summary>
     [AttributeUsage(AttributeTargets.Parameter)]
 #pragma warning disable CS0618 // Type or member is obsolete
     [Binding(TriggerHandlesReturnValue = true)]
@@ -15,12 +18,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
     public class WebPubSubTriggerAttribute : Attribute
     {
         /// <summary>
-        /// 
+        /// Attribute used to bind a parameter to an Azure Web PubSub, when an request is from Azure Web PubSub service.
         /// </summary>
-        /// <param name="hub"></param>
-        /// <param name="eventType"></param>
-        /// <param name="eventName"></param>
-        /// <param name="connectionStrings"></param>
+        /// <param name="hub">Target hub name of the request.</param>
+        /// <param name="eventType">Target event name of the request.</param>
+        /// <param name="eventName">Target event type of the request.</param>
+        /// <param name="connections">Connection strings of allowed upstreams for signature checks.</param>
         public WebPubSubTriggerAttribute(string hub, WebPubSubEventType eventType, string eventName, params string[] connections)
         {
             Hub = hub;
@@ -30,31 +33,32 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
         }
 
         /// <summary>
-        /// Used to map to method name automatically
+        /// Attribute used to bind a parameter to an Azure Web PubSub, when an request is from Azure Web PubSub service.
         /// </summary>
-        /// <param name="hub"></param>
-        /// <param name="eventName"></param>
-        /// <param name="eventType"></param>
+        /// <param name="hub">Target hub name of the request.</param>
+        /// <param name="eventType">Target event name of the request.</param>
+        /// <param name="eventName">Target event type of the request.</param>
         public WebPubSubTriggerAttribute(string hub, WebPubSubEventType eventType, string eventName)
             : this(hub, eventType, eventName, null)
         {
         }
 
         /// <summary>
-        /// 
+        /// Attribute used to bind a parameter to an Azure Web PubSub, when an request is from Azure Web PubSub service.
         /// </summary>
-        /// <param name="eventType"></param>
-        /// <param name="eventName"></param>
+        /// <param name="eventType">Target event name of the request.</param>
+        /// <param name="eventName">Target event type of the request.</param>
+        /// <param name="connections">Connection strings of allowed upstreams for signature checks.</param>
         public WebPubSubTriggerAttribute(WebPubSubEventType eventType, string eventName, params string[] connections)
             : this("", eventType, eventName, connections)
         {
         }
 
         /// <summary>
-        /// 
+        /// Attribute used to bind a parameter to an Azure Web PubSub, when an request is from Azure Web PubSub service.
         /// </summary>
-        /// <param name="eventType"></param>
-        /// <param name="eventName"></param>
+        /// <param name="eventType">Target event name of the request.</param>
+        /// <param name="eventName">Target event type of the request.</param>
         public WebPubSubTriggerAttribute(WebPubSubEventType eventType, string eventName)
             : this ("", eventType, eventName)
         {
@@ -67,13 +71,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
         public string Hub { get; }
 
         /// <summary>
-        /// The event of the request
+        /// The event of the request.
         /// </summary>
         [Required]
         public string EventName { get; }
 
         /// <summary>
-        /// The event type, allowed value is system or user
+        /// The event type, allowed value is system or user.
         /// </summary>
         [Required]
         public WebPubSubEventType EventType { get; }

@@ -4,12 +4,12 @@
 module.exports = async function (context, message) {
   context.bindings.webPubSubEvent = {
     "operationKind": "sendToAll",
-    "message": message,
-    "dataType": context.bindingData.dataType
+    "message": JSON.stringify(message),
+    "dataType": "text"
   };
   var response = { 
-    "message": message,
-    "dataType" : context.bindingData.dataType
+    "message": JSON.stringify(message),
+    "dataType" : "text"
   };
   return response;
 };

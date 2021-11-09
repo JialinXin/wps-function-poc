@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.Azure.WebJobs;
 using Microsoft.Azure.WebJobs.Extensions.Http;
 using Microsoft.Azure.WebJobs.Extensions.WebPubSub;
+using Microsoft.Azure.WebJobs.Extensions.WebPubSub.Operations;
 using Microsoft.Azure.WebPubSub.Common;
 using Microsoft.Extensions.Logging;
 
@@ -19,6 +20,11 @@ namespace notifications
             {
                 Message = BinaryData.FromString($"[DateTime: {DateTime.Now}], MSFT stock price: {GetStockPrice()}"),
                 DataType = MessageDataType.Text
+            });
+            await operations.AddAsync(new AddConnectionToGroup
+            {
+                ConnectionId = "",
+                Group = "aaa"
             });
         }
 

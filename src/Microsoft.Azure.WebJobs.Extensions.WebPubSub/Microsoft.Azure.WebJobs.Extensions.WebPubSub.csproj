@@ -5,39 +5,16 @@
     <PackageId>Microsoft.Azure.WebJobs.Extensions.WebPubSub</PackageId>
     <Description>The Azure Functions extension for Web PubSub Service</Description>
     <LangVersion>9.0</LangVersion>
-    <Version>1.0.0-alpha.20211001.1</Version>
+    <Version>1.0.0-alpha.20211031.1</Version>
     <NoWarn>$(NoWarn);AZC0001;CS1591;SA1636;CA1056;CS0227</NoWarn>
     <IsExtensionClientLibrary>true</IsExtensionClientLibrary>
     <LangVersion>9.0</LangVersion>
   </PropertyGroup>
 
-  <PropertyGroup Condition="'$(Configuration)|$(TargetFramework)|$(Platform)'=='Debug|netstandard2.0|AnyCPU'">
-    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-  </PropertyGroup>
-
-  <PropertyGroup Condition="'$(Configuration)|$(TargetFramework)|$(Platform)'=='Release|netstandard2.0|AnyCPU'">
-    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-  </PropertyGroup>
-
   <ItemGroup>
-    <PackageReference Include="Azure.Core" Version="1.20.0" />
+    <PackageReference Include="Azure.Messaging.WebPubSub" Version="1.0.0-alpha.20211103.1" />
     <PackageReference Include="Microsoft.AspNetCore.Http" Version="2.2.2" />
     <PackageReference Include="Microsoft.Azure.WebJobs" Version="3.0.27" />
-  </ItemGroup>
-
-  <!-- Shared source from Azure.Core -->
-  <ItemGroup>
-    <Compile Include="D:\Code\GitHub_Jialin\azure-sdk-for-net\sdk\core\Azure.Core\src\Shared\AppContextSwitchHelper.cs" LinkBase="Shared" />
-    <Compile Include="D:\Code\GitHub_Jialin\azure-sdk-for-net\sdk\core\Azure.Core\src\Shared\ArrayBufferWriter.cs" LinkBase="Shared" />
-    <Compile Include="D:\Code\GitHub_Jialin\azure-sdk-for-net\sdk\core\Azure.Core\src\Shared\ClientDiagnostics.cs" LinkBase="Shared" />
-    <Compile Include="D:\Code\GitHub_Jialin\azure-sdk-for-net\sdk\core\Azure.Core\src\Shared\ContentTypeUtilities.cs" LinkBase="Shared" />
-    <Compile Include="D:\Code\GitHub_Jialin\azure-sdk-for-net\sdk\core\Azure.Core\src\Shared\DiagnosticScope.cs" LinkBase="Shared" />
-    <Compile Include="D:\Code\GitHub_Jialin\azure-sdk-for-net\sdk\core\Azure.Core\src\Shared\DiagnosticScopeFactory.cs" LinkBase="Shared" />
-    <Compile Include="D:\Code\GitHub_Jialin\azure-sdk-for-net\sdk\core\Azure.Core\src\Shared\HttpMessageSanitizer.cs" LinkBase="Shared" />
-    <Compile Include="D:\Code\GitHub_Jialin\azure-sdk-for-net\sdk\core\Azure.Core\src\Shared\TaskExtensions.cs" LinkBase="Shared" />
-    <Compile Include="D:\Code\GitHub_Jialin\azure-sdk-for-net\sdk\core\Azure.Core\src\Shared\OperationHelpers.cs" LinkBase="Shared" />
-    <Compile Include="D:\Code\GitHub_Jialin\azure-sdk-for-net\sdk\core\Azure.Core\src\Shared\AzureResourceProviderNamespaceAttribute.cs" LinkBase="Shared" />
-    <Compile Include="D:\Code\GitHub_Jialin\azure-sdk-for-net\sdk\core\Azure.Core\src\Shared\Argument.cs" LinkBase="Shared" />
   </ItemGroup>
 
   <ItemGroup>

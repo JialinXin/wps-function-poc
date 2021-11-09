@@ -15,13 +15,13 @@ namespace chatapp
             _client = client;
         }
 
-        public override async ValueTask<WebPubSubEventResponse> OnConnectAsync(ConnectEventRequest request, CancellationToken cancellationToken)
+        public override async ValueTask<ConnectEventResponse> OnConnectAsync(ConnectEventRequest request, CancellationToken cancellationToken)
         {
             await _client.SendToAllAsync($"user: {request.ConnectionContext.UserId} is connecting...");
             return request.CreateResponse(request.ConnectionContext.UserId, null, null, null);
         }
 
-        public override async ValueTask<WebPubSubEventResponse> OnMessageReceivedAsync(UserEventRequest request, CancellationToken cancellationToken)
+        public override async ValueTask<UserEventResponse> OnMessageReceivedAsync(UserEventRequest request, CancellationToken cancellationToken)
         {
             await _client.SendToAllAsync(request.Message.ToString());
             return request.CreateResponse("ack");

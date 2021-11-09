@@ -21,7 +21,7 @@ namespace Microsoft.Azure.WebPubSub.AspNetCore
     /// <summary>
     /// Helper methods to parse upstream requests.
     /// </summary>
-    public static class WebPubSubRequestExtensions
+    internal static class WebPubSubRequestExtensions
     {
         /// <summary>
         /// Parse request to system/user type ServiceRequest.
@@ -30,7 +30,7 @@ namespace Microsoft.Azure.WebPubSub.AspNetCore
         /// <param name="options"></param>
         /// <param name="cancellationToken"></param>
         /// <returns>Deserialize <see cref="WebPubSubEventRequest"/></returns>
-        public static async Task<WebPubSubEventRequest> ReadWebPubSubEventAsync(this HttpRequest request, WebPubSubValidationOptions options = null, CancellationToken cancellationToken = default)
+        internal static async Task<WebPubSubEventRequest> ReadWebPubSubEventAsync(this HttpRequest request, WebPubSubValidationOptions options = null, CancellationToken cancellationToken = default)
         {
             if (request == null)
             {
@@ -38,11 +38,11 @@ namespace Microsoft.Azure.WebPubSub.AspNetCore
             }
 
             // validation request.
-            if (request.IsValidationRequest(out var requestHosts))
+            if (request.IsPreflightRequest(out var requestHosts))
             {
                 if (options == null || !options.ContainsHost())
                 {
-                    return new ValidationRequest(true);
+                    return new PreflightRequest(true);
                 }
                 else
                 {
@@ -50,11 +50,11 @@ namespace Microsoft.Azure.WebPubSub.AspNetCore
                     {
                         if (options.ContainsHost(item))
                         {
-                            return new ValidationRequest(true);
+                            return new PreflightRequest(true);
                         }
                     }
                 }
-                return new ValidationRequest(false);
+                return new PreflightRequest(false);
             }
 
             if (!request.TryParseCloudEvents(out var context))
@@ -79,8 +79,9 @@ namespace Microsoft.Azure.WebPubSub.AspNetCore
                     }
                 case RequestType.User:
                     {
+                        const int bufferSize = 4096;
                         using var ms = new MemoryStream();
-                        await request.Body.CopyToAsync(ms).ConfigureAwait(false);
+                        await request.Body.CopyToAsync(ms, bufferSize, cancellationToken).ConfigureAwait(false);
                         var message = BinaryData.FromBytes(ms.ToArray());
                         if (!MediaTypeHeaderValue.Parse(request.ContentType).MediaType.IsValidMediaType(out var dataType))
                         {
@@ -104,12 +105,12 @@ namespace Microsoft.Azure.WebPubSub.AspNetCore
             }
         }
 
-        internal static bool IsValidationRequest(this HttpRequest request, out List<string> requestHosts)
+        internal static bool IsPreflightRequest(this HttpRequest request, out List<string> requestHosts)
         {
             if (HttpMethods.IsOptions(request.Method))
             {
                 request.Headers.TryGetValue(Constants.Headers.WebHookRequestOrigin, out StringValues requestOrigin);
-                if (requestOrigin.Any())
+                if (requestOrigin.Count > 0)
                 {
                     requestHosts = requestOrigin.ToList();
                     return true;
@@ -127,6 +128,7 @@ namespace Microsoft.Azure.WebPubSub.AspNetCore
                 return true;
             }
 
+            // TODO: considering add cache to improve.
             if (options.TryGetKey(connectionContext.Origin, out var accessKey))
             {
                 var signatures = connectionContext.Signature.ToHeaderList();
@@ -162,7 +164,7 @@ namespace Microsoft.Azure.WebPubSub.AspNetCore
             return null;
         }
 
-        internal static Dictionary<string,object> UpdateStates(this WebPubSubConnectionContext connectionContext, Dictionary<string, object> newStates) 
+        internal static Dictionary<string, object> UpdateStates(this WebPubSubConnectionContext connectionContext, Dictionary<string, object> newStates)
         {
             // states cleared.
             if (newStates == null)
@@ -233,7 +235,7 @@ namespace Microsoft.Azure.WebPubSub.AspNetCore
         {
             try
             {
-                connectionContext = new ();
+                connectionContext = new();
                 connectionContext.ConnectionId = request.Headers.GetFirstHeaderValueOrDefault(Constants.Headers.CloudEvents.ConnectionId);
                 connectionContext.Hub = request.Headers.GetFirstHeaderValueOrDefault(Constants.Headers.CloudEvents.Hub);
                 connectionContext.EventType = GetEventType(request.Headers.GetFirstHeaderValueOrDefault(Constants.Headers.CloudEvents.Type));

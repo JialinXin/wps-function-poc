@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Net;
 using System.Net.Http;
 using System.Threading.Tasks;
+using Microsoft.Azure.WebJobs.Extensions.WebPubSub.Operations;
 using Microsoft.Azure.WebPubSub.Common;
 using Newtonsoft.Json.Linq;
 using NUnit.Framework;
@@ -25,14 +26,16 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub.Tests
         [TestCase(nameof(RemoveConnectionFromGroup))]
         [TestCase(nameof(RemoveUserFromAllGroups))]
         [TestCase(nameof(RemoveUserFromGroup))]
+        [TestCase(nameof(CloseAllConnections))]
         [TestCase(nameof(CloseClientConnection))]
+        [TestCase(nameof(CloseGroupConnections))]
         [TestCase(nameof(GrantPermission))]
         [TestCase(nameof(RevokePermission))]
         public void TestOutputConvert(string operationKind)
         {
             WebPubSubConfigProvider.RegisterJsonConverter();
 
-            var input = @"{ ""operationKind"":""{0}"",""userId"":""user"", ""group"":""group1"",""connectionId"":""connection"",""message"":""test"",""dataType"":""text"", ""reason"":""close""}";
+            var input = @"{ ""operationKind"":""{0}"",""userId"":""user"", ""group"":""group1"",""connectionId"":""connection"",""message"":""test"",""dataType"":""text"", ""reason"":""close"", ""excluded"":[""aa"",""bb""]}";
 
             var replacedInput = input.Replace("{0}", operationKind);
 
@@ -43,8 +46,84 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub.Tests
             Assert.AreEqual(operationKind, converted.OperationKind.ToString());
         }
 
+        [TestCase(nameof(SendToAll))]
+        [TestCase(nameof(SendToConnection))]
+        [TestCase(nameof(SendToGroup))]
+        [TestCase(nameof(SendToUser))]
+        public void TestInvalidSendConvert(string operationKind)
+        {
+            WebPubSubConfigProvider.RegisterJsonConverter();
+
+            var input = @"{ ""operationKind"":""{0}"",""userId"":""user"", ""group"":""group1"",""connectionId"":""connection"",""message"": {""type"":""binary"", ""data"": [66, 105, 110, 97, 114, 121, 68, 97, 116, 97]} ,""dataType"":""binary"", ""reason"":""close"", ""excluded"":[""aa"",""bb""]}";
+
+            var replacedInput = input.Replace("{0}", operationKind);
+
+            var jObject = JObject.Parse(replacedInput);
+
+            Assert.Throws<ArgumentException>(() => WebPubSubConfigProvider.ConvertToWebPubSubOperation(jObject));
+        }
+
+        [TestCase(typeof(SendToAll))]
+        [TestCase(typeof(SendToConnection))]
+        [TestCase(typeof(SendToGroup))]
+        [TestCase(typeof(SendToUser))]
+        public void TestValidSendBinaryConvert(Type operationKind)
+        {
+            WebPubSubConfigProvider.RegisterJsonConverter();
+
+            var input = @"{ ""operationKind"":""{0}"",""userId"":""user"", ""group"":""group1"",""connectionId"":""connection"",""message"": {""type"":""Buffer"", ""data"": [66, 105, 110, 97, 114, 121, 68, 97, 116, 97]} ,""dataType"":""binary"", ""reason"":""close"", ""excluded"":[""aa"",""bb""]}";
+
+            var replacedInput = input.Replace("{0}", operationKind.Name);
+
+            var jObject = JObject.Parse(replacedInput);
+
+            var converted = WebPubSubConfigProvider.ConvertToWebPubSubOperation(jObject);
+
+            // Use json format for message value validation.
+            Assert.AreEqual("BinaryData", JObject.FromObject(converted)["message"].ToString());
+        }
+
+        [TestCase("webpubsuboperation")]
+        [TestCase("unknown")]
+        public void TestInvalidWebPubSubOperationConvert(string operationKind)
+        {
+            WebPubSubConfigProvider.RegisterJsonConverter();
+
+            var input = @"{ ""operationKind"":""{0}"",""userId"":""user"", ""group"":""group1"",""connectionId"":""connection"",""message"":""test"",""dataType"":""text"", ""reason"":""close"", ""excluded"":[""aa"",""bb""]}";
+
+            var replacedInput = input.Replace("{0}", operationKind);
+
+            var jObject = JObject.Parse(replacedInput);
+
+            // Throws excpetion of not able to de-serialize to abstract class.
+            var ex = Assert.Throws<ArgumentException>(() => WebPubSubConfigProvider.ConvertToWebPubSubOperation(jObject));
+            Assert.AreEqual($"Not supported WebPubSubOperation: {operationKind}.", ex.Message);
+        }
+
         [TestCase]
-        public void TestBinaryDataConvertFromByteArray()
+        public void TestBinaryDataConverter_String()
+        {
+            WebPubSubConfigProvider.RegisterJsonConverter();
+
+            var input = @"{ operationKind : ""sendToAll"", dataType: ""text"", message: ""2""}";
+
+            var converted = JObject.Parse(input).ToObject<SendToAll>();
+
+            Assert.AreEqual("2", converted.Message.ToString());
+        }
+
+        [TestCase]
+        public void TestBinaryDataConverter_NonStringThrows()
+        {
+            WebPubSubConfigProvider.RegisterJsonConverter();
+
+            var input = @"{ operationKind : ""sendToAll"", dataType: ""text"", message: 2}";
+
+            Assert.Throws<ArgumentException>(() => JObject.Parse(input).ToObject<SendToAll>(), "Message should be string, please stringify object.");
+        }
+
+        [TestCase]
+        public void TestBinaryDataConvertFromByteArray_SystemJson()
         {
             var testData = @"{""type"":""Buffer"", ""data"": [66, 105, 110, 97, 114, 121, 68, 97, 116, 97]}";
 
@@ -52,6 +131,17 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub.Tests
             options.Converters.Add(new System.BinaryDataJsonConverter());
 
             var converted = SystemJson.JsonSerializer.Deserialize<BinaryData>(testData, options);
+
+            Assert.AreEqual("BinaryData", converted.ToString());
+        }
+
+        [TestCase]
+        public void TestBinaryDataConvertFromByteArray_Newtonsoft()
+        {
+            WebPubSubConfigProvider.RegisterJsonConverter();
+            var testData = @"{""type"":""Buffer"", ""data"": [66, 105, 110, 97, 114, 121, 68, 97, 116, 97]}";
+
+            var converted = JObject.Parse(testData).ToObject<BinaryData>();
 
             Assert.AreEqual("BinaryData", converted.ToString());
         }
@@ -141,8 +231,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub.Tests
             Assert.NotNull(serialize["request"]);
             Assert.NotNull(serialize["response"]);
             Assert.AreEqual("", serialize["errorMessage"].ToString());
-            Assert.AreEqual("", serialize["errorCode"].ToString());
-            Assert.AreEqual("False", serialize["isValidationRequest"].ToString());
+            Assert.AreEqual("False", serialize["hasError"].ToString());
+            Assert.AreEqual("False", serialize["isPreflight"].ToString());
         }
 
         [TestCase]
@@ -170,8 +260,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub.Tests
             Assert.AreEqual(subprotocol, request["subprotocols"].ToObject<string[]>());
             Assert.NotNull(serialize["response"]);
             Assert.AreEqual("", serialize["errorMessage"].ToString());
-            Assert.AreEqual("", serialize["errorCode"].ToString());
-            Assert.AreEqual("False", serialize["isValidationRequest"].ToString());
+            Assert.AreEqual("False", serialize["hasError"].ToString());
+            Assert.AreEqual("False", serialize["isPreflight"].ToString());
         }
 
         [TestCase]
@@ -193,20 +283,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub.Tests
             Assert.AreEqual("test", request["message"].ToString());
             Assert.NotNull(serialize["response"]);
             Assert.AreEqual("", serialize["errorMessage"].ToString());
-            Assert.AreEqual("", serialize["errorCode"].ToString());
-            Assert.AreEqual("False", serialize["isValidationRequest"].ToString());
+            Assert.AreEqual("False", serialize["hasError"].ToString());
+            Assert.AreEqual("False", serialize["isPreflight"].ToString());
         }
 
         [TestCase]
         public void TestWebPubSubContext_DisconnectedEvent()
         {
-            var context = new WebPubSubConnectionContext()
-            {
-                ConnectionId = "connectionId",
-                UserId = "userA",
-                EventName = "connected",
-                EventType = WebPubSubEventType.System
-            };
             var test = new WebPubSubContext(new DisconnectedEventRequest("dropped"));
 
             var serialize = JObject.FromObject(test);
@@ -216,8 +299,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub.Tests
             Assert.AreEqual("dropped", request["reason"].ToString());
             Assert.NotNull(serialize["response"]);
             Assert.AreEqual("", serialize["errorMessage"].ToString());
-            Assert.AreEqual("", serialize["errorCode"].ToString());
-            Assert.AreEqual("False", serialize["isValidationRequest"].ToString());
+            Assert.AreEqual("False", serialize["hasError"].ToString());
+            Assert.AreEqual("False", serialize["isPreflight"].ToString());
         }
 
         [TestCase]
@@ -233,8 +316,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub.Tests
             Assert.AreEqual("400", response["status"].ToString());
             Assert.AreEqual("Invalid Request", response["body"].ToString());
             Assert.AreEqual("Invalid Request", serialize["errorMessage"].ToString());
-            Assert.AreEqual("UserError", serialize["errorCode"].ToString());
-            Assert.AreEqual("False", serialize["isValidationRequest"].ToString());
+            Assert.AreEqual("True", serialize["hasError"].ToString());
+            Assert.AreEqual("False", serialize["isPreflight"].ToString());
         }
 
         private static HttpResponseMessage BuildResponse(string input, RequestType requestType)
