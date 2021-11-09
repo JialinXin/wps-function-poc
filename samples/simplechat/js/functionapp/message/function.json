@@ -5,14 +5,14 @@
       "type": "webPubSubTrigger",
       "direction": "in",
       "name": "message",
-      "hub": "simplechat",
+      "hub": "triggerchat",
       "eventName": "message",
       "eventType": "user"
     },
     {
       "type": "webPubSub",
       "name": "webPubSubEvent",
-      "hub": "simplechat",
+      "hub": "triggerchat",
       "direction": "out"
     }
   ]
