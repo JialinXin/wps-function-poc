@@ -134,7 +134,7 @@ namespace Microsoft.Azure.WebPubSub.AspNetCore.Tests
                 Origin = TestUri.Host
             };
 
-            var request = new UserEventRequest(connectionContext, BinaryData.FromString("Hello World"), MessageDataType.Text);
+            var request = new UserEventRequest(connectionContext, BinaryData.FromString("Hello World"), WebPubSubDataType.Text);
 
             var serialized = JsonSerializer.Serialize(request);
         }
@@ -194,7 +194,7 @@ namespace Microsoft.Azure.WebPubSub.AspNetCore.Tests
 
             Assert.NotNull(userRequest.ConnectionContext);
             Assert.AreEqual(TestUri.Host, userRequest.ConnectionContext.Origin);
-            Assert.AreEqual(text, userRequest.Message.ToString());
+            Assert.AreEqual(text, userRequest.Data.ToString());
         }
 
         [TestCase("7aab239577fd4f24bc919802fb629f5f", true)]
@@ -244,7 +244,7 @@ namespace Microsoft.Azure.WebPubSub.AspNetCore.Tests
         {
             var context = PrepareHttpContext(TestUri, WebPubSubEventType.System, Constants.Events.ConnectEvent, httpMethod: httpMethod);
 
-            var result = context.Request.IsValidationRequest(out var requestHosts);
+            var result = context.Request.IsPreflightRequest(out var requestHosts);
 
             Assert.AreEqual(valid, result);
 

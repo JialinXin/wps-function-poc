@@ -5,16 +5,16 @@ using Azure.Messaging.WebPubSub;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Serialization;
 
-namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub.Operations
+namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
 {
     /// <summary>
-    /// Operation to remove permission.
+    /// Operation to grant permission.
     /// </summary>
     [JsonObject(NamingStrategyType = typeof(CamelCaseNamingStrategy))]
-    public class RevokePermission : WebPubSubOperation
+    public class GrantPermissionAction : WebPubSubAction
     {
         /// <summary>
-        /// Targe connectionId.
+        /// Target connectionId.
         /// </summary>
         public string ConnectionId { get; set; }
 

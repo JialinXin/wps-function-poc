@@ -1,6 +1,7 @@
 ﻿// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
+using System.ComponentModel;
 using Microsoft.Azure.WebJobs.Hosting;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
@@ -23,9 +24,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
         public string ConnectionString { get; set; }
 
         /// <summary>
-        /// Formats the options as JSON objects for display.
+        /// Returns a string representation of this <see cref="WebPubSubFunctionsOptions"/>.
         /// </summary>
-        /// <returns>Options formatted as JSON.</returns>
+        /// <returns>A string representation of this <see cref="WebPubSubFunctionsOptions"/> instance.</returns>
+        [EditorBrowsable(EditorBrowsableState.Never)]
         string IOptionsFormatter.Format()
         {
             // Not expose ConnectionString in logging.

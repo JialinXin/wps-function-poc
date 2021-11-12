@@ -7,9 +7,9 @@ module.exports = async function (context, req, wpsReq) {
     return wpsReq.response;
   }
   else {
-    context.bindings.webPubSubEvent = {
-      "operationKind": "sendToAll",
-      "message": wpsReq.request.message,
+    context.bindings.actions = {
+      "actionName": "sendToAll",
+      "data": wpsReq.request.data,
       "dataType": wpsReq.request.dataType
     };
     return { body: { from: '[System]', content: 'ack.'} };

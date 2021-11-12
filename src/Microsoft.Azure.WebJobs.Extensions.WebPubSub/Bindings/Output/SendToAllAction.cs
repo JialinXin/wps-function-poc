@@ -2,37 +2,33 @@
 // Licensed under the MIT License.
 
 using System;
+using System.Collections.Generic;
 using Microsoft.Azure.WebPubSub.Common;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Serialization;
 
-namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub.Operations
+namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
 {
     /// <summary>
-    /// Operation to send message to a group.
+    /// Operation to send message to all.
     /// </summary>
     [JsonObject(NamingStrategyType = typeof(CamelCaseNamingStrategy))]
-    public class SendToGroup : WebPubSubOperation
+    public class SendToAllAction : WebPubSubAction
     {
         /// <summary>
-        /// Target group name.
-        /// </summary>
-        public string Group { get; set; }
-
-        /// <summary>
-        /// Message to send.
+        /// Message to broadcast.
         /// </summary>
         [JsonConverter(typeof(BinaryDataJsonConverter))]
-        public BinaryData Message { get; set; }
+        public BinaryData Data { get; set; }
 
         /// <summary>
         /// Message data type.
         /// </summary>
-        public MessageDataType DataType { get; set; } = MessageDataType.Binary;
+        public WebPubSubDataType DataType { get; set; } = WebPubSubDataType.Text;
 
         /// <summary>
-        /// ConnectionIds to exclude.
+        /// ConnectionIds to excluded.
         /// </summary>
-        public string[] Excluded { get; set; }
+        public IList<string> Excluded { get; set; } = new List<string>();
     }
 }

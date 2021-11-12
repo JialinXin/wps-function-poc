@@ -6,12 +6,13 @@ using System.Text.Json.Serialization;
 namespace Microsoft.Azure.WebPubSub.Common
 {
     /// <summary>
-    /// Validation request for abuse protection.
+    /// Preflight OPTIONS request for <see href="https://github.com/cloudevents/spec/blob/v1.0.1/http-webhook.md#4-abuse-protection">Abuse Protection</see> validation.
     /// </summary>
     public sealed class PreflightRequest : WebPubSubEventRequest
     {
         /// <summary>
-        /// Flag to indicate whether is a valid request.
+        /// Flag to indicate whether the request is valid.
+        /// The property will be preprocessed with available validation options when parsing the request.
         /// </summary>
         [JsonPropertyName("isValid")]
         public bool IsValid { get; }

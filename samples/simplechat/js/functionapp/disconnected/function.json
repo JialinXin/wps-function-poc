@@ -11,7 +11,7 @@
     },
     {
       "type": "webPubSub",
-      "name": "webPubSubEvent",
+      "name": "actions",
       "hub": "triggerchat",
       "direction": "out"
     }

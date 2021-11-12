@@ -4,14 +4,14 @@
     {
       "type": "webPubSubTrigger",
       "direction": "in",
-      "name": "message",
+      "name": "data",
       "hub": "triggerchat",
       "eventName": "message",
       "eventType": "user"
     },
     {
       "type": "webPubSub",
-      "name": "webPubSubEvent",
+      "name": "actions",
       "hub": "triggerchat",
       "direction": "out"
     }

@@ -1,13 +1,22 @@
-﻿#if NETCOREAPP3_0_OR_GREATER
-using System;
+﻿using System;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.Azure.WebPubSub.AspNetCore;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace Microsoft.AspNetCore.Builder
 {
+    /// <summary>
+    /// Extensions for <see cref="IEndpointRouteBuilder"/>.
+    /// </summary>
     public static class WebPubSubEndpointRouteBuilderExtensions
     {
+        /// <summary>
+        /// Maps the <see cref="WebPubSubHub"/> to the path <paramref name="path"/>.
+        /// </summary>
+        /// <typeparam name="THub">User implemented <see cref="WebPubSubHub"/>.</typeparam>
+        /// <param name="endpoints">The <see cref="IEndpointRouteBuilder"/>.</param>
+        /// <param name="path">The path to map the <see cref="WebPubSubHub"/>.</param>
+        /// <returns>The <see cref="IEndpointConventionBuilder"/>.</returns>
         public static IEndpointConventionBuilder MapWebPubSubHub<THub>(
             this IEndpointRouteBuilder endpoints,
             string path) where THub: WebPubSubHub
@@ -36,4 +45,3 @@ namespace Microsoft.AspNetCore.Builder
         }
     }
 }
-#endif

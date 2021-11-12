@@ -3,7 +3,6 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.Azure.WebJobs;
 using Microsoft.Azure.WebJobs.Extensions.Http;
 using Microsoft.Azure.WebJobs.Extensions.WebPubSub;
-using Microsoft.Azure.WebJobs.Extensions.WebPubSub.Operations;
 using Microsoft.Azure.WebPubSub.Common;
 using Newtonsoft.Json;
 using System;
@@ -51,24 +50,20 @@ namespace SimpleChat
         [FunctionName("connected")]
         public static async Task Connected(
             [WebPubSubTrigger("%abc%",WebPubSubEventType.System, "connected")] WebPubSubConnectionContext connectionContext,
-            [WebPubSub(Hub = "%abc%")] IAsyncCollector<WebPubSubOperation> webpubsubOperation)
+            [WebPubSub(Hub = "%abc%")] IAsyncCollector<WebPubSubAction> webpubsubOperation)
         {
-            await webpubsubOperation.AddAsync(new SendToAll
+            await webpubsubOperation.AddAsync(new SendToAllAction
             {
-                Message = BinaryData.FromString(new ClientContent($"{connectionContext.UserId} connected.").ToString()),
-                DataType = MessageDataType.Json
+                Data = BinaryData.FromString(new ClientContent($"{connectionContext.UserId} connected.").ToString()),
+                DataType = WebPubSubDataType.Json
             });
 
-            await webpubsubOperation.AddAsync(new AddUserToGroup
+            await webpubsubOperation.AddAsync(WebPubSubAction.CreateAddUserToGroupAction(connectionContext.UserId, "group1"));
+            await webpubsubOperation.AddAsync(new SendToUserAction
             {
                 UserId = connectionContext.UserId,
-                Group = "group1"
-            });
-            await webpubsubOperation.AddAsync(new SendToUser
-            {
-                UserId = connectionContext.UserId,
-                Message = BinaryData.FromString(new ClientContent($"{connectionContext.UserId} joined group: group1.").ToString()),
-                DataType = MessageDataType.Json
+                Data = BinaryData.FromString(new ClientContent($"{connectionContext.UserId} joined group: group1.").ToString()),
+                DataType = WebPubSubDataType.Json
             });
         }
 
@@ -78,29 +73,25 @@ namespace SimpleChat
             [WebPubSubTrigger("%abc%", WebPubSubEventType.User, "message")]
             UserEventRequest request,
             WebPubSubConnectionContext connectionContext,
-            BinaryData message,
-            MessageDataType dataType,
-            [WebPubSub(Hub = "triggerchat")] IAsyncCollector<WebPubSubOperation> operations)
+            BinaryData data,
+            WebPubSubDataType dataType,
+            [WebPubSub(Hub = "triggerchat")] IAsyncCollector<WebPubSubAction> operations)
         {
-            await operations.AddAsync(new SendToAll
-            {
-                Message = request.Message,
-                DataType = request.DataType
-            });
+            await operations.AddAsync(WebPubSubAction.CreateSendToAllAction(request.Data, request.DataType));
 
-            return request.CreateResponse(BinaryData.FromString(new ClientContent("ack").ToString()), MessageDataType.Json);
+            return request.CreateResponse(BinaryData.FromString(new ClientContent("ack").ToString()), WebPubSubDataType.Json);
         }
 
         [FunctionName("disconnect")]
         [return: WebPubSub(Hub = "%abc%")]
-        public static WebPubSubOperation Disconnect(
+        public static WebPubSubAction Disconnect(
             [WebPubSubTrigger("%abc%", WebPubSubEventType.System, "disconnected")] WebPubSubConnectionContext connectionContext)
         {
             Console.WriteLine("Disconnect.");
-            return new SendToAll
+            return new SendToAllAction
             {
-                Message = BinaryData.FromString(new ClientContent($"{connectionContext.UserId} disconnect.").ToString()),
-                DataType = MessageDataType.Text
+                Data = BinaryData.FromString(new ClientContent($"{connectionContext.UserId} disconnect.").ToString()),
+                DataType = WebPubSubDataType.Text
             };
         }
 

@@ -4,13 +4,13 @@
 using Newtonsoft.Json;
 using Newtonsoft.Json.Serialization;
 
-namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub.Operations
+namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
 {
     /// <summary>
-    /// Operation to add connectionId to a group.
+    /// Operation to remove a connection from group.
     /// </summary>
     [JsonObject(NamingStrategyType = typeof(CamelCaseNamingStrategy))]
-    public class AddConnectionToGroup : WebPubSubOperation
+    public class RemoveConnectionFromGroupAction : WebPubSubAction
     {
         /// <summary>
         /// Target connectionId.

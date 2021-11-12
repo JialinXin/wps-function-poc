@@ -6,13 +6,13 @@ using Microsoft.Azure.WebPubSub.Common;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Serialization;
 
-namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub.Operations
+namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
 {
     /// <summary>
     /// Operation to send message to a connection.
     /// </summary>
     [JsonObject(NamingStrategyType = typeof(CamelCaseNamingStrategy))]
-    public class SendToConnection : WebPubSubOperation
+    public class SendToConnectionAction : WebPubSubAction
     {
         /// <summary>
         /// Target ConnectionId.
@@ -23,11 +23,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub.Operations
         /// Message to send.
         /// </summary>
         [JsonConverter(typeof(BinaryDataJsonConverter))]
-        public BinaryData Message { get; set; }
+        public BinaryData Data { get; set; }
 
         /// <summary>
         /// Message data type.
         /// </summary>
-        public MessageDataType DataType { get; set; } = MessageDataType.Binary;
+        public WebPubSubDataType DataType { get; set; } = WebPubSubDataType.Text;
     }
 }

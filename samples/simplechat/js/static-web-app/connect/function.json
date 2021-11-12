@@ -16,10 +16,7 @@
     {
       "type": "webPubSubContext",
       "name": "wpsReq",
-      "direction": "in",
-      "connectionStrings": [
-        "Endpoint=http://localhost;Port=8080;AccessKey=ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789ABCDEFGE;Version=1.0;"
-      ]
+      "direction": "in"
     }
   ]
 }
