@@ -35,7 +35,7 @@ namespace SimpleChat
         #region Work with WebPubSubTrigger
         [FunctionName("connect")]
         public static WebPubSubEventResponse Connect(
-            [WebPubSubTrigger("triggerchat", WebPubSubEventType.System, "connect")] ConnectEventRequest request)
+            [WebPubSubTrigger("simplechat", WebPubSubEventType.System, "connect")] ConnectEventRequest request)
         {
             Console.WriteLine($"Received client connect with connectionId: {request.ConnectionContext.ConnectionId}");
             if (request.ConnectionContext.UserId == "attacker")
@@ -75,11 +75,23 @@ namespace SimpleChat
             WebPubSubConnectionContext connectionContext,
             BinaryData data,
             WebPubSubDataType dataType,
-            [WebPubSub(Hub = "triggerchat")] IAsyncCollector<WebPubSubAction> operations)
+            [WebPubSub(Hub = "simplechat")] IAsyncCollector<WebPubSubAction> operations)
         {
             await operations.AddAsync(WebPubSubAction.CreateSendToAllAction(request.Data, request.DataType));
 
-            return request.CreateResponse(BinaryData.FromString(new ClientContent("ack").ToString()), WebPubSubDataType.Json);
+            // retrieve counter from states.
+            var states = new CounterState(1);
+            var idle = 0.0;
+            if (connectionContext.States.Count > 0)
+            {
+                states = JsonConvert.DeserializeObject<CounterState>(connectionContext.States[nameof(CounterState)] as string);
+                idle = (DateTime.Now - states.Timestamp).TotalSeconds;
+                states.Update();
+            }
+            var response = request.CreateResponse(BinaryData.FromString(new ClientContent($"ack, idle: {idle}s, connection message counter: {states.Counter}").ToString()), WebPubSubDataType.Json);
+            response.SetState(nameof(CounterState), JsonConvert.SerializeObject(states));
+
+            return response;
         }
 
         [FunctionName("disconnect")]
@@ -120,6 +132,27 @@ namespace SimpleChat
             public override string ToString()
             {
                 return JsonConvert.SerializeObject(this);
+            }
+        }
+
+        [JsonObject]
+        private sealed class CounterState
+        {
+            [JsonProperty("timestamp")]
+            public DateTime Timestamp { get; set; }
+            [JsonProperty("counter")]
+            public int Counter { get; set; }
+
+            public CounterState(int counter)
+            {
+                Counter = counter;
+                Timestamp = DateTime.Now;
+            }
+
+            public void Update()
+            {
+                Timestamp = DateTime.Now;
+                Counter++;
             }
         }
     }

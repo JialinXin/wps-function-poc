@@ -5,7 +5,6 @@
       "type": "webPubSubTrigger",
       "name": "request",
       "direction": "in",
-      "hub": "triggerchat",
       "eventName": "connect",
       "eventType": "system"
     }

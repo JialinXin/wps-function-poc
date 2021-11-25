@@ -33,16 +33,17 @@ namespace Microsoft.Azure.WebPubSub.AspNetCore
             // Not Web PubSub requests.
             if (!context.Request.Headers.ContainsKey(Constants.Headers.CloudEvents.WebPubSubVersion))
             {
-                await _next(context);
+                await _next(context).ConfigureAwait(false);
                 return;
             }
 
             // Handle Abuse Protection
             if (context.Request.IsPreflightRequest(out var requestHosts))
             {
+                var validationOptions = _options?.ServiceEndpoint?.GetValidationOptions();
                 Log.ReceivedAbuseProtectionRequest(_logger);
                 var isValid = false;
-                if (_options == null || !_options.ValidationOptions.ContainsHost())
+                if (validationOptions == null || !validationOptions.ContainsHost())
                 {
                     isValid = true;
                 }
@@ -50,7 +51,7 @@ namespace Microsoft.Azure.WebPubSub.AspNetCore
                 {
                     foreach (var item in requestHosts)
                     {
-                        if (_options.ValidationOptions.ContainsHost(item))
+                        if (validationOptions.ContainsHost(item))
                         {
                             isValid = true;
                             break;
@@ -72,7 +73,7 @@ namespace Microsoft.Azure.WebPubSub.AspNetCore
             // Not upstream business request.
             if (!context.Request.Headers.TryGetValue(Constants.Headers.CloudEvents.Hub, out var hubName))
             {
-                await _next(context);
+                await _next(context).ConfigureAwait(false);
                 return;
             }
             else
@@ -82,12 +83,12 @@ namespace Microsoft.Azure.WebPubSub.AspNetCore
                 if (hub == null)
                 {
                     Log.HubNotRegistered(_logger, hubName);
-                    await _next(context);
+                    await _next(context).ConfigureAwait(false);
                     return;
                 }
             }
 
-            await _handler.HandleRequest(context);
+            await _handler.HandleRequest(context).ConfigureAwait(false);
         }
 
         private static class Log

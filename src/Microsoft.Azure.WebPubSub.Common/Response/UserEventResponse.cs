@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
@@ -13,7 +14,18 @@ namespace Microsoft.Azure.WebPubSub.Common
     /// </summary>
     public class UserEventResponse : WebPubSubEventResponse
     {
-        internal Dictionary<string, object> States = new();
+        private Dictionary<string, BinaryData> _states;
+
+        /// <summary>
+        /// The connection states.
+        /// </summary>
+        [EditorBrowsable(EditorBrowsableState.Never)]
+        public IReadOnlyDictionary<string, object> States { get; private set; }
+
+        /// <summary>
+        /// The connection states.
+        /// </summary>
+        public IReadOnlyDictionary<string, BinaryData> ConnectionStates => _states;
 
         /// <summary>
         /// Message.
@@ -33,6 +45,7 @@ namespace Microsoft.Azure.WebPubSub.Common
         /// <param name="data">BinaryData type message.</param>
         /// <param name="dataType">Message data type.</param>
         public UserEventResponse(BinaryData data, WebPubSubDataType dataType)
+            : this()
         {
             Data = data;
             DataType = dataType;
@@ -50,30 +63,46 @@ namespace Microsoft.Azure.WebPubSub.Common
         /// <summary>
         /// Default constructor for JsonSerialize
         /// </summary>
-        public UserEventResponse()
-        { }
+        public UserEventResponse() =>
+            SetStatesDictionary(new Dictionary<string, BinaryData>());
 
         /// <summary>
         /// Set connection states.
         /// </summary>
         /// <param name="key">State key.</param>
         /// <param name="value">State value.</param>
-        public void SetState(string key, object value)
+        [EditorBrowsable(EditorBrowsableState.Never)]
+        public void SetState(string key, object value) =>
+            SetState(key, BinaryData.FromObjectAsJson(value));
+
+        /// <summary>
+        /// Set connection states.
+        /// </summary>
+        /// <param name="key">State key.</param>
+        /// <param name="value">State value.</param>
+        public void SetState(string key, BinaryData value)
         {
             // In case user cleared states.
-            if (States == null)
+            if (_states == null)
             {
-                States = new Dictionary<string, object>();
+                SetStatesDictionary(new Dictionary<string, BinaryData>());
             }
-            States[key] = value;
+            _states[key] = value;
         }
 
         /// <summary>
         /// Clear all states.
         /// </summary>
-        public void ClearStates()
+        public void ClearStates() => SetStatesDictionary(null);
+
+        /// <summary>
+        /// Update the dictionary backing both States and ConnectionStates.
+        /// </summary>
+        /// <param name="states">The new dictionary or null.</param>
+        private void SetStatesDictionary(Dictionary<string, BinaryData> states)
         {
-            States = null;
+            _states = states;
+            States = states != null ? new StringifiedDictionary(states) : null;
         }
     }
 }

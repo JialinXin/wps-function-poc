@@ -16,7 +16,6 @@
       "type": "webPubSubConnection",
       "name": "connection",
       "userId": "{query.userid}",
-      "hub": "triggerchat",
       "direction": "in"
     }
   ]

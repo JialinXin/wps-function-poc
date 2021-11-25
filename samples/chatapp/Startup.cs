@@ -16,13 +16,12 @@ namespace chatapp
         // For more information on how to configure your application, visit https://go.microsoft.com/fwlink/?LinkID=398940
         public void ConfigureServices(IServiceCollection services)
         {
-            services.AddWebPubSub(o =>
+            //services.AddWebPubSub();
+            services.AddWebPubSub(o => 
             {
-                o.ValidationOptions.Add("Endpoint=http://localhost;Port=8080;AccessKey=ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789ABCDEFGH;Version=1.0;");
-            }).AddAzureClients(builder =>
-            {
-                builder.AddWebPubSubServiceClient("Endpoint=http://localhost;Port=8080;AccessKey=ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789ABCDEFGH;Version=1.0;", "samplehub");
-            });
+                o.ServiceEndpoint = new ServiceEndpoint("Endpoint=http://localhost;Port=8080;AccessKey=ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789ABCDEFGH;Version=1.0;");
+            }).AddWebPubSubServiceClient<SampleHub>()
+            .AddWebPubSubServiceClient<SampleHub1>();
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
@@ -37,8 +36,6 @@ namespace chatapp
 
             app.UseRouting();
 
-            var options = app.ApplicationServices.GetService<WebPubSubOptions>();
-
             app.UseEndpoints(endpoints =>
             {
                 endpoints.MapWebPubSubHub<SampleHub>("/api/{event}");
@@ -52,8 +49,12 @@ namespace chatapp
                         await context.Response.WriteAsync("missing user id");
                         return;
                     }
-                    var serviceClient = context.RequestServices.GetRequiredService<WebPubSubServiceClient>();
-                    await context.Response.WriteAsync(serviceClient.GenerateClientAccessUri(userId: id).AbsoluteUri);
+                    var serviceClient = context.RequestServices.GetService<WebPubSubServiceClient>();
+                    if (serviceClient == null)
+                    {
+                        serviceClient = new WebPubSubServiceClient("Endpoint=http://localhost;Port=8080;AccessKey=ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789ABCDEFGH;Version=1.0;", "samplehub");
+                    }
+                    await context.Response.WriteAsync(serviceClient.GetClientAccessUri(userId: id).AbsoluteUri);
                 });
             });
         }

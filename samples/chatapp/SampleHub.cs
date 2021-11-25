@@ -11,9 +11,9 @@ namespace chatapp
     {
         private readonly WebPubSubServiceClient _client;
 
-        public SampleHub(WebPubSubServiceClient client)
+        public SampleHub()
         {
-            _client = client;
+            _client = new WebPubSubServiceClient("Endpoint=http://localhost;Port=8080;AccessKey=ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789ABCDEFGH;Version=1.0;", "samplehub");
         }
 
         //public override async ValueTask<WebPubSubEventResponse> OnConnectAsync(ConnectEventRequest request, CancellationToken cancellationToken)

@@ -1,6 +1,7 @@
 ﻿// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
+#if NETCOREAPP3_1_OR_GREATER
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -13,9 +14,6 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Http.Features;
 using Microsoft.Azure.WebPubSub.Common;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Logging.Abstractions;
-using Microsoft.Extensions.Options;
 using NUnit.Framework;
 
 namespace Microsoft.Azure.WebPubSub.AspNetCore.Tests
@@ -24,19 +22,15 @@ namespace Microsoft.Azure.WebPubSub.AspNetCore.Tests
     public class ServiceRequestHandlerTests
     {
         private const string TestEndpoint = "https://my-host.webpubsub.net";
-        private readonly WebPubSubOptions _testOptions;
-        private readonly ILogger _logger;
         private readonly ServiceRequestHandlerAdapter _adaptor;
 
         public ServiceRequestHandlerTests()
         {
-            _testOptions = new WebPubSubOptions();
-            _testOptions.ValidationOptions.Add($"Endpoint={TestEndpoint};AccessKey=7aab239577fd4f24bc919802fb629f5f;Version=1.0;");
-            _logger = NullLogger<ServiceRequestHandlerTests>.Instance;
-            var services = new ServiceCollection()
-                .AddLogging();
-            services.AddWebPubSub(x => x.ValidationOptions.Add($"Endpoint={TestEndpoint};AccessKey=7aab239577fd4f24bc919802fb629f5f;Version=1.0;"));
-            var provider = services.BuildServiceProvider();
+            var provider = new ServiceCollection()
+                .AddLogging()
+                .AddWebPubSub(x => x.ServiceEndpoint = new ServiceEndpoint($"Endpoint={TestEndpoint};AccessKey=7aab239577fd4f24bc919802fb629f5f;Version=1.0;"))
+                .Services
+                .BuildServiceProvider();
             _adaptor = provider.GetRequiredService<ServiceRequestHandlerAdapter>();
         }
 
@@ -112,7 +106,7 @@ namespace Microsoft.Azure.WebPubSub.AspNetCore.Tests
             Assert.NotNull(states);
             var updated = states[0].DecodeConnectionStates();
             Assert.AreEqual(1, updated.Count);
-            Assert.AreEqual("10", updated["counter"]);
+            Assert.AreEqual(10, ((JsonElement)updated["counter"]).GetInt32());
 
             // 2 to add a new state.
             context = PrepareHttpContext(httpMethod: HttpMethods.Post, type: WebPubSubEventType.User, eventName: "message", body: "2", connectionState: initState);
@@ -123,7 +117,7 @@ namespace Microsoft.Azure.WebPubSub.AspNetCore.Tests
             Assert.NotNull(states);
             updated = states[0].DecodeConnectionStates();
             Assert.AreEqual(2, updated.Count);
-            Assert.AreEqual("new", updated["new"]);
+            Assert.AreEqual("new", updated["new"].ToString());
 
             // 3 to clear states
             context = PrepareHttpContext(httpMethod: HttpMethods.Post, type: WebPubSubEventType.User, eventName: "message", body: "3", connectionState: initState);
@@ -140,7 +134,7 @@ namespace Microsoft.Azure.WebPubSub.AspNetCore.Tests
             Assert.NotNull(states);
             updated = states[0].DecodeConnectionStates();
             Assert.AreEqual(2, updated.Count);
-            Assert.AreEqual("new1", updated["new1"]);
+            Assert.AreEqual("new1", updated["new1"].ToString());
         }
 
         [Test]
@@ -299,11 +293,9 @@ namespace Microsoft.Azure.WebPubSub.AspNetCore.Tests
                 // simple tests.
                 switch (request.Data.ToString())
                 {
-                    case "1":
-                        response.SetState("counter", 10);
+                    case "1": response.SetState("counter", 10);
                         break;
-                    case "2":
-                        response.SetState("new", "new");
+                    case "2": response.SetState("new", "new");
                         break;
                     case "3":
                         response.ClearStates();
@@ -362,3 +354,4 @@ namespace Microsoft.Azure.WebPubSub.AspNetCore.Tests
         }
     }
 }
+#endif

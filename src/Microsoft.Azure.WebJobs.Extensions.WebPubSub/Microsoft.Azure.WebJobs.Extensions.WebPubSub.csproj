@@ -12,6 +12,10 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Include="..\Microsoft.Azure.WebPubSub.Common\Shared\ConnectionStatesConverter.cs" Link="ConnectionStatesConverter.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
     <PackageReference Include="Azure.Messaging.WebPubSub" Version="1.0.0-alpha.20211103.1" />
     <PackageReference Include="Microsoft.AspNetCore.Http" Version="2.2.2" />
     <PackageReference Include="Microsoft.Azure.WebJobs" Version="3.0.27" />

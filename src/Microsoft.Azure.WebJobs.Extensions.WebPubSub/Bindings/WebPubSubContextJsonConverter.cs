@@ -26,7 +26,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
             var jobj = new JObject();
             if (value.Request != null)
             {
-                jobj.Add(new JProperty(WebPubSubContext.RequestPropertyName, JObject.Parse(request)));
+                jobj.Add(new JProperty(WebPubSubContext.RequestPropertyName, JObject.FromObject(value.Request, serializer)));
             }
             if (value.Response != null)
             {

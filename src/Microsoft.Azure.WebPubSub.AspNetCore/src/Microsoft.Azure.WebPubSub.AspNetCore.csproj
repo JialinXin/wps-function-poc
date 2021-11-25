@@ -8,9 +8,14 @@
     <NoWarn>$(NoWarn);419</NoWarn>
     <LangVersion>9.0</LangVersion>
   </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="..\..\Microsoft.Azure.WebPubSub.Common\Shared\ConnectionStatesConverter.cs" Link="ConnectionStatesConverter.cs" />
+  </ItemGroup>
 
   <ItemGroup>
     <FrameworkReference Include="Microsoft.AspNetCore.App" />
+    <PackageReference Include="Azure.Messaging.WebPubSub" Version="1.0.0" />
+    <PackageReference Include="Microsoft.Extensions.Azure" Version="1.0.0" />
     <PackageReference Include="System.Text.Json" Version="4.6.0" />
     <PackageReference Include="System.Memory.Data" Version="1.0.2" />
   </ItemGroup>

@@ -1,6 +1,7 @@
 ﻿// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
+#if NETCOREAPP3_1_OR_GREATER
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -23,14 +24,13 @@ namespace Microsoft.Azure.WebPubSub.AspNetCore.Tests
         [Test]
         public void TestUpdateConnectionState()
         {
-            var exist = new Dictionary<string, object>
+            var exist = new Dictionary<string, BinaryData>
             {
-                { "aaa", "aaa" },
-                { "bbb", "bbb" }
+                { "aaa", BinaryData.FromString("aaa") },
+                { "bbb", BinaryData.FromString("bbb") }
             };
-            var connectionContext = new WebPubSubConnectionContext();
 
-            connectionContext.InitStates(exist);
+            var connectionContext = new WebPubSubConnectionContext(eventType: WebPubSubEventType.System, null, null, null, connectionStates: exist);
 
             var response = new ConnectEventResponse
             {
@@ -55,22 +55,6 @@ namespace Microsoft.Azure.WebPubSub.AspNetCore.Tests
         }
 
         [Test]
-        public void TestEncodeAndDecodeState()
-        {
-            var state = new Dictionary<string, object>
-            {
-                { "aaa", "aaa" },
-                { "bbb", "bbb" }
-            };
-
-            var encoded = state.EncodeConnectionStates();
-
-            var decoded = encoded.DecodeConnectionStates();
-
-            Assert.AreEqual(state, decoded);
-        }
-
-        [Test]
         public void TestConnectEventDeserialize()
         {
             var request = "{\"claims\":{\"http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier\":[\"ddd\"],\"nbf\":[\"1629183374\"],\"exp\":[\"1629186974\"],\"iat\":[\"1629183374\"],\"aud\":[\"http://localhost:8080/client/hubs/chat\"],\"sub\":[\"ddd\"]},\"query\":{\"access_token\":[\"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJkZGQiLCJuYmYiOjE2MjkxODMzNzQsImV4cCI6MTYyOTE4Njk3NCwiaWF0IjoxNjI5MTgzMzc0LCJhdWQiOiJodHRwOi8vbG9jYWxob3N0OjgwODAvY2xpZW50L2h1YnMvY2hhdCJ9.tqD8ykjv5NmYw6gzLKglUAv-c-AVWu-KNZOptRKkgMM\"]},\"subprotocols\":[\"protocol1\",\"protocol2\"],\"clientCertificates\":[]}";
@@ -88,12 +72,12 @@ namespace Microsoft.Azure.WebPubSub.AspNetCore.Tests
         [Test]
         public void TestConnectEventRequestSerialize()
         {
-            var connectionContext = new WebPubSubConnectionContext()
-            {
-                ConnectionId = "0f9c97a2f0bf4706afe87a14e0797b11",
-                Signature = "sha256=7767effcb3946f3e1de039df4b986ef02c110b1469d02c0a06f41b3b727ab561",
-                Origin = TestUri.Host
-            };
+            var connectionContext = new WebPubSubConnectionContext(
+                WebPubSubEventType.System,
+                null, null, "0f9c97a2f0bf4706afe87a14e0797b11",
+                signature: "sha256=7767effcb3946f3e1de039df4b986ef02c110b1469d02c0a06f41b3b727ab561",
+                origin: TestUri.Host);
+
             var claims = new Dictionary<string, string[]>
             {
                 {"aaa", new string[]{"a1", "a2"} },
@@ -106,8 +90,8 @@ namespace Microsoft.Azure.WebPubSub.AspNetCore.Tests
                 {"query2", new string[]{"b1"} },
             };
             var certs = new List<WebPubSubClientCertificate>
-            { 
-                new WebPubSubClientCertificate("111"), 
+            {
+                new WebPubSubClientCertificate("111"),
                 new WebPubSubClientCertificate("222")
             };
             var request = new ConnectEventRequest(connectionContext, claims, query, new string[] { "protocol1", "protocol2" }, certs);
@@ -127,12 +111,11 @@ namespace Microsoft.Azure.WebPubSub.AspNetCore.Tests
         [Test]
         public void TestUserEventRequestSerialize()
         {
-            var connectionContext = new WebPubSubConnectionContext()
-            {
-                ConnectionId = "0f9c97a2f0bf4706afe87a14e0797b11",
-                Signature = "sha256=7767effcb3946f3e1de039df4b986ef02c110b1469d02c0a06f41b3b727ab561",
-                Origin = TestUri.Host
-            };
+            var connectionContext = new WebPubSubConnectionContext(
+                WebPubSubEventType.System,
+                null, null, "0f9c97a2f0bf4706afe87a14e0797b11",
+                signature: "sha256=7767effcb3946f3e1de039df4b986ef02c110b1469d02c0a06f41b3b727ab561",
+                origin: TestUri.Host);
 
             var request = new UserEventRequest(connectionContext, BinaryData.FromString("Hello World"), WebPubSubDataType.Text);
 
@@ -201,41 +184,63 @@ namespace Microsoft.Azure.WebPubSub.AspNetCore.Tests
         [TestCase("ccc", false)]
         public void TestSignatureCheck(string accessKey, bool valid)
         {
-            var connectionContext = new WebPubSubConnectionContext()
-            {
-                ConnectionId = "0f9c97a2f0bf4706afe87a14e0797b11",
-                Signature = "sha256=7767effcb3946f3e1de039df4b986ef02c110b1469d02c0a06f41b3b727ab561",
-                Origin = TestUri.Host
-            };
-            var options = new WebPubSubValidationOptions($"Endpoint={TestUri};AccessKey={accessKey};Version=1.0;");
+            var connectionContext = new WebPubSubConnectionContext(
+                WebPubSubEventType.System,
+                null, null, "0f9c97a2f0bf4706afe87a14e0797b11",
+                signature: "sha256=7767effcb3946f3e1de039df4b986ef02c110b1469d02c0a06f41b3b727ab561",
+                origin: TestUri.Host);
+            var options = new ValidationOptions($"Endpoint={TestUri};AccessKey={accessKey};Version=1.0;");
             var result = connectionContext.IsValidSignature(options);
             Assert.AreEqual(valid, result);
         }
 
         [Test]
-        public void TestSignatureCheck_OptionsNull()
+        public void TestSignatureCheck_OptionsNullSuccess()
         {
-            var connectionContext = new WebPubSubConnectionContext()
-            {
-                ConnectionId = "0f9c97a2f0bf4706afe87a14e0797b11",
-                Signature = "sha256=7767effcb3946f3e1de039df4b986ef02c110b1469d02c0a06f41b3b727ab561",
-                Origin = TestUri.Host
-            };
+            var connectionContext = new WebPubSubConnectionContext(
+                WebPubSubEventType.System,
+                null, null, "0f9c97a2f0bf4706afe87a14e0797b11",
+                signature: "sha256=7767effcb3946f3e1de039df4b986ef02c110b1469d02c0a06f41b3b727ab561",
+                origin: TestUri.Host);
             var result = connectionContext.IsValidSignature(null);
             Assert.True(result);
         }
 
         [Test]
-        public void TestSignatureCheck_OptionsEmpty()
+        public void TestSignatureCheck_OptionsEmptySuccess()
         {
-            var connectionContext = new WebPubSubConnectionContext()
-            {
-                ConnectionId = "0f9c97a2f0bf4706afe87a14e0797b11",
-                Signature = "sha256=7767effcb3946f3e1de039df4b986ef02c110b1469d02c0a06f41b3b727ab561",
-                Origin = TestUri.Host
-            };
+            var connectionContext = new WebPubSubConnectionContext(
+                WebPubSubEventType.System,
+                null, null, "0f9c97a2f0bf4706afe87a14e0797b11",
+                signature: "sha256=7767effcb3946f3e1de039df4b986ef02c110b1469d02c0a06f41b3b727ab561",
+                origin: TestUri.Host);
             var result = connectionContext.IsValidSignature(null);
             Assert.True(result);
+        }
+
+        [Test]
+        public void TestSignatureCheck_AccessKeyEmptySuccess()
+        {
+            var connectionContext = new WebPubSubConnectionContext(
+                WebPubSubEventType.System,
+                null, null, "0f9c97a2f0bf4706afe87a14e0797b11",
+                signature: "sha256=7767effcb3946f3e1de039df4b986ef02c110b1469d02c0a06f41b3b727ab561",
+                origin: TestUri.Host);
+            var options = new ValidationOptions($"Endpoint={TestUri};Version=1.0;");
+            var result = connectionContext.IsValidSignature(options);
+            Assert.True(result);
+        }
+
+        [Test]
+        public void TestSignatureCheck_SignatureNullFail()
+        {
+            var connectionContext = new WebPubSubConnectionContext(
+                WebPubSubEventType.System,
+                null, null, "0f9c97a2f0bf4706afe87a14e0797b11",
+                origin: TestUri.Host);
+            var options = new ValidationOptions($"Endpoint={TestUri};AccessKey=7aab239577fd4f24bc919802fb629f5f;Version=1.0;");
+            var result = connectionContext.IsValidSignature(options);
+            Assert.False(result);
         }
 
         [TestCase("OPTIONS", true)]
@@ -253,6 +258,22 @@ namespace Microsoft.Azure.WebPubSub.AspNetCore.Tests
                 Assert.NotNull(requestHosts);
                 Assert.AreEqual(TestUri.Host, requestHosts[0]);
             }
+        }
+
+        [TestCase("my-host.com", true)]
+        [TestCase("my-host1.com", false)]
+        [TestCase("localhost", false)]
+        [TestCase("http://localhost", false)]
+        public void TestAbuseProtectionCompare(string requestHost, bool expected)
+        {
+            var options = new ValidationOptions($"Endpoint=https://my-host.com;AccessKey=7aab239577fd4f24bc919802fb629f5f;Version=1.0;");
+
+            var result = false;
+            if (options.ContainsHost(requestHost))
+            {
+                result = true;
+            }
+            Assert.AreEqual(expected, result);
         }
 
         private static HttpContext PrepareHttpContext(
@@ -321,5 +342,29 @@ namespace Microsoft.Azure.WebPubSub.AspNetCore.Tests
                 $"{Constants.Headers.CloudEvents.TypeUserPrefix}{eventName}" :
                 $"{Constants.Headers.CloudEvents.TypeSystemPrefix}{eventName}";
         }
+
+        private sealed class StateTestClass
+        {
+            public DateTime Timestamp { get; set; }
+
+            public string Title { get; set; }
+
+            public int Version { get; set; }
+
+            public StateTestClass()
+            {
+                Timestamp = DateTime.Parse("2021-11-10");
+                Title = "GA";
+                Version = 1;
+            }
+
+            public StateTestClass(DateTime timestamp, string title, int version)
+            {
+                Timestamp = timestamp;
+                Title = title;
+                Version = version;
+            }
+        }
     }
 }
+#endif
