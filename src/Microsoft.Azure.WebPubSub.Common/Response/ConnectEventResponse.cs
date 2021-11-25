@@ -82,7 +82,6 @@ namespace Microsoft.Azure.WebPubSub.Common
         /// </summary>
         /// <param name="key">State key.</param>
         /// <param name="value">State value.</param>
-        [EditorBrowsable(EditorBrowsableState.Never)]
         public void SetState(string key, object value) =>
             SetState(key, BinaryData.FromObjectAsJson(value));
 
