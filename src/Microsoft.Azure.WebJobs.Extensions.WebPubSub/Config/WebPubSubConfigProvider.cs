@@ -1,8 +1,9 @@
-﻿// Copyright (c) Microsoft. All rights reserved.
-// Licensed under the MIT license. See LICENSE file in the project root for full license information.
+﻿// Copyright (c) Microsoft Corporation. All rights reserved.
+// Licensed under the MIT License.
 
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
@@ -59,13 +60,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
                 _options.Hub = _nameResolver.Resolve(Constants.HubNameStringName);
             }
 
-            // resolve validation options
-            var upstream = _nameResolver.Resolve(Constants.WebPubSubTriggerValidationStringName);
-            if (upstream != null)
-            {
-                _options.ValidationOptions = new WebPubSubValidationOptions(upstream);
-            }
-
             Exception webhookException = null;
             try
             {
@@ -83,13 +77,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
             // register JsonConverters
             RegisterJsonConverter();
 
-
             // bindings
             context
                 .AddConverter<WebPubSubConnection, JObject>(JObject.FromObject)
                 .AddConverter<WebPubSubContext, JObject>(JObject.FromObject)
-                .AddConverter<JObject, WebPubSubOperation>(ConvertToWebPubSubOperation)
-                .AddConverter<JArray, WebPubSubOperation[]>(ConvertToWebPubSubOperationArray);
+                .AddConverter<JObject, WebPubSubAction>(ConvertToWebPubSubOperation)
+                .AddConverter<JArray, WebPubSubAction[]>(ConvertToWebPubSubOperationArray);
 
             // Trigger binding
             context.AddBindingRule<WebPubSubTriggerAttribute>()
@@ -101,7 +94,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
             webpubsubConnectionAttributeRule.BindToInput(GetClientConnection);
 
             var webPubSubRequestAttributeRule = context.AddBindingRule<WebPubSubContextAttribute>();
-            webPubSubRequestAttributeRule.Bind(new WebPubSubContextBindingProvider(_nameResolver, _configuration));
+            webPubSubRequestAttributeRule.Bind(new WebPubSubContextBindingProvider(_nameResolver, _configuration, _options));
 
             // Output binding
             var webPubSubAttributeRule = context.AddBindingRule<WebPubSubAttribute>();
@@ -119,25 +112,25 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
         private void ValidateWebPubSubConnectionAttributeBinding(WebPubSubConnectionAttribute attribute, Type type)
         {
             ValidateConnectionString(
-                attribute.ConnectionStringSetting,
-                $"{nameof(WebPubSubConnectionAttribute)}.{nameof(WebPubSubConnectionAttribute.ConnectionStringSetting)}");
+                attribute.Connection,
+                $"{nameof(WebPubSubConnectionAttribute)}.{nameof(WebPubSubConnectionAttribute.Connection)}");
         }
 
         private void ValidateWebPubSubAttributeBinding(WebPubSubAttribute attribute, Type type)
         {
             ValidateConnectionString(
-                attribute.ConnectionStringSetting,
-                $"{nameof(WebPubSubAttribute)}.{nameof(WebPubSubAttribute.ConnectionStringSetting)}");
+                attribute.Connection,
+                $"{nameof(WebPubSubAttribute)}.{nameof(WebPubSubAttribute.Connection)}");
         }
 
         internal WebPubSubService GetService(WebPubSubAttribute attribute)
         {
-            var connectionString = Utilities.FirstOrDefault(attribute.ConnectionStringSetting, _options.ConnectionString);
+            var connectionString = Utilities.FirstOrDefault(attribute.Connection, _options.ConnectionString);
             var hubName = Utilities.FirstOrDefault(attribute.Hub, _options.Hub);
             return new WebPubSubService(connectionString, hubName);
         }
 
-        private IAsyncCollector<WebPubSubOperation> CreateCollector(WebPubSubAttribute attribute)
+        private IAsyncCollector<WebPubSubAction> CreateCollector(WebPubSubAttribute attribute)
         {
             return new WebPubSubAsyncCollector(GetService(attribute));
         }
@@ -145,7 +138,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
         private WebPubSubConnection GetClientConnection(WebPubSubConnectionAttribute attribute)
         {
             var hub = Utilities.FirstOrDefault(attribute.Hub, _options.Hub);
-            var service = new WebPubSubService(attribute.ConnectionStringSetting, hub);
+            var service = new WebPubSubService(attribute.Connection, hub);
             return service.GetClientConnection(attribute.UserId);
         }
 
@@ -167,74 +160,31 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
                 {
                     new StringEnumConverter(),
                     new BinaryDataJsonConverter(),
+                    new ConnectionStatesNewtonsoftConverter(),
                 },
                 ContractResolver = new CamelCasePropertyNamesContractResolver()
             };
         }
 
-        internal static WebPubSubOperation ConvertToWebPubSubOperation(JObject input)
+        internal static WebPubSubAction ConvertToWebPubSubOperation(JObject input)
         {
-            if (input.TryGetValue("operationKind", StringComparison.OrdinalIgnoreCase, out var kind))
+            if (input.TryGetValue("actionName", StringComparison.OrdinalIgnoreCase, out var kind))
             {
-                if (kind.ToString().Equals(nameof(SendToAll), StringComparison.OrdinalIgnoreCase))
+                var opeartions = typeof(WebPubSubAction).Assembly.GetTypes().Where(t => t.BaseType == typeof(WebPubSubAction));
+                foreach (var item in opeartions)
                 {
-                    CheckDataType(input);
-                    return input.ToObject<SendToAll>();
-                }
-                else if (kind.ToString().Equals(nameof(SendToConnection), StringComparison.OrdinalIgnoreCase))
-                {
-                    CheckDataType(input);
-                    return input.ToObject<SendToConnection>();
-                }
-                else if (kind.ToString().Equals(nameof(SendToUser), StringComparison.OrdinalIgnoreCase))
-                {
-                    CheckDataType(input);
-                    return input.ToObject<SendToUser>();
-                }
-                else if (kind.ToString().Equals(nameof(SendToGroup), StringComparison.OrdinalIgnoreCase))
-                {
-                    CheckDataType(input);
-                    return input.ToObject<SendToGroup>();
-                }
-                else if (kind.ToString().Equals(nameof(AddUserToGroup), StringComparison.OrdinalIgnoreCase))
-                {
-                    return input.ToObject<AddUserToGroup>();
-                }
-                else if (kind.ToString().Equals(nameof(RemoveUserFromGroup), StringComparison.OrdinalIgnoreCase))
-                {
-                    return input.ToObject<RemoveUserFromGroup>();
-                }
-                else if (kind.ToString().Equals(nameof(RemoveUserFromAllGroups), StringComparison.OrdinalIgnoreCase))
-                {
-                    return input.ToObject<RemoveUserFromAllGroups>();
-                }
-                else if (kind.ToString().Equals(nameof(AddConnectionToGroup), StringComparison.OrdinalIgnoreCase))
-                {
-                    return input.ToObject<AddConnectionToGroup>();
-                }
-                else if (kind.ToString().Equals(nameof(RemoveConnectionFromGroup), StringComparison.OrdinalIgnoreCase))
-                {
-                    return input.ToObject<RemoveConnectionFromGroup>();
-                }
-                else if (kind.ToString().Equals(nameof(CloseClientConnection), StringComparison.OrdinalIgnoreCase))
-                {
-                    return input.ToObject<CloseClientConnection>();
-                }
-                else if (kind.ToString().Equals(nameof(GrantPermission), StringComparison.OrdinalIgnoreCase))
-                {
-                    return input.ToObject<GrantPermission>();
-                }
-                else if (kind.ToString().Equals(nameof(RevokePermission), StringComparison.OrdinalIgnoreCase))
-                {
-                    return input.ToObject<RevokePermission>();
+                    if (TryToWebPubSubOperation(input, kind.ToString() + "Action", item, out var operation))
+                    {
+                        return operation;
+                    }
                 }
             }
-            return input.ToObject<WebPubSubOperation>();
+            throw new ArgumentException($"Not supported WebPubSubOperation: {kind}.");
         }
 
-        internal static WebPubSubOperation[] ConvertToWebPubSubOperationArray(JArray input)
+        internal static WebPubSubAction[] ConvertToWebPubSubOperationArray(JArray input)
         {
-            var result = new List<WebPubSubOperation>();
+            var result = new List<WebPubSubAction>();
             foreach (var item in input)
             {
                 result.Add(ConvertToWebPubSubOperation((JObject)item));
@@ -242,19 +192,35 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
             return result.ToArray();
         }
 
-        // Binary data accepts ArrayBuffer only.
+        private static bool TryToWebPubSubOperation(JObject input, string actionName, Type operationType, out WebPubSubAction operation)
+        {
+            // message events need check dataType.
+            if (actionName.StartsWith("Send", StringComparison.OrdinalIgnoreCase))
+            {
+                CheckDataType(input);
+            }
+            if (actionName.Equals(operationType.Name, StringComparison.OrdinalIgnoreCase))
+            {
+                operation = input.ToObject(operationType) as WebPubSubAction;
+                return true;
+            }
+            operation = null;
+            return false;
+        }
+
+        // Binary data accepts ArrayBuffer only, script language checks.
         private static void CheckDataType(JObject input)
         {
             if (input.TryGetValue("dataType", StringComparison.OrdinalIgnoreCase, out var value))
             {
-                var dataType = value.ToObject<MessageDataType>();
+                var dataType = value.ToObject<WebPubSubDataType>();
 
-                input.TryGetValue("message", StringComparison.OrdinalIgnoreCase, out var message);
+                input.TryGetValue("data", StringComparison.OrdinalIgnoreCase, out var data);
 
-                if (dataType == MessageDataType.Binary &&
-                    !(message["type"] != null && message["type"].ToString().Equals("Buffer", StringComparison.OrdinalIgnoreCase)))
+                if (dataType == WebPubSubDataType.Binary &&
+                    !(data["type"] != null && data["type"].ToString().Equals("Buffer", StringComparison.OrdinalIgnoreCase)))
                 {
-                    throw new ArgumentException("MessageDataType is binary, please use ArrayBuffer as message type.");
+                    throw new ArgumentException("WebPubSubDataType is binary, please use ArrayBuffer as message data type.");
                 }
             }
         }

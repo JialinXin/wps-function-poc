@@ -3,47 +3,44 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Text.Json;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Azure.WebPubSub.Common;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 
 namespace Microsoft.Azure.WebPubSub.AspNetCore
 {
     internal class ServiceRequestHandlerAdapter
     {
-        private readonly WebPubSubValidationOptions _options;
+        private readonly RequestValidator _requestValidator;
+        private readonly IServiceProvider _provider;
+        private readonly ILogger _logger;
 
-        // <hubName, <Hub,path>>
-        private readonly Dictionary<string, HubRegistry> _hubRegistry = new(StringComparer.OrdinalIgnoreCase);
+        // <hubName, HubImpl>
+        private readonly Dictionary<string, WebPubSubHub> _hubRegistry = new(StringComparer.OrdinalIgnoreCase);
 
-        // for tests.
-        internal ServiceRequestHandlerAdapter(WebPubSubValidationOptions options, WebPubSubHub hub, string path)
+        public ServiceRequestHandlerAdapter(IServiceProvider provider, RequestValidator requestValidator, ILogger<ServiceRequestHandlerAdapter> logger)
         {
-            _options = options;
-            _hubRegistry.Add(hub.GetType().Name, new HubRegistry(hub, path));
+            _provider = provider ?? throw new ArgumentNullException(nameof(provider));
+            _requestValidator = requestValidator ?? throw new ArgumentNullException(nameof(requestValidator));
+            _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
 
-        public ServiceRequestHandlerAdapter(WebPubSubValidationOptions options, Dictionary<string, HubRegistry> hubRegistry)
+        public void RegisterHub<THub>() where THub : WebPubSubHub
         {
-            _options = options;
-            _hubRegistry = hubRegistry;
-        }
-
-        public string GetPath(string hubName)
-        {
-            if (_hubRegistry.TryGetValue(hubName, out var registry))
-            {
-                return registry.Path;
-            }
-            return null;
+            var hub = Create<THub>();
+            _hubRegistry[hub.GetType().Name] = hub;
         }
 
         public WebPubSubHub GetHub(string hubName)
         {
-            if (_hubRegistry.TryGetValue(hubName, out var registry))
+            if (_hubRegistry.TryGetValue(hubName, out var hub))
             {
-                return registry.Hub;
+                return hub;
             }
             return null;
         }
@@ -54,26 +51,22 @@ namespace Microsoft.Azure.WebPubSub.AspNetCore
 
             if (context == null)
             {
-                context.Response.StatusCode = StatusCodes.Status400BadRequest;
-                await context.Response.WriteAsync("HttpContext is null").ConfigureAwait(false);
-                return;
+                throw new ArgumentNullException(nameof(context));
             }
 
             // Should check in middleware to skip not match calls.
-            // And keep here for internal reference lib robustness amd return as 400BadRequest.
+            // And keep here for internal reference lib robustness and return as 400BadRequest.
             #region WebPubSubRequest Check
             // Not Web PubSub request.
             if (!context.Request.Headers.ContainsKey(Constants.Headers.CloudEvents.WebPubSubVersion)
                 || !context.Request.Headers.TryGetValue(Constants.Headers.CloudEvents.Hub, out var hubName))
             {
-                context.Response.StatusCode = StatusCodes.Status400BadRequest;
-                await context.Response.WriteAsync("Not Web PubSub request.").ConfigureAwait(false);
-                return;
+                throw new ArgumentException("Invalid Web PubSub request.");
             }
 
-            // Hub not registered or path not match will skip.
+            // Hub not registered
             var hub = GetHub(hubName);
-            if (hub == null || !context.Request.Path.StartsWithSegments(GetPath(hubName)))
+            if (hub == null)
             {
                 context.Response.StatusCode = StatusCodes.Status400BadRequest;
                 await context.Response.WriteAsync("Hub is not registered.").ConfigureAwait(false);
@@ -83,84 +76,81 @@ namespace Microsoft.Azure.WebPubSub.AspNetCore
 
             try
             {
-                var serviceRequest = await request.ReadWebPubSubEventAsync(_options);
+                var serviceRequest = await request.ReadWebPubSubEventAsync(_requestValidator, context.RequestAborted).ConfigureAwait(false);
+                Log.StartToHandleRequest(_logger, serviceRequest.ConnectionContext);
 
                 switch (serviceRequest)
                 {
-                    case ValidationRequest validationRequest:
+                    // should not hit.
+                    case PreflightRequest preflightRequest:
                         {
-                            if (validationRequest.IsValid)
+                            if (preflightRequest.IsValid)
                             {
-                                context.Response.Headers.Add(Constants.Headers.WebHookAllowedOrigin, "*");
-                                return;
+                                context.Response.Headers.Add(Constants.Headers.WebHookAllowedOrigin, Constants.AllowedAllOrigins);
+                                break;
                             }
                             context.Response.StatusCode = StatusCodes.Status400BadRequest;
                             await context.Response.WriteAsync("Abuse Protection validation failed.").ConfigureAwait(false);
-                            return;
+                            break;
                         }
                     case ConnectEventRequest connectEventRequest:
                         {
                             var response = await hub.OnConnectAsync(connectEventRequest, context.RequestAborted).ConfigureAwait(false);
-                            if (response is EventErrorResponse error)
+                            // default as null is allowed.
+                            if (response != null)
                             {
-                                context.Response.StatusCode = ConvertToStatusCode(error.Code);
-                                context.Response.ContentType = Constants.ContentTypes.PlainTextContentType;
-                                await context.Response.WriteAsync(error.ErrorMessage).ConfigureAwait(false);
-                                return;
+                                SetConnectionState(ref context, connectEventRequest.ConnectionContext, response.ConnectionStates);
+                                await context.Response.WriteAsync(JsonSerializer.Serialize(response)).ConfigureAwait(false);
                             }
-                            else if (response is ConnectEventResponse connectResponse)
-                            {
-                                SetConnectionState(ref context, connectEventRequest.ConnectionContext, connectResponse.States);
-                                await context.Response.WriteAsync(JsonSerializer.Serialize(connectResponse)).ConfigureAwait(false);
-                                return;
-                            }
-                            // other response is invalid, igonre.
-                            return;
+                            break;
                         }
                     case UserEventRequest messageRequest:
                         {
                             var response = await hub.OnMessageReceivedAsync(messageRequest, context.RequestAborted).ConfigureAwait(false);
-                            if (response is EventErrorResponse error)
+                            // default as null is allowed.
+                            if (response != null)
                             {
-                                context.Response.StatusCode = ConvertToStatusCode(error.Code);
-                                context.Response.ContentType = Constants.ContentTypes.PlainTextContentType;
-                                await context.Response.WriteAsync(error.ErrorMessage).ConfigureAwait(false);
-                                return;
+                                SetConnectionState(ref context, messageRequest.ConnectionContext, response.ConnectionStates);
                             }
-                            else if (response is UserEventResponse msgResponse)
+                            if (response.Data != null)
                             {
-                                SetConnectionState(ref context, messageRequest.ConnectionContext, msgResponse.States);
-                                context.Response.ContentType = ConvertToContentType(msgResponse.DataType);
-                                var payload = msgResponse.Message.ToArray();
-                                await context.Response.Body.WriteAsync(payload, 0, payload.Length).ConfigureAwait(false);
-                                return;
+                                context.Response.ContentType = ConvertToContentType(response.DataType);
+                                var payload = response.Data.ToArray();
+                                await context.Response.Body.WriteAsync(payload).ConfigureAwait(false);
                             }
-                            // other response is invalid, igonre.
-                            return;
+                            break;
                         }
                     case ConnectedEventRequest connectedEvent:
                         {
                             _ = hub.OnConnectedAsync(connectedEvent).ConfigureAwait(false);
-                            return;
+                            break;
                         }
                     case DisconnectedEventRequest disconnectedEvent:
                         {
                             _ = hub.OnDisconnectedAsync(disconnectedEvent).ConfigureAwait(false);
-                            return;
+                            break;
                         }
                     default:
-                        return;
+                        break;
                 }
+                Log.SucceededToHandleRequest(_logger, serviceRequest.ConnectionContext);
             }
             catch (UnauthorizedAccessException ex)
             {
+                Log.FailedToHandleRequest(_logger, ex.Message, ex);
                 context.Response.StatusCode = StatusCodes.Status401Unauthorized;
                 await context.Response.WriteAsync(ex.Message).ConfigureAwait(false);
-                return;
+            }
+            catch (Exception ex)
+            {
+                Log.FailedToHandleRequest(_logger, ex.Message, ex);
+                // logging to service.
+                context.Response.StatusCode = StatusCodes.Status500InternalServerError;
+                await context.Response.WriteAsync(ex.Message).ConfigureAwait(false);
             }
         }
 
-        private static void SetConnectionState(ref HttpContext context, WebPubSubConnectionContext connectionContext, Dictionary<string, object> newStates)
+        private static void SetConnectionState(ref HttpContext context, WebPubSubConnectionContext connectionContext, IReadOnlyDictionary<string, BinaryData> newStates)
         {
             var updatedStates = connectionContext.UpdateStates(newStates);
             if (updatedStates != null)
@@ -169,21 +159,54 @@ namespace Microsoft.Azure.WebPubSub.AspNetCore
             }
         }
 
-        private static int ConvertToStatusCode(WebPubSubErrorCode errorCode) =>
-            errorCode switch
-            {
-                WebPubSubErrorCode.UserError => StatusCodes.Status400BadRequest,
-                WebPubSubErrorCode.Unauthorized => StatusCodes.Status401Unauthorized,
-                // default and server error returns 500
-                _ => StatusCodes.Status500InternalServerError
-            };
-
-        private static string ConvertToContentType(MessageDataType dataType) =>
+        private static string ConvertToContentType(WebPubSubDataType dataType) =>
             dataType switch
             {
-                MessageDataType.Text => $"{Constants.ContentTypes.PlainTextContentType}; {Constants.ContentTypes.CharsetUTF8}",
-                MessageDataType.Json => $"{Constants.ContentTypes.JsonContentType}; {Constants.ContentTypes.CharsetUTF8}",
+                WebPubSubDataType.Text => $"{Constants.ContentTypes.PlainTextContentType}; {Constants.ContentTypes.CharsetUTF8}",
+                WebPubSubDataType.Json => $"{Constants.ContentTypes.JsonContentType}; {Constants.ContentTypes.CharsetUTF8}",
                 _ => Constants.ContentTypes.BinaryContentType
             };
+
+        private THub Create<THub>() where THub : WebPubSubHub
+        {
+            var hub = _provider.GetService<THub>();
+            if (hub == null)
+            {
+                hub = ActivatorUtilities.CreateInstance<THub>(_provider);
+            }
+
+            if (_hubRegistry.TryGetValue(nameof(hub), out _))
+            {
+                Debug.Assert(true, $"{typeof(THub)} must not be reused.");
+            }
+            return hub;
+        }
+
+        private static class Log
+        {
+            private static readonly Action<ILogger, string, string, string, Exception> _startToHandleRequest =
+                LoggerMessage.Define<string, string, string>(LogLevel.Debug, new EventId(1, "StartToHandleRequest"), "Start to handle request, connectionId: {connectionId}, eventType: {eventType}, eventName: {eventName}");
+
+            private static readonly Action<ILogger, string, string, string, Exception> _succeededToHandleRequest =
+                LoggerMessage.Define<string, string, string>(LogLevel.Debug, new EventId(2, "SucceededToHandleRequest"), "Succeeded to handle request, connectionId: {connectionId}, eventType: {eventType}, eventName: {eventName}");
+
+            private static readonly Action<ILogger, string, Exception> _failedToHandleRequest =
+                LoggerMessage.Define<string>(LogLevel.Warning, new EventId(3, "FailedToHandleRequest"), "Handle request failed. {error}");
+
+            public static void StartToHandleRequest(ILogger logger, WebPubSubConnectionContext context)
+            {
+                _startToHandleRequest(logger, context?.ConnectionId, context?.EventType.ToString(), context?.EventName, null);
+            }
+
+            public static void SucceededToHandleRequest(ILogger logger, WebPubSubConnectionContext context)
+            {
+                _succeededToHandleRequest(logger, context?.ConnectionId, context?.EventType.ToString(), context?.EventName, null);
+            }
+
+            public static void FailedToHandleRequest(ILogger logger, string error, Exception exception)
+            {
+                _failedToHandleRequest(logger, error, exception);
+            }
+        }
     }
 }

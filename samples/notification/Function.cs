@@ -13,12 +13,12 @@ namespace notifications
     {
         [FunctionName("notification")]
         public static async Task Run([HttpTrigger(AuthorizationLevel.Function, "get", "post", Route = null)] HttpRequest req, ILogger log,
-            [WebPubSub(Hub = "notification")] IAsyncCollector<WebPubSubOperation> operations)
+            [WebPubSub(Hub = "notification")] IAsyncCollector<WebPubSubAction> operations)
         {
-           await operations.AddAsync(new SendToAll
+           await operations.AddAsync(new SendToAllAction
             {
-                Message = BinaryData.FromString($"[DateTime: {DateTime.Now}], MSFT stock price: {GetStockPrice()}"),
-                DataType = MessageDataType.Text
+                Data = BinaryData.FromString($"[DateTime: {DateTime.Now}], MSFT stock price: {GetStockPrice()}"),
+                DataType = WebPubSubDataType.Text
             });
         }
 

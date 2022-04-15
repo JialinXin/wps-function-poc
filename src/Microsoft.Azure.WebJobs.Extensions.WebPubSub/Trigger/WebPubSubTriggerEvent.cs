@@ -1,5 +1,5 @@
-﻿// Copyright (c) Microsoft. All rights reserved.
-// Licensed under the MIT license. See LICENSE file in the project root for full license information.
+﻿// Copyright (c) Microsoft Corporation. All rights reserved.
+// Licensed under the MIT License.
 
 using System;
 using System.Collections.Generic;
@@ -15,9 +15,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
         /// </summary>
         public WebPubSubConnectionContext ConnectionContext { get; set; }
 
-        public BinaryData Message { get; set; }
+        public BinaryData Data { get; set; }
 
-        public MessageDataType DataType { get; set; }
+        public WebPubSubDataType DataType { get; set; }
 
         public IList<string> Subprotocols { get; set; }
 

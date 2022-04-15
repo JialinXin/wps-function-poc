@@ -1,5 +1,5 @@
-﻿// Copyright (c) Microsoft. All rights reserved.
-// Licensed under the MIT license. See LICENSE file in the project root for full license information.
+﻿// Copyright (c) Microsoft Corporation. All rights reserved.
+// Licensed under the MIT License.
 
 using System.Net.Http;
 using Microsoft.Azure.WebPubSub.Common;
@@ -7,41 +7,60 @@ using Newtonsoft.Json;
 
 namespace Microsoft.Azure.WebJobs.Extensions.WebPubSub
 {
+    /// <summary>
+    /// Web PubSub service request context.
+    /// </summary>
     [JsonConverter(typeof(WebPubSubContextJsonConverter))]
     public class WebPubSubContext
     {
+        internal const string RequestPropertyName = "request";
+        internal const string ResponsePropertyName = "response";
+        internal const string ErrorMessagePropertyName = "errorMessage";
+        internal const string HasErrorPropertyName = "hasError";
+        internal const string IsPreflightPropertyName = "isPreflight";
+
         /// <summary>
         /// Request body.
         /// </summary>
-        [JsonProperty("request")]
+        [JsonProperty(RequestPropertyName)]
         public WebPubSubEventRequest Request { get; }
 
         /// <summary>
         /// System build response for easy return, works for AbuseProtection and Errors.
         /// </summary>
-        [JsonProperty("response"), JsonConverter(typeof(HttpResponseMessageJsonConverter))]
+        [JsonProperty(ResponsePropertyName), JsonConverter(typeof(HttpResponseMessageJsonConverter))]
         public HttpResponseMessage Response { get; }
 
-        [JsonProperty("errorMessage")]
+        /// <summary>
+        /// Error detail message.
+        /// </summary>
+        [JsonProperty(ErrorMessagePropertyName)]
         public string ErrorMessage { get; }
 
-        [JsonProperty("errorCode")]
-        public string ErrorCode { get; }
+        /// <summary>
+        /// Flag to indicate whether the request has error.
+        /// </summary>
+        [JsonProperty(HasErrorPropertyName)]
+        public bool HasError { get; }
 
-        [JsonProperty("isValidationRequest")]
-        public bool IsValidationRequest => Request is ValidationRequest;
+        /// <summary>
+        /// Flag to indicate if it's a validation request.
+        /// </summary>
+        [JsonProperty(IsPreflightPropertyName)]
+        public bool IsPreflight { get; }
 
         // Invalid Request
         internal WebPubSubContext(string errorMessage, WebPubSubErrorCode errorCode)
         {
             ErrorMessage = errorMessage;
-            ErrorCode = errorCode.ToString();
+            HasError = true;
             Response = Utilities.BuildErrorResponse(new EventErrorResponse(errorCode, errorMessage));
         }
 
         internal WebPubSubContext(WebPubSubEventRequest request, HttpResponseMessage response = null)
         {
             Request = request;
+            IsPreflight = request is PreflightRequest;
             Response = response ?? new HttpResponseMessage();
         }
     }

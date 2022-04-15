@@ -48,7 +48,7 @@ namespace SimpleChat_Input
             [HttpTrigger(AuthorizationLevel.Anonymous, "post")] HttpRequest req,
             [WebPubSubContext] WebPubSubContext wpsReq)
         {
-            if (wpsReq.Request is ValidationRequest || wpsReq.ErrorMessage != null)
+            if (wpsReq.Request is PreflightRequest|| wpsReq.ErrorMessage != null)
             {
                 return wpsReq.Response;
             }
@@ -61,17 +61,17 @@ namespace SimpleChat_Input
         public static async Task<object> Broadcast(
             [HttpTrigger(AuthorizationLevel.Anonymous, "post")] HttpRequest req,
             [WebPubSubContext] WebPubSubContext wpsReq,
-            [WebPubSub(Hub = "%abc%")] IAsyncCollector<WebPubSubOperation> operations)
+            [WebPubSub(Hub = "%abc%")] IAsyncCollector<WebPubSubAction> operations)
         {
-            if (wpsReq.Request is ValidationRequest || wpsReq.ErrorMessage != null)
+            if (wpsReq.Request is PreflightRequest || wpsReq.ErrorMessage != null)
             {
                 return wpsReq.Response;
             }
             if (wpsReq.Request is UserEventRequest request)
             {
-                await operations.AddAsync(new SendToAll
+                await operations.AddAsync(new SendToAllAction
                 {
-                    Message = request.Message,
+                    Data = request.Data,
                     DataType = request.DataType
                 });
             }
@@ -83,39 +83,39 @@ namespace SimpleChat_Input
         public static async Task Connected(
             [HttpTrigger(AuthorizationLevel.Anonymous, "post")] HttpRequest req,
             [WebPubSubContext] WebPubSubContext wpsReq,
-            [WebPubSub(Hub = "%abc%")] IAsyncCollector<WebPubSubOperation> webpubsubOperation)
+            [WebPubSub(Hub = "%abc%")] IAsyncCollector<WebPubSubAction> webpubsubOperation)
         {
             Console.WriteLine("Connected.");
-            await webpubsubOperation.AddAsync(new SendToAll
+            await webpubsubOperation.AddAsync(new SendToAllAction
             {
-                Message = BinaryData.FromString(new ClientContent($"{wpsReq.Request.ConnectionContext.UserId} connected.").ToString()),
-                DataType = MessageDataType.Json
+                Data = BinaryData.FromString(new ClientContent($"{wpsReq.Request.ConnectionContext.UserId} connected.").ToString()),
+                DataType = WebPubSubDataType.Json
             });
 
-            await webpubsubOperation.AddAsync(new AddUserToGroup
+            await webpubsubOperation.AddAsync(new AddUserToGroupAction
             {
                 UserId = wpsReq.Request.ConnectionContext.UserId,
                 Group = "group1"
             });
-            await webpubsubOperation.AddAsync(new SendToUser
+            await webpubsubOperation.AddAsync(new SendToUserAction
             {
                 UserId = wpsReq.Request.ConnectionContext.UserId,
-                Message = BinaryData.FromString(new ClientContent($"{wpsReq.Request.ConnectionContext.UserId} joined group: group1.").ToString()),
-                DataType = MessageDataType.Json
+                Data = BinaryData.FromString(new ClientContent($"{wpsReq.Request.ConnectionContext.UserId} joined group: group1.").ToString()),
+                DataType = WebPubSubDataType.Json
             });
         }
 
         [FunctionName("disconnected")]
         [return: WebPubSub(Hub = "%abc%")]
-        public static WebPubSubOperation Disconnect(
+        public static WebPubSubAction Disconnect(
             [HttpTrigger(AuthorizationLevel.Anonymous, "post")] HttpRequest req,
             [WebPubSubContext] WebPubSubContext wpsReq)
         {
             Console.WriteLine("Disconnected.");
-            return new SendToAll
+            return new SendToAllAction
             {
-                Message = BinaryData.FromString(new ClientContent($"{wpsReq.Request.ConnectionContext.UserId} disconnect.").ToString()),
-                DataType = MessageDataType.Text
+                Data = BinaryData.FromString(new ClientContent($"{wpsReq.Request.ConnectionContext.UserId} disconnect.").ToString()),
+                DataType = WebPubSubDataType.Text
             };
         }
 

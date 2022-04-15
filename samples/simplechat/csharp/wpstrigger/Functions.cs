@@ -50,24 +50,24 @@ namespace SimpleChat
         [FunctionName("connected")]
         public static async Task Connected(
             [WebPubSubTrigger("%abc%",WebPubSubEventType.System, "connected")] WebPubSubConnectionContext connectionContext,
-            [WebPubSub(Hub = "%abc%")] IAsyncCollector<WebPubSubOperation> webpubsubOperation)
+            [WebPubSub(Hub = "%abc%")] IAsyncCollector<WebPubSubAction> webpubsubOperation)
         {
-            await webpubsubOperation.AddAsync(new SendToAll
+            await webpubsubOperation.AddAsync(new SendToAllAction
             {
-                Message = BinaryData.FromString(new ClientContent($"{connectionContext.UserId} connected.").ToString()),
-                DataType = MessageDataType.Json
+                Data = BinaryData.FromString(new ClientContent($"{connectionContext.UserId} connected.").ToString()),
+                DataType = WebPubSubDataType.Json
             });
 
-            await webpubsubOperation.AddAsync(new AddUserToGroup
+            await webpubsubOperation.AddAsync(new AddUserToGroupAction
             {
                 UserId = connectionContext.UserId,
                 Group = "group1"
             });
-            await webpubsubOperation.AddAsync(new SendToUser
+            await webpubsubOperation.AddAsync(new SendToUserAction
             {
                 UserId = connectionContext.UserId,
-                Message = BinaryData.FromString(new ClientContent($"{connectionContext.UserId} joined group: group1.").ToString()),
-                DataType = MessageDataType.Json
+                Data = BinaryData.FromString(new ClientContent($"{connectionContext.UserId} joined group: group1.").ToString()),
+                DataType = WebPubSubDataType.Json
             });
         }
 
@@ -79,27 +79,27 @@ namespace SimpleChat
             WebPubSubConnectionContext connectionContext,
             //BinaryData message,
             //MessageDataType dataType,
-            [WebPubSub(Hub = "simplechat")] IAsyncCollector<WebPubSubOperation> operations)
+            [WebPubSub(Hub = "simplechat")] IAsyncCollector<WebPubSubAction> operations)
         {
-            await operations.AddAsync(new SendToAll
+            await operations.AddAsync(new SendToAllAction
             {
-                Message = request.Message,
+                Data = request.Data,
                 DataType = request.DataType
             });
 
-            return request.CreateResponse(BinaryData.FromString(new ClientContent("ack").ToString()), MessageDataType.Json);
+            return request.CreateResponse(BinaryData.FromString(new ClientContent("ack").ToString()), WebPubSubDataType.Json);
         }
 
         [FunctionName("disconnect")]
         [return: WebPubSub(Hub = "%abc%")]
-        public static WebPubSubOperation Disconnect(
+        public static WebPubSubAction Disconnect(
             [WebPubSubTrigger("%abc%", WebPubSubEventType.System, "disconnected")] WebPubSubConnectionContext connectionContext)
         {
             Console.WriteLine("Disconnect.");
-            return new SendToAll
+            return new SendToAllAction
             {
-                Message = BinaryData.FromString(new ClientContent($"{connectionContext.UserId} disconnect.").ToString()),
-                DataType = MessageDataType.Text
+                Data = BinaryData.FromString(new ClientContent($"{connectionContext.UserId} disconnect.").ToString()),
+                DataType = WebPubSubDataType.Text
             };
         }
 

@@ -1,11 +1,13 @@
-using Azure.Messaging.WebPubSub;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Azure;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using System;
 using System.IO;
+using Microsoft.Azure.WebPubSub.AspNetCore;
+using Microsoft.OpenApi.Models;
 
 namespace chatapp
 {
@@ -15,15 +17,8 @@ namespace chatapp
         // For more information on how to configure your application, visit https://go.microsoft.com/fwlink/?LinkID=398940
         public void ConfigureServices(IServiceCollection services)
         {
-            services.AddAzureClients(builder =>
-            {
-                builder.AddWebPubSubServiceClient("<connection-string>", "samplehub");
-            });
-
-            services.AddWebPubSub(o =>
-            {
-                o.ValidationOptions.Add("<connection-string>");
-            });
+            services.AddWebPubSub(o => o.ServiceEndpoint = new("Endpoint=http://localhost;Port=8080;AccessKey=ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789ABCDEFGH;Version=1.0;"))
+                .AddWebPubSubServiceClient<SampleHub>();
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
@@ -37,10 +32,12 @@ namespace chatapp
             app.UseStaticFiles();
 
             app.UseRouting();
-            //app.UseWebPubSub(builder => {
-            //    builder.MapWebPubSubHub<SampleHub>("/api");
-            //    builder.MapWebPubSubHub<SampleHub1>("/api1");
-            //});
+
+            app.UseSwagger();
+            app.UseSwaggerUI(c =>
+            {
+                c.SwaggerEndpoint("/swagger/v1/swagger.json", "My Test1 Api v1");
+            });
 
             app.UseEndpoints(endpoints =>
             {
@@ -55,22 +52,10 @@ namespace chatapp
                         await context.Response.WriteAsync("missing user id");
                         return;
                     }
-                    var serviceClient = context.RequestServices.GetRequiredService<WebPubSubServiceClient>();
-                    await context.Response.WriteAsync(serviceClient.GenerateClientAccessUri(userId: id).AbsoluteUri);
+                    var serviceClient = context.RequestServices.GetRequiredService<WebPubSubServiceClient<SampleHub>>();
+                    await context.Response.WriteAsync(serviceClient.GetClientAccessUri(userId: id).AbsoluteUri);
                 });
             });
-
-            //app.UseEndpoints(endpoints =>
-            //{
-            //    endpoints.MapGet("/negotiate", async context =>
-            //    {
-            //        var request = await context.Request.ReadWebPubSubEventRequestAsync(null);
-            //        if (request is ConnectEventRequest)
-            //        {
-            //            //
-            //        }
-            //    });
-            //});
         }
     }
 }
