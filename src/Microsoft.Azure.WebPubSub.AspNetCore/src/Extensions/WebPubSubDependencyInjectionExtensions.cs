@@ -2,6 +2,8 @@
 // Licensed under the MIT License.
 
 using System;
+using System.IO;
+using System.Reflection;
 using Microsoft.Azure.WebPubSub.AspNetCore;
 
 namespace Microsoft.Extensions.DependencyInjection
@@ -78,6 +80,7 @@ namespace Microsoft.Extensions.DependencyInjection
             services.AddSwaggerGen(c =>
             {
                 c.DocumentFilter<CustomDocumentFilter>();
+                c.OperationFilter<CustomOperationFilter>();
             });
 
             var builder = new WebPubSubServerBuilder(services);

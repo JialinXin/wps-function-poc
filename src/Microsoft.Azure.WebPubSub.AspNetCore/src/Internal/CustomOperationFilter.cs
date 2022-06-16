@@ -15,13 +15,15 @@ namespace Microsoft.Azure.WebPubSub.AspNetCore
 
             operation.Parameters.Add(new OpenApiParameter
             {
-                Name = "x-customHeader",
+                Name = "ce-awpsversion",
                 In = ParameterLocation.Header,
                 Required = true,
-                Schema = new OpenApiSchema
-                {
-                    Type = "String"
-                }
+                //Schema = new OpenApiSchema
+                //{
+                //    Type = "String",
+                //},
+                Description = "1.0",
+                //AllowReserved = true,
             });
         }
     }

@@ -25,7 +25,7 @@ namespace chatapp
         public override async ValueTask<UserEventResponse> OnMessageReceivedAsync(UserEventRequest request, CancellationToken cancellationToken)
         {
             await _client.SendToAllAsync(request.Data.ToString());
-            return request.CreateResponse("ack");
+            return request.CreateResponse("[SYSTEM] ACK");
         }
     }
 }

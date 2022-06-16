@@ -9,8 +9,14 @@ namespace Microsoft.Azure.WebPubSub.AspNetCore
     {
         public void Apply(OpenApiSchema schema, SchemaFilterContext context)
         {
+            if (schema == null)
+            {
+                schema = new OpenApiSchema();
+            }
+
             schema.Example = new OpenApiObject()
             {
+
             };
         }
     }
